@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IM Campaign</title>
+<meta name="theme-color" content="#0e1115">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IM Campaign">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e1115; --panel:#161a20; --panel2:#1c2129; --line:#2a313b; --line2:#353e4a;
+  --text:#e8e3d6; --muted:#8e96a3; --dim:#5f6774;
+  --brass:#d4a24c; --brass-dim:#8a6a33;
+  --enemy:#4b2225; --enemy-line:#6b3236;
+  --ours:#4f7fa8; --held:#3c8a6c; --secured:#c9a23f; --weak:#c27c2c;
+  --good:#5fb38a; --warn:#d9a441; --bad:#d0584f;
+  --sea:#0b1a24;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"Barlow",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;padding-top:var(--safe-t)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header.top{display:flex;align-items:center;gap:12px;padding:14px 0 10px}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
+.brand span{font-size:11px;color:var(--brass);letter-spacing:.22em;text-transform:uppercase;margin-top:4px;font-weight:600}
+.top .spacer{flex:1}
+.countdown{text-align:right;line-height:1.05}
+.countdown b{font-family:var(--mono);font-size:22px;color:var(--brass)}
+.countdown span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.syncdot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+.syncdot i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.syncdot.ok i{background:var(--good)} .syncdot.busy i{background:var(--warn)} .syncdot.err i{background:var(--bad)}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 14px;color:var(--muted);font-family:var(--display);font-size:16px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:var(--text);border-color:var(--brass)}
+.grid{display:grid;gap:12px}
+.stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){.stats{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h3{margin:0 0 8px;font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.big{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
+.big small{font-size:14px;color:var(--muted);font-weight:500}
+.sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.4}
+.bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+.bar>div{height:100%;background:var(--brass);transition:width .6s ease}
+.pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid currentColor}
+.c-good{color:var(--good)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)} .c-brass{color:var(--brass)} .c-muted{color:var(--muted)}
+.mapcard{padding:0;overflow:hidden;margin-top:12px;position:relative}
+.maphead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.maphead h3{margin:0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg.map{display:block;width:100%;height:auto;background:var(--sea)}
+svg.map .hex{stroke:#0b0e12;stroke-width:1;transition:fill .5s ease}
+svg.map .border{stroke:#e8e3d6;stroke-opacity:.55;stroke-width:1.6;fill:none;stroke-linecap:round;pointer-events:none}
+svg.map .prov{cursor:pointer}
+svg.map .prov:hover .hex{filter:brightness(1.18)}
+svg.map .prov.sel .hex{filter:brightness(1.3)}
+svg.map text{font-family:var(--display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:#f3eee2;paint-order:stroke;stroke:#0b0e12;stroke-width:3.2px;stroke-linejoin:round;pointer-events:none}
+svg.map text.pct{font-family:var(--mono);font-size:10px;fill:var(--brass);stroke-width:2.6px}
+svg.map .fresh{animation:pulse 1.6s ease 2}
+@keyframes pulse{50%{filter:brightness(1.8)}}
+.row{display:flex;gap:12px;align-items:center}
+.two{grid-template-columns:1fr 1fr;margin-top:12px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.toggle:first-of-type{border-top:0}
+.sw{position:relative;width:46px;height:26px;border-radius:13px;background:var(--panel2);border:1px solid var(--line2);flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--dim);transition:.2s}
+.sw.on{background:#24402f;border-color:var(--good)} .sw.on::after{left:22px;background:var(--good)}
+.dots{display:flex;gap:4px;margin-top:4px}
+.dots i{width:12px;height:12px;border-radius:3px;background:var(--panel2);border:1px solid var(--line)}
+.dots i.y{background:var(--good);border-color:var(--good)} .dots i.n{background:#3a1e20;border-color:#5a2a2d}
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+.log li:first-child{border-top:0}
+.log .d{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:52px;padding-top:2px}
+.log .x{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;padding:0 4px}
+.log .x:hover{color:var(--bad)}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-weight:600}
+.btn:hover{border-color:var(--brass-dim)}
+.btn.pri{background:var(--brass);color:#1a1408;border-color:var(--brass)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.fab{position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:20;background:var(--brass);color:#1a1408;border:0;border-radius:999px;padding:14px 20px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+main{padding-bottom:110px}
+.sheet-bg{position:fixed;inset:0;background:rgba(5,7,9,.7);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg.hidden{display:none}
+.sheet{background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:18px 16px calc(18px + var(--safe-b))}
+@media (min-width:760px){.sheet-bg{align-items:center}.sheet{border-radius:14px;border-bottom:1px solid var(--line2)}}
+.sheet h2{margin:0 0 4px;font-family:var(--display);font-size:22px;letter-spacing:.06em;text-transform:uppercase}
+.field{margin-top:14px}
+.field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600}
+.field input[type=number],.field input[type=text],.field input[type=password],.field input[type=date],.field select{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font-size:16px}
+.field input:focus,.field select:focus{outline:2px solid var(--brass-dim);outline-offset:0}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:3px;gap:3px}
+.seg button{flex:1;background:none;border:0;border-radius:6px;padding:8px;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--brass-dim)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{background:var(--bg);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted)}
+.chips button.on{color:#1a1408;background:var(--brass);border-color:var(--brass);font-weight:600}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.brk{display:grid;grid-template-columns:1fr 70px 70px;gap:6px;align-items:center;font-size:13px;margin-top:6px}
+.brk input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:6px 8px}
+.note{font-size:13px;color:var(--muted);line-height:1.5}
+.note code{font-family:var(--mono);font-size:12px;background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--text)}
+.battles{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.battle .when{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.battle .res{font-family:var(--mono);font-size:28px;font-weight:700;margin:8px 0}
+.final{border-color:var(--brass-dim);background:linear-gradient(180deg,#1f1a10,var(--panel))}
+.sysrow{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.sysrow input{background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:6px 8px;width:100%;text-align:right;font-family:var(--mono)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin-top:8px}
+.kv span:nth-child(odd){color:var(--muted)} .kv span:nth-child(even){font-family:var(--mono);text-align:right}
+#toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--panel2);border:1px solid var(--brass-dim);padding:10px 16px;border-radius:8px;z-index:60;transition:.3s;font-size:14px;max-width:90vw;text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.offdays{display:flex;flex-wrap:wrap;gap:4px}
+.offdays button{width:36px;height:36px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted);padding:0}
+.offdays button.off{background:#3a1e20;border-color:#6b3236;color:var(--text)}
+.offdays button.wk{color:var(--dim)}
+.offdays .mo{width:100%;font-size:12px;color:var(--muted);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.1em}
+@media (max-width:600px){
+  .brand b{font-size:20px} .countdown b{font-size:19px}
+  nav.tabs button{padding:10px 9px;font-size:15px}
+  svg.map text{font-size:21px} svg.map text.pct{font-size:16px}
+  .legend{margin-left:0}
+}
+.foot{color:var(--dim);font-size:12px;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>IM Campaign</b><span>Operation Honors</span></div>
+    <div class="spacer"></div>
+    <button class="syncdot" id="syncdot" title="Sync"><i></i><em id="synctxt">Local</em></button>
+    <div class="countdown"><b id="cd">–</b><span>days to shelf</span></div>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button data-t="campaign" class="on">Campaign</button>
+    <button data-t="battles">Battles</button>
+    <button data-t="log">War log</button>
+    <button data-t="settings">Settings</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<button class="fab" id="fab">+ Log block</button>
+<div class="sheet-bg hidden" id="sheetbg"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const APP_VERSION = '0.2';
+
+/* ---------- Provinces (UWorld-style IM systems) ---------- */
+const SYSTEMS = [
+  {id:'cardio', name:'Cardiovascular',                       short:'Cardio',   land:'The Cardiac Heartland', share:15.7, x:395,y:240},
+  {id:'pulm',   name:'Pulmonary & Critical Care',            short:'Pulm',     land:'The Pulmonary Steppe',  share:11.2, x:530,y:150},
+  {id:'id',     name:'Infectious Diseases',                  short:'ID',       land:'The Infectious Wastes', share:10.4, x:660,y:250},
+  {id:'gi',     name:'Gastrointestinal & Nutrition',         short:'GI',       land:'The GI Delta',          share:9.7,  x:275,y:315},
+  {id:'renal',  name:'Renal, Urinary & Male Reproductive',   short:'Renal/GU', land:'The Renal Basin',       share:9.7,  x:525,y:330},
+  {id:'neuro',  name:'Nervous System',                       short:'Neuro',    land:'The Neural Highlands',  share:8.7,  x:285,y:70},
+  {id:'heme',   name:'Hematology & Oncology (+ Breast)',     short:'Heme-Onc', land:'The Marrow Marches',    share:8.4,  x:255,y:185},
+  {id:'endo',   name:'Endocrine, Diabetes & Metabolism',     short:'Endo',     land:'The Endocrine Peaks',   share:8.0,  x:420,y:95},
+  {id:'rheum',  name:'Rheumatology, Orthopedics & Sports',   short:'Rheum',    land:'The Joint Frontier',    share:6.5,  x:125,y:250},
+  {id:'gen',    name:'Biostats, Ethics/Legal & Multisystem', short:'Biostat',  land:'The Capital District',  share:4.1,  x:395,y:395},
+  {id:'derm',   name:'Dermatology',                          short:'Derm',     land:'The Outer Reaches',     share:2.2,  x:705,y:145},
+  {id:'psych',  name:'Psychiatric, Behavioral & Substance',  short:'Psych',    land:'The Mindlands',         share:1.7,  x:140,y:140},
+  {id:'eye',    name:'ENT & Ophthalmology',                  short:'ENT/Eye',  land:'The Sensory Isles',     share:1.7,  x:690,y:360},
+  {id:'tox',    name:'Poisoning & Environmental',            short:'Tox',      land:'The Toxic Fens',        share:1.4,  x:150,y:360},
+  {id:'allergy',name:'Allergy & Immunology',                 short:'Immuno',   land:'The Immune Ramparts',   share:0.5,  x:575,y:62},
+];
+// Exact UWorld Step 2 CK "Medicine" unused counts, Oct 27 2026
+const EXACT_COUNTS = {cardio:171, pulm:122, id:114, gi:106, renal:106, neuro:95, heme:92, endo:87, rheum:71, gen:45, derm:24, psych:19, eye:19, tox:15, allergy:6};
+const SYS = Object.fromEntries(SYSTEMS.map(s=>[s.id,s]));
+
+function distribute(total){
+  const raw = SYSTEMS.map(s=>({id:s.id, v:total*s.share/100}));
+  const out = {}; let used=0;
+  raw.forEach(r=>{out[r.id]=Math.floor(r.v); used+=out[r.id];});
+  raw.sort((a,b)=>(b.v%1)-(a.v%1)).slice(0,total-used).forEach(r=>out[r.id]++);
+  return out;
+}
+
+const DEFAULT_SETTINGS = () => ({
+  updatedAt: 0,
+  start: '2026-10-27',
+  imStart: '2026-11-09',
+  shelf: '2026-12-18',
+  sysCounts: {...EXACT_COUNTS},
+  countsExact: true,
+  ambossTotal: 1687,
+  targetPct: 65,
+  ankiGoal: 250,
+  ankiDueCap: 200,
+  ankiQuery: 'is:due',
+  offDays: [],
+  cms: {1:'2026-11-14', 2:'2026-11-29', 3:'2026-12-08', 4:'2026-12-14'},
+});
+
+/* ---------- Dates ---------- */
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const parseD = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d=parseD(s); d.setDate(d.getDate()+n); return ymd(d); };
+const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/864e5);
+const fmtD = s => parseD(s).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+const fmtDow = s => parseD(s).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+
+/* ---------- State ---------- */
+const LS_STATE='imc.state', LS_SYNC='imc.sync', LS_DEV='imc.device', LS_ANKI='imc.ankiAuto';
+let device = localStorage.getItem(LS_DEV);
+if(!device){ device = Math.random().toString(36).slice(2,7); localStorage.setItem(LS_DEV,device); }
+const uid = () => Date.now().toString(36)+'-'+device+Math.random().toString(36).slice(2,5);
+
+function freshState(){ return {v:1, settings:DEFAULT_SETTINGS(), events:[]}; }
+let S;
+try { S = JSON.parse(localStorage.getItem(LS_STATE)) || freshState(); } catch(e){ S = freshState(); }
+S.settings = Object.assign(DEFAULT_SETTINGS(), S.settings||{});
+S.events = S.events || [];
+if(!S.settings.countsExact || !('psych' in S.settings.sysCounts)){ S.settings.sysCounts={...EXACT_COUNTS}; S.settings.countsExact=true; }
+
+function saveLocal(){ try{ localStorage.setItem(LS_STATE, JSON.stringify(S)); }catch(e){} }
+function touchSettings(){ S.settings.updatedAt = Date.now(); commit(); }
+function addEvent(e){
+  e.id = e.id || uid(); e.ts = Date.now(); e.date = e.date || today();
+  const i = S.events.findIndex(x=>x.id===e.id);
+  if(i>=0) S.events[i]=e; else S.events.push(e);
+  commit();
+  return e;
+}
+function removeEvent(id){ addEvent({id:'del-'+id, type:'del', target:id}); }
+function commit(){ saveLocal(); render(); scheduleSync(); }
+
+function mergeStates(a,b){
+  if(!b) return a; if(!a) return b;
+  const m = new Map();
+  [...(a.events||[]), ...(b.events||[])].forEach(e=>{ const p=m.get(e.id); if(!p || e.ts>p.ts) m.set(e.id,e); });
+  const sa=a.settings||{}, sb=b.settings||{};
+  const settings = Object.assign(DEFAULT_SETTINGS(), (sb.updatedAt||0)>(sa.updatedAt||0) ? sb : sa);
+  return {v:1, settings, events:[...m.values()].sort((x,y)=>x.ts-y.ts)};
+}
+
+/* ---------- Derived campaign state ---------- */
+const uwTotal = st => Object.values(st.settings.sysCounts).reduce((a,b)=>a+b,0);
+
+function derive(st){
+  const set = st.settings, counts = set.sysCounts;
+  const dead = new Set(st.events.filter(e=>e.type==='del').map(e=>e.target));
+  const evs = st.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>a.ts-b.ts);
+  const sys = {}; SYSTEMS.forEach(s=>sys[s.id]={total:counts[s.id]||0, uw:0, n:0, c:0, amb:0, last:null});
+  const D = {sys, uwDone:0, uwN:0, uwC:0, ambN:0, ambC:0, byDay:{}, anki:{}, habits:{}, cms:{}, blocks:[], ankiLatest:null, recon:null};
+  for(const e of evs){
+    if(e.type==='block'){
+      D.blocks.push(e);
+      const day = D.byDay[e.date] ||= {uw:0,uwc:0,amb:0,ambc:0};
+      const isUW = e.src==='uw';
+      if(isUW){ D.uwDone+=e.n; D.uwN+=e.n; D.uwC+=e.c; day.uw+=e.n; day.uwc+=e.c; }
+      else { D.ambN+=e.n; D.ambC+=e.c; day.amb+=e.n; day.ambc+=e.c; }
+      let assigned = 0;
+      if(e.sys){
+        for(const [id,v] of Object.entries(e.sys)){
+          if(!sys[id]) continue;
+          sys[id].n+=v.n; sys[id].c+=v.c; sys[id].last=e.date; assigned+=v.n;
+          if(isUW) sys[id].uw+=v.n; else sys[id].amb+=v.n;
+        }
+      }
+      const rest = e.n - assigned;
+      if(isUW && rest>0){ // mixed questions: spread across fronts by what's left in each
+        const rem = SYSTEMS.map(s=>[s.id, Math.max(0, sys[s.id].total - sys[s.id].uw)]);
+        const tot = rem.reduce((a,[,v])=>a+v,0);
+        if(tot>0) rem.forEach(([id,v])=>{ sys[id].uw += rest*v/tot; });
+      }
+    } else if(e.type==='anki'){ D.anki[e.date]=e; if(!D.ankiLatest || e.ts>D.ankiLatest.ts) D.ankiLatest=e; }
+    else if(e.type==='habit'){ D.habits[e.date+':'+e.kind]=e.val; }
+    else if(e.type==='cms'){ D.cms[e.form]=e; }
+    else if(e.type==='recon'){ D.recon=e; }
+  }
+  return D;
+}
+
+function provInfo(D, id){
+  const p = D.sys[id], t = S.settings.targetPct;
+  const ctl = p.total>0 ? Math.min(1, p.uw/p.total) : 1;
+  const rc = D.recon && D.recon.sys && D.recon.sys[id]!=null ? D.recon.sys[id] : null;
+  const acc = rc!=null ? rc : (p.n ? p.c/p.n*100 : null);
+  const weak = acc!=null && (rc!=null || p.n>=20) && acc < t-10;
+  let state = 'enemy';
+  if(ctl>=1 && acc!=null && acc>=t) state='secured';
+  else if(ctl>=0.75) state='held';
+  else if(ctl>=0.25) state='contested';
+  return {...p, ctl, acc, weak, state, fromRecon: rc!=null};
+}
+const STATE_LABEL = {enemy:'Enemy-held', contested:'Contested', held:'Held', secured:'Secured'};
+
+function studyDays(fromDate){
+  const set=S.settings; let n=0;
+  for(let d=fromDate; d<set.shelf; d=addDays(d,1)) if(!set.offDays.includes(d)) n++;
+  return n;
+}
+function orders(D){
+  const t = today(), set = S.settings, total = uwTotal(S);
+  const td = D.byDay[t] || {uw:0,uwc:0,amb:0,ambc:0};
+  const remStart = Math.max(0, total - (D.uwDone - td.uw));
+  const left = studyDays(t);
+  const isOff = set.offDays.includes(t);
+  const quota = (t>=set.shelf) ? 0 : isOff ? 0 : Math.ceil(remStart/Math.max(1,left));
+  return {quota, done:td.uw, amb:td.amb, remaining:Math.max(0,total-D.uwDone), daysLeft:left, isOff, td};
+}
+function outlook(D){
+  const t=today(), set=S.settings;
+  const span = Math.max(1, Math.min(7, daysBetween(set.start, t)+1));
+  let n7=0,c7=0;
+  for(let i=0;i<span;i++){ const d=D.byDay[addDays(t,-i)]; if(d){ n7+=d.uw; c7+=d.uwc; } }
+  const o = orders(D);
+  const pace = n7/span;
+  const need = o.remaining / Math.max(1, studyDays(t));
+  const proj = Math.min(100, (D.uwDone + pace*studyDays(t)) / Math.max(1,uwTotal(S)) * 100);
+  const acc = n7>=30 ? c7/n7*100 : (D.uwN>=30 ? D.uwC/D.uwN*100 : null);
+  const paceOk = need===0 || pace >= need*0.95;
+  const accOk = acc==null || acc >= set.targetPct;
+  let level, label;
+  if(D.uwN===0){ level='muted'; label='Awaiting first report'; }
+  else if(paceOk && accOk){ level='good'; label='On course'; }
+  else if(pace >= need*0.8 && (acc==null || acc >= set.targetPct-5)){ level='warn'; label='Pressing'; }
+  else { level='bad'; label='Off course'; }
+  const why = D.uwN===0 ? 'Log a block to start the campaign.'
+    : (!paceOk && !accOk) ? 'Behind pace and under your honors line.'
+    : !paceOk ? 'Accuracy is there — volume is behind.'
+    : !accOk ? 'Volume is there — accuracy is under your line. Slow down on explanations.'
+    : 'Volume and accuracy both on target.';
+  return {pace, need, proj, acc, level, label, span, why};
+}
+function ankiFront(D){
+  const set=S.settings, t=today();
+  const snap = D.anki[t], latest = D.ankiLatest;
+  const due = latest ? latest.due : null;
+  const reviewed = snap ? snap.reviewed : 0;
+  let streak=0;
+  for(let d = (snap && snap.reviewed>=set.ankiGoal) ? t : addDays(t,-1); ; d=addDays(d,-1)){
+    const s=D.anki[d]; if(s && s.reviewed>=set.ankiGoal) streak++; else break;
+  }
+  let status='Unknown', level='muted';
+  if(due!=null){
+    if(due<=set.ankiDueCap){status='Walls held'; level='good';}
+    else if(due<=set.ankiDueCap*3){status='Under pressure'; level='warn';}
+    else {status='Under siege'; level='bad';}
+  }
+  return {due, reviewed, streak, status, level, latest};
+}
+const RANKS=[[0,'Recruit'],[100,'Corporal'],[250,'Sergeant'],[500,'Lieutenant'],[800,'Captain'],[1200,'Major'],[1700,'Colonel'],[2300,'General'],[2800,'Field Marshal']];
+function rank(D){
+  const q = D.uwN + D.ambN + Object.values(D.cms).length*50;
+  let r=RANKS[0], nx=null;
+  for(let i=0;i<RANKS.length;i++){ if(q>=RANKS[i][0]){ r=RANKS[i]; nx=RANKS[i+1]||null; } }
+  return {q, name:r[1], next:nx};
+}
+
+/* ---------- Map geometry (built once) ---------- */
+const HEX = 21, COLS = 21, ROWS = 14, SQ3 = Math.sqrt(3);
+const MAP_W = Math.ceil(HEX*SQ3*(COLS+0.5)), MAP_H = Math.ceil(HEX*1.5*(ROWS-1)+HEX*2);
+function hash(a,b){ let h = (a*374761393 + b*668265263) ^ 0x5bd1e995; h = (h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967296; }
+const GEO = (()=>{
+  const hexes=[]; const at={};
+  const cx=MAP_W/2, cy=MAP_H/2, rx=MAP_W*0.47, ry=MAP_H*0.46;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const x = HEX*SQ3*(c+0.5*(r&1)) + HEX*SQ3/2, y = HEX*1.5*r + HEX;
+    const e = ((x-cx)/rx)**2 + ((y-cy)/ry)**2;
+    if(e > 1 - hash(c,r)*0.28) continue;
+    if(hash(r+11,c+7) > 0.975 && e>0.35) continue; // a few lakes near coasts
+    let best=null, bd=1e9;
+    for(const s of SYSTEMS){ const d = Math.hypot(x-s.x,y-s.y)/Math.sqrt(s.share+3); if(d<bd){bd=d;best=s.id;} }
+    const h={c,r,x,y,p:best}; hexes.push(h); at[c+','+r]=h;
+  }
+  const nb = (c,r)=> (r&1)
+    ? [[c+1,r],[c+1,r+1],[c,r+1],[c-1,r],[c,r-1],[c+1,r-1]]
+    : [[c+1,r],[c,r+1],[c-1,r+1],[c-1,r],[c-1,r-1],[c,r-1]];
+  const corner = (h,i)=>{ const a=Math.PI/180*(60*i-30); return [h.x+HEX*Math.cos(a), h.y+HEX*Math.sin(a)]; };
+  const borders=[];
+  for(const h of hexes){
+    h.pts = [0,1,2,3,4,5].map(i=>corner(h,i).map(v=>v.toFixed(1)).join(',')).join(' ');
+    nb(h.c,h.r).forEach(([c2,r2],i)=>{
+      const o = at[c2+','+r2];
+      if(!o || o.p!==h.p){ if(!o || h.p<o.p || !o){ const a=corner(h,i), b=corner(h,(i+1)%6); borders.push(`M${a[0].toFixed(1)},${a[1].toFixed(1)}L${b[0].toFixed(1)},${b[1].toFixed(1)}`); } }
+    });
+  }
+  const prov={};
+  SYSTEMS.forEach(s=>{
+    let hs = hexes.filter(h=>h.p===s.id);
+    const mx = hs.reduce((a,h)=>a+h.x,0)/hs.length, my = hs.reduce((a,h)=>a+h.y,0)/hs.length;
+    let lab = hs.reduce((best,h)=>Math.hypot(h.x-mx,h.y-my)<Math.hypot(best.x-mx,best.y-my)?h:best, hs[0]);
+    // territory grows outward from the province's capital hex
+    hs = hs.sort((a,b)=>(Math.hypot(a.x-lab.x,a.y-lab.y)+hash(a.c,a.r)*6)-(Math.hypot(b.x-lab.x,b.y-lab.y)+hash(b.c,b.r)*6));
+    prov[s.id]={hexes:hs, lx:lab.x, ly:lab.y};
+  });
+  const xs=hexes.map(h=>h.x), ys=hexes.map(h=>h.y);
+  const vb=[Math.min(...xs)-HEX-6, Math.min(...ys)-HEX-6, Math.max(...xs)-Math.min(...xs)+2*HEX+12, Math.max(...ys)-Math.min(...ys)+2*HEX+12].map(v=>v.toFixed(0)).join(' ');
+  return {hexes, prov, borders:borders.join(''), vb};
+})();
+
+function stateColor(info){
+  if(info.state==='secured') return 'var(--secured)';
+  if(info.weak) return 'var(--weak)';
+  if(info.state==='held') return 'var(--held)';
+  return 'var(--ours)';
+}
+let selProv=null, freshProvs=new Set();
+function mapSVG(D){
+  let g='';
+  for(const s of SYSTEMS){
+    const info = provInfo(D,s.id), P = GEO.prov[s.id];
+    const k = Math.round(info.ctl * P.hexes.length);
+    const col = stateColor(info);
+    g += `<g class="prov${selProv===s.id?' sel':''}${freshProvs.has(s.id)?' fresh':''}" data-p="${s.id}">`;
+    P.hexes.forEach((h,i)=>{ g+=`<polygon class="hex" points="${h.pts}" style="fill:${i<k?col:'var(--enemy)'}"/>`; });
+    g += `</g>`;
+  }
+  g += `<path class="border" d="${GEO.borders}"/>`;
+  for(const s of SYSTEMS){
+    const info = provInfo(D,s.id), P=GEO.prov[s.id];
+    const fs = P.hexes.length>14 ? 13 : 11;
+    g += `<text x="${P.lx.toFixed(0)}" y="${(P.ly-2).toFixed(0)}" text-anchor="middle" font-size="${fs}">${s.short}</text>`;
+    g += `<text class="pct" x="${P.lx.toFixed(0)}" y="${(P.ly+(innerWidth<600?17:11)).toFixed(0)}" text-anchor="middle">${Math.round(info.ctl*100)}%</text>`;
+  }
+  return `<svg class="map" viewBox="${GEO.vb}" role="img" aria-label="Campaign map">${g}</svg>`;
+}
+
+/* ---------- Rendering ---------- */
+let tab = 'campaign';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = (c,n) => n ? Math.round(c/n*100) : null;
+
+function render(){
+  const D = derive(S);
+  const left = daysBetween(today(), S.settings.shelf);
+  $('#cd').textContent = Math.max(0,left);
+  renderSync();
+  const v = $('#view');
+  if(tab==='campaign') v.innerHTML = viewCampaign(D);
+  else if(tab==='battles') v.innerHTML = viewBattles(D);
+  else if(tab==='log') v.innerHTML = viewLog(D);
+  else v.innerHTML = viewSettings(D);
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
+  $('#fab').style.display = tab==='settings' ? 'none' : '';
+}
+
+function viewCampaign(D){
+  const o = orders(D), ol = outlook(D), ak = ankiFront(D), rk = rank(D), t = today();
+  const set = S.settings;
+  const qpct = o.quota ? Math.min(100, o.done/o.quota*100) : 100;
+  const qMsg = o.isOff ? 'Leave day — no quota. Anything you log still counts.'
+    : o.quota===0 ? 'Campaign complete.'
+    : o.done>=o.quota ? `Orders fulfilled. ${o.done-o.quota>0?`+${o.done-o.quota} beyond orders.`:''}`
+    : `${o.quota-o.done} to go today · ${o.remaining} UWorld left over ${o.daysLeft} study day${o.daysLeft===1?'':'s'}`;
+  const ambLine = o.amb ? ` · ${o.amb} AMBOSS` : '';
+  const dots = kind => { let h=''; for(let i=6;i>=0;i--){ const d=addDays(t,-i); const v=D.habits[d+':'+kind]; h+=`<i class="${v===true?'y':v===false?'n':''}" title="${fmtD(d)}"></i>`; } return h; };
+  const gym = D.habits[t+':gym']===true, diet = D.habits[t+':diet']===true;
+  const ankiAuto = localStorage.getItem(LS_ANKI)==='1';
+  const sinceAnki = ak.latest ? agoText(ak.latest.ts) : null;
+
+  const counts = {enemy:0,contested:0,held:0,secured:0};
+  SYSTEMS.forEach(s=>counts[provInfo(D,s.id).state]++);
+
+  return `
+  <div class="grid stats">
+    <div class="card">
+      <h3>Today's orders</h3>
+      <div class="big">${o.done}<small> / ${o.quota} UWorld${ambLine}</small></div>
+      <div class="bar"><div style="width:${qpct}%;background:${o.done>=o.quota?'var(--good)':'var(--brass)'}"></div></div>
+      <div class="sub">${qMsg}</div>
+    </div>
+    <div class="card">
+      <h3>Anki front</h3>
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div class="big">${ak.due==null?'–':ak.due.toLocaleString()}<small> due</small></div>
+        <span class="pill c-${ak.level}">${ak.status}</span>
+      </div>
+      <div class="bar"><div style="width:${Math.min(100,ak.reviewed/set.ankiGoal*100)}%;background:${ak.reviewed>=set.ankiGoal?'var(--good)':'var(--brass)'}"></div></div>
+      <div class="sub">${ak.reviewed} / ${set.ankiGoal} reviews today${ak.streak?` · ${ak.streak}-day streak`:''}${sinceAnki?` · updated ${sinceAnki}`:''}</div>
+      <div class="row" style="margin-top:10px;gap:8px">
+        ${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read from Anki</button>`:''}
+        <button class="btn sm" data-a="anki-manual">Enter manually</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Campaign outlook</h3>
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div class="big c-${ol.level}" style="font-size:24px">${ol.label}</div>
+        <span class="pill c-brass">${rk.name}</span>
+      </div>
+      <div class="kv">
+        <span>Pace (last ${ol.span}d)</span><span class="${ol.pace>=ol.need*0.95?'c-good':'c-warn'}">${ol.pace.toFixed(0)}/day</span>
+        <span>Needed</span><span>${ol.need.toFixed(0)}/day</span>
+        <span>UWorld accuracy</span><span class="${ol.acc==null?'':ol.acc>=set.targetPct?'c-good':'c-warn'}">${ol.acc==null?'–':ol.acc.toFixed(0)+'%'} <span class="c-muted">/ ${set.targetPct}%</span></span>
+        <span>Projected bank done by shelf</span><span>${ol.proj.toFixed(0)}%</span>
+      </div>
+      <div class="sub">${ol.why}</div>
+    </div>
+  </div>
+
+  <div class="card mapcard">
+    <div class="maphead">
+      <h3>The Medicine Front</h3>
+      <button class="btn sm" data-a="recon">Intel report${D.recon?` · ${fmtD(D.recon.date)}`:''}</button>
+      <span class="c-muted" style="font-size:13px">${counts.secured} secured · ${counts.held} held · ${counts.contested} contested · ${counts.enemy} enemy</span>
+      <div class="legend">
+        <span><i style="background:var(--enemy)"></i>Enemy</span>
+        <span><i style="background:var(--ours)"></i>Advancing</span>
+        <span><i style="background:var(--held)"></i>Held 75%+</span>
+        <span><i style="background:var(--weak)"></i>Weak front</span>
+        <span><i style="background:var(--secured)"></i>Secured</span>
+      </div>
+    </div>
+    ${mapSVG(D)}
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Supply & troops</h3>
+      <div class="toggle"><div><div>Gym today</div><div class="dots">${dots('gym')}</div></div><button class="sw ${gym?'on':''}" data-a="habit" data-k="gym" aria-label="Gym today"></button></div>
+      <div class="toggle"><div><div>Low-carb held today</div><div class="dots">${dots('diet')}</div></div><button class="sw ${diet?'on':''}" data-a="habit" data-k="diet" aria-label="Low-carb today"></button></div>
+    </div>
+    <div class="card">
+      <h3>Latest dispatches</h3>
+      <ul class="log">${dispatches(D).slice(0,5).map(x=>`<li><span class="d">${fmtD(x.date)}</span><span>${x.html}</span></li>`).join('') || '<li class="c-muted">No reports yet. Log your first block.</li>'}</ul>
+    </div>
+  </div>
+  <div class="foot">Tap a province for details · v${APP_VERSION}</div>`;
+}
+
+function agoText(ts){
+  const m = Math.round((Date.now()-ts)/60000);
+  if(m<1) return 'just now'; if(m<60) return m+'m ago';
+  const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago';
+}
+
+function blockVerdict(p){
+  if(p>=75) return 'decisive advance';
+  if(p>=60) return 'steady push';
+  if(p>=45) return 'costly gains — review the casualties';
+  return 'repelled — study every miss';
+}
+function dispatches(D){
+  const out=[];
+  const dead = new Set(S.events.filter(e=>e.type==='del').map(e=>e.target));
+  const evs = S.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>b.ts-a.ts);
+  for(const e of evs){
+    if(e.type==='block'){
+      const p = pct(e.c,e.n);
+      const ids = e.sys ? Object.keys(e.sys) : [];
+      const where = ids.length===1 ? SYS[ids[0]].land : ids.length>1 ? ids.map(i=>SYS[i].short).join(', ')+' fronts' : 'all fronts';
+      const src = e.src==='uw'?'UWorld':'AMBOSS';
+      out.push({id:e.id, date:e.date, kind:'block', html:`<b>${e.n}</b> ${src} on ${esc(where)} at <b class="${p>=S.settings.targetPct?'c-good':p>=50?'c-warn':'c-bad'}">${p}%</b> — ${blockVerdict(p)}.`});
+    } else if(e.type==='cms'){
+      out.push({id:e.id, date:e.date, kind:'cms', html:`<b class="c-brass">Battle of CMS Form ${e.form}</b>: ${e.pct}% — ${e.pct>=S.settings.targetPct+10?'a rout of the enemy':e.pct>=S.settings.targetPct?'the field is ours':'the line wavered; regroup'}.`});
+    } else if(e.type==='recon'){
+      out.push({id:e.id, date:e.date, kind:'recon', html:`Intel report filed for ${Object.keys(e.sys||{}).length} fronts.`});
+    } else if(e.type==='anki'){
+      out.push({id:e.id, date:e.date, kind:'anki', html:`Anki: ${e.reviewed} reviewed, ${e.due.toLocaleString()} still at the gates.`});
+    }
+  }
+  return out;
+}
+
+function viewBattles(D){
+  const set=S.settings, t=today();
+  const cards = [1,2,3,4].map(f=>{
+    const r = D.cms[f], when = set.cms[f];
+    const dleft = daysBetween(t, when);
+    const status = r ? `<div class="res ${r.pct>=set.targetPct?'c-good':'c-warn'}">${r.pct}%</div><div class="sub">Fought ${fmtD(r.date)}</div>`
+      : `<div class="res c-muted">—</div><div class="sub">${dleft>0?`In ${dleft} day${dleft===1?'':'s'}`:dleft===0?'Scheduled today':'Overdue'}</div>`;
+    return `<div class="card battle"><h3>CMS Medicine · Form ${f}</h3><div class="when">Planned ${fmtDow(when)}</div>${status}
+      <div class="row" style="margin-top:12px;gap:8px"><button class="btn sm ${r?'':'pri'}" data-a="cms" data-f="${f}">${r?'Edit result':'Report result'}</button></div></div>`;
+  }).join('');
+  const done = Object.values(D.cms);
+  const avg = done.length ? done.reduce((a,b)=>a+b.pct,0)/done.length : null;
+  const shelfLeft = daysBetween(t, set.shelf);
+  return `
+  <div class="card final" style="margin-bottom:12px">
+    <h3>The final battle</h3>
+    <div class="big" style="font-size:26px">IM Shelf · ${fmtDow(set.shelf)}</div>
+    <div class="sub">${shelfLeft>0?`${shelfLeft} days out.`:'Today.'} Your honors line is set at <b>${set.targetPct}%</b> UWorld accuracy — your own bar, editable in Settings. ${avg!=null?`CMS average so far: <b class="${avg>=set.targetPct?'c-good':'c-warn'}">${avg.toFixed(0)}%</b>.`:'Your CMS forms are the closest preview of the real thing.'}</div>
+  </div>
+  <div class="grid battles">${cards}</div>
+  <p class="note" style="margin-top:14px">Suggested rhythm: Form 1 as a baseline after your first IM week, then the rest in the final three weeks when they predict best. Change the dates in Settings.</p>`;
+}
+
+function viewLog(D){
+  const items = dispatches(D);
+  return `<div class="card"><h3>War log</h3><ul class="log">${items.map(x=>`<li><span class="d">${fmtD(x.date)}</span><span>${x.html}</span>${x.kind!=='anki'?`<button class="x" data-a="del" data-id="${x.id}" title="Delete entry" aria-label="Delete entry">×</button>`:''}</li>`).join('') || '<li class="c-muted">Nothing logged yet.</li>'}</ul></div>
+  <div class="card" style="margin-top:12px"><h3>Totals</h3><div class="kv">
+    <span>UWorld IM done (campaign)</span><span>${D.uwDone} / ${uwTotal(S)}</span>
+    <span>UWorld accuracy</span><span>${D.uwN?pct(D.uwC,D.uwN)+'%':'–'}</span>
+    <span>AMBOSS done</span><span>${D.ambN} / ${S.settings.ambossTotal}</span>
+    <span>AMBOSS accuracy</span><span>${D.ambN?pct(D.ambC,D.ambN)+'%':'–'}</span>
+    <span>CMS forms fought</span><span>${Object.keys(D.cms).length} / 4</span>
+  </div></div>`;
+}
+
+function offDayPicker(){
+  const set=S.settings; let h='', month='';
+  for(let d=today(); d<set.shelf; d=addDays(d,1)){
+    const dt=parseD(d), m=dt.toLocaleDateString(undefined,{month:'long'});
+    if(m!==month){ month=m; h+=`<div class="mo">${m}</div>`; }
+    const wk = dt.getDay()===0||dt.getDay()===6;
+    h+=`<button class="${set.offDays.includes(d)?'off':''} ${wk?'wk':''}" data-a="offday" data-d="${d}" title="${fmtDow(d)}">${dt.getDate()}</button>`;
+  }
+  return `<div class="offdays">${h}</div>`;
+}
+
+function viewSettings(D){
+  const set=S.settings, cfg=getSyncCfg()||{}, ankiAuto=localStorage.getItem(LS_ANKI)==='1';
+  const total=uwTotal(S);
+  return `
+  <div class="grid two" style="margin-top:0">
+    <div class="card">
+      <h3>Campaign</h3>
+      <div class="pair">
+        <div class="field"><label>IM starts</label><input type="date" data-s="imStart" value="${set.imStart}"></div>
+        <div class="field"><label>Shelf</label><input type="date" data-s="shelf" value="${set.shelf}"></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label>Honors line (UWorld %)</label><input type="number" data-s="targetPct" value="${set.targetPct}"></div>
+        <div class="field"><label>AMBOSS IM total</label><input type="number" data-s="ambossTotal" value="${set.ambossTotal}"></div>
+      </div>
+      <div class="field"><label>CMS form dates</label>
+        <div class="pair">${[1,2,3,4].map(f=>`<input type="date" data-cms="${f}" value="${set.cms[f]}" aria-label="Form ${f} date">`).join('')}</div>
+      </div>
+      <div class="field"><label>Leave days (tap to mark — no quota, quota redistributes)</label>${offDayPicker()}</div>
+    </div>
+
+    <div class="card">
+      <h3>UWorld IM by province</h3>
+      <p class="note">${set.countsExact?'Loaded from your UWorld screen (Oct 27). Edit if your bank changes.':'These are <b>estimates</b> split from your 1,092 unused. For a true map, copy the unused count for each system from UWorld\'s Create Test screen (IM filter).'}</p>
+      ${SYSTEMS.map(s=>`<div class="sysrow"><span>${s.name}</span><input type="number" min="0" data-sys="${s.id}" value="${set.sysCounts[s.id]}"></div>`).join('')}
+      <div class="sysrow" style="font-weight:600"><span>Total unused at campaign start</span><span style="text-align:right;font-family:var(--mono)">${total}</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Anki</h3>
+      <div class="toggle" style="border:0"><div><div>This device runs Anki</div><div class="note">Turn on for your Mac only. Reads reviews and due count automatically while Anki is open.</div></div><button class="sw ${ankiAuto?'on':''}" data-a="anki-auto" aria-label="This device runs Anki"></button></div>
+      <div class="pair">
+        <div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div>
+        <div class="field"><label>"Walls held" at ≤ due</label><input type="number" data-s="ankiDueCap" value="${set.ankiDueCap}"></div>
+      </div>
+      <div class="field"><label>Due-card search</label><input type="text" data-s="ankiQuery" value="${esc(set.ankiQuery)}"></div>
+      <p class="note">Default <code>is:due</code> counts every deck. To count one deck: <code>deck:"Deck Name" is:due</code>.</p>
+      ${ankiAuto?`<button class="btn sm" data-a="anki-test">Test Anki connection</button>`:''}
+    </div>
+
+    <div class="card">
+      <h3>Sync between devices</h3>
+      <p class="note">Your campaign is stored in a private GitHub repo. Every device connected with the same repo and token stays on the same page. The token stays on this device.</p>
+      <div class="field"><label>GitHub repo (owner/name)</label><input type="text" id="sg-repo" placeholder="kani190spy-gif/im-campagin-data" value="${esc(cfg.repo||'')}"></div>
+      <div class="field"><label>Access token</label><input type="password" id="sg-token" placeholder="github_pat_…" value="${esc(cfg.token||'')}" autocomplete="off"></div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="btn pri sm" data-a="sync-save">Save & sync</button>
+        ${cfg.repo?`<button class="btn sm" data-a="sync-now">Sync now</button><button class="btn sm danger" data-a="sync-off">Disconnect</button>`:''}
+      </div>
+      <p class="note" style="margin-top:10px">Status: ${esc(syncInfo.msg)}</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3>Data</h3>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="btn sm" data-a="export">Export backup</button>
+      <label class="btn sm" style="display:inline-block">Import backup<input type="file" accept="application/json" id="importfile" hidden></label>
+    </div>
+  </div>
+  <div class="foot">IM Campaign v${APP_VERSION} · device ${device}</div>`;
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(html){ $('#sheet').innerHTML = html; $('#sheetbg').classList.remove('hidden'); }
+function closeSheet(){ $('#sheetbg').classList.add('hidden'); $('#sheet').innerHTML=''; }
+
+let logDraft=null;
+function openLog(preSys){
+  logDraft = {src:'uw', sys: preSys||null, split:false};
+  drawLog();
+}
+function drawLog(){
+  const d=logDraft;
+  openSheet(`
+    <h2>Report a block</h2>
+    <div class="note">Every block you log moves the front.</div>
+    <div class="field"><label>Source</label><div class="seg">
+      <button data-ls="uw" class="${d.src==='uw'?'on':''}">UWorld</button>
+      <button data-ls="amboss" class="${d.src==='amboss'?'on':''}">AMBOSS</button></div></div>
+    <div class="pair">
+      <div class="field"><label>Questions</label><input type="number" inputmode="numeric" id="lg-n" min="1" placeholder="40"></div>
+      <div class="field"><label>Correct</label><input type="number" inputmode="numeric" id="lg-c" min="0" placeholder="28"></div>
+    </div>
+    <div class="field"><label>Front</label>
+      <div class="chips">
+        <button data-lsys="" class="${!d.sys&&!d.split?'on':''}">Mixed</button>
+        ${SYSTEMS.map(s=>`<button data-lsys="${s.id}" class="${d.sys===s.id?'on':''}">${s.short}</button>`).join('')}
+        <button data-lsplit="1" class="${d.split?'on':''}">Split by system…</button>
+      </div>
+    </div>
+    ${d.split?`<div class="field"><label>Per-system breakdown (from UWorld's test analysis)</label>
+      <div class="brk" style="color:var(--muted);font-size:11px"><span></span><span>Qs</span><span>Correct</span></div>
+      ${SYSTEMS.map(s=>`<div class="brk"><span>${s.short}</span><input type="number" inputmode="numeric" data-bn="${s.id}"><input type="number" inputmode="numeric" data-bc="${s.id}"></div>`).join('')}
+      <p class="note">Leave blank rows empty. Questions/correct above are filled from these totals.</p></div>`:''}
+    ${!d.sys && !d.split && d.src==='uw' ? `<p class="note">Mixed blocks advance every front in proportion to what's left there. Use a single front or split for sharper intel.</p>`:''}
+    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="log-save">Send report</button></div>
+  `);
+  if(d.split){
+    const sync=()=>{ let n=0,c=0; document.querySelectorAll('[data-bn]').forEach(i=>{ n+=+i.value||0; }); document.querySelectorAll('[data-bc]').forEach(i=>{ c+=+i.value||0; }); $('#lg-n').value=n||''; $('#lg-c').value=c||''; };
+    document.querySelectorAll('[data-bn],[data-bc]').forEach(i=>i.addEventListener('input',sync));
+  }
+  setTimeout(()=>{ const n=$('#lg-n'); if(n && !d.split) n.focus(); }, 50);
+}
+function saveLog(){
+  const d=logDraft, n=+$('#lg-n').value, c=+$('#lg-c').value;
+  let sys=null;
+  if(d.split){
+    sys={};
+    SYSTEMS.forEach(s=>{ const bn=+document.querySelector(`[data-bn="${s.id}"]`).value||0, bc=+document.querySelector(`[data-bc="${s.id}"]`).value||0; if(bn>0) sys[s.id]={n:bn,c:Math.min(bc,bn)}; });
+    if(!Object.keys(sys).length) sys=null;
+  } else if(d.sys){ sys={[d.sys]:{n,c}}; }
+  if(!(n>0)) return toast('Enter how many questions.');
+  if(c<0 || c>n || $('#lg-c').value==='') return toast('Correct must be between 0 and '+n+'.');
+  const before = derive(S);
+  addEvent({type:'block', src:d.src, n, c, sys});
+  const after = derive(S);
+  freshProvs = new Set();
+  const changes=[];
+  SYSTEMS.forEach(s=>{
+    const a=provInfo(before,s.id), b=provInfo(after,s.id);
+    if(b.uw-a.uw>0.5 || (b.n>a.n && sys && sys[s.id])) freshProvs.add(s.id);
+    if(a.state!==b.state) changes.push(`${s.short} is now ${STATE_LABEL[b.state].toUpperCase()}`);
+  });
+  closeSheet(); tab='campaign'; render();
+  const p = pct(c,n);
+  toast(changes.length ? changes.join(' · ') : `${n} questions at ${p}% — ${blockVerdict(p)}.`);
+  setTimeout(()=>{ freshProvs=new Set(); }, 3500);
+}
+
+function openProvince(id){
+  const D=derive(S), info=provInfo(D,id), s=SYS[id], set=S.settings;
+  selProv=id; render();
+  openSheet(`
+    <h2>${s.land}</h2>
+    <div class="note">${s.name}</div>
+    <div class="row" style="margin-top:12px;gap:8px"><span class="pill ${info.state==='secured'?'c-brass':info.state==='held'?'c-good':info.state==='contested'?'c-warn':'c-bad'}">${STATE_LABEL[info.state]}</span>${info.weak?'<span class="pill c-warn">Weak front</span>':''}</div>
+    <div class="bar"><div style="width:${info.ctl*100}%"></div></div>
+    <div class="kv">
+      <span>UWorld taken</span><span>${Math.round(info.uw)} / ${info.total}${set.countsExact?'':' <span class="c-muted">est.</span>'}</span>
+      <span>Accuracy here</span><span class="${info.acc==null?'':info.acc>=set.targetPct?'c-good':'c-warn'}">${info.acc==null?'– (send an intel report)':info.acc.toFixed(0)+'%'+(info.fromRecon?' <span class="c-muted">UWorld intel</span>':' of '+info.n)}</span>
+      <span>AMBOSS reinforcements</span><span>${info.amb}</span>
+      <span>Last engaged</span><span>${info.last?fmtD(info.last):'never'}</span>
+    </div>
+    <p class="note" style="margin-top:12px">${info.state==='secured'?'Secured: bank cleared here at or above your honors line.':info.weak?`Accuracy here is more than 10 points under your ${set.targetPct}% line. Re-read the explanations and hit this front with AMBOSS.`:info.ctl<1?`Take it to 75% to hold it. Clear it at ${set.targetPct}%+ accuracy to secure it.`:`Bank cleared — lift accuracy to ${set.targetPct}% (AMBOSS counts) to secure it.`}</p>
+    <div class="actions"><button class="btn" data-a="close">Close</button><button class="btn pri" data-a="log-here" data-p="${id}">Log a block here</button></div>
+  `);
+}
+
+function openRecon(){
+  const D=derive(S), r=(D.recon&&D.recon.sys)||{};
+  openSheet(`<h2>Intel report</h2>
+    <div class="note">From UWorld: Performance → Reports, filtered to Medicine. Enter your % correct for each system. Leave blank where you haven't done any. Every few days is plenty.</div>
+    ${SYSTEMS.map(s=>`<div class="sysrow"><span>${s.name}</span><input type="number" inputmode="decimal" min="0" max="100" data-rc="${s.id}" value="${r[s.id]??''}" placeholder="%"></div>`).join('')}
+    <p class="note">Renal/GU includes Male Reproductive; Heme-Onc includes Female Reproductive & Breast; Biostat includes Social Sciences and Miscellaneous. If a province combines several UWorld systems, enter the one with the most questions.</p>
+    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="recon-save">Update map</button></div>`);
+}
+function openAnkiManual(){
+  const D=derive(S), snap=D.anki[today()];
+  openSheet(`<h2>Anki report</h2><div class="note">Use this on your phone or if the connection isn't set up.</div>
+    <div class="pair"><div class="field"><label>Reviewed today</label><input type="number" inputmode="numeric" id="ak-r" value="${snap?snap.reviewed:''}"></div>
+    <div class="field"><label>Cards due now</label><input type="number" inputmode="numeric" id="ak-d" value="${snap?snap.due:''}"></div></div>
+    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="anki-save">Save</button></div>`);
+}
+function openCms(f){
+  const D=derive(S), r=D.cms[f];
+  openSheet(`<h2>CMS Form ${f}</h2><div class="note">Report your percent correct (out of 50).</div>
+    <div class="pair"><div class="field"><label>Correct (of 50)</label><input type="number" inputmode="numeric" id="cms-c" min="0" max="50" value="${r?Math.round(r.pct/2):''}"></div>
+    <div class="field"><label>Date taken</label><input type="date" id="cms-d" value="${r?r.date:today()}"></div></div>
+    <div class="actions">${r?`<button class="btn danger" data-a="cms-del" data-f="${f}">Clear</button>`:''}<button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="cms-save" data-f="${f}">Save</button></div>`);
+}
+
+/* ---------- Anki (AnkiConnect, Mac only) ---------- */
+async function ankiCall(action, params){
+  const ctl = new AbortController(); const tm=setTimeout(()=>ctl.abort(), 4000);
+  try{
+    const r = await fetch('http://127.0.0.1:8765', {method:'POST', body:JSON.stringify({action, version:6, params:params||{}}), signal:ctl.signal});
+    const j = await r.json(); if(j.error) throw new Error(j.error); return j.result;
+  } finally { clearTimeout(tm); }
+}
+async function ankiPull(silent){
+  try{
+    const reviewed = await ankiCall('getNumCardsReviewedToday');
+    const ids = await ankiCall('findCards', {query:S.settings.ankiQuery||'is:due'});
+    const D=derive(S), cur=D.anki[today()];
+    if(!cur || cur.reviewed!==reviewed || cur.due!==ids.length) addEvent({id:'anki-'+today(), type:'anki', reviewed, due:ids.length, auto:true});
+    if(!silent) toast(`Anki: ${reviewed} reviewed today, ${ids.length.toLocaleString()} due.`);
+    return true;
+  }catch(e){
+    if(!silent) toast('Couldn\'t reach Anki. Is it open, with AnkiConnect set up? See Settings.');
+    return false;
+  }
+}
+
+/* ---------- Sync (GitHub private repo, Anki-style merge) ---------- */
+const syncInfo = {state:'off', msg:'Not connected — this device only.'};
+function getSyncCfg(){ try{ return JSON.parse(localStorage.getItem(LS_SYNC)); }catch(e){ return null; } }
+function renderSync(){
+  const el=$('#syncdot'); el.className='syncdot '+({ok:'ok',busy:'busy',err:'err'}[syncInfo.state]||'');
+  $('#synctxt').textContent = syncInfo.state==='ok'?'Synced':syncInfo.state==='busy'?'Syncing':syncInfo.state==='err'?'Sync error':'Local';
+}
+const b64enc = s => btoa(unescape(encodeURIComponent(s)));
+const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
+async function gh(method, cfg, body){
+  const url = `https://api.github.com/repos/${cfg.repo}/contents/campaign.json`;
+  return fetch(url, {method, cache:'no-store', headers:{'Authorization':'Bearer '+cfg.token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28'}, body: body?JSON.stringify(body):undefined});
+}
+let syncing=false, syncAgain=false, syncTimer=null;
+function scheduleSync(){ if(!getSyncCfg()) return; clearTimeout(syncTimer); syncTimer=setTimeout(syncNow, 1500); }
+const canon = st => JSON.stringify({s:st.settings, e:[...st.events].sort((a,b)=>a.id<b.id?-1:1)});
+async function syncNow(){
+  const cfg=getSyncCfg(); if(!cfg || !cfg.repo || !cfg.token) return;
+  if(syncing){ syncAgain=true; return; }
+  syncing=true; syncInfo.state='busy'; renderSync();
+  try{
+    for(let attempt=0; attempt<3; attempt++){
+      const r = await gh('GET', cfg);
+      let remote=null, sha;
+      if(r.status===404){ remote=null; }
+      else if(!r.ok){ throw new Error(r.status===401?'Token rejected (401). Check the token.':r.status===403?'No permission (403). Token needs Contents: read & write on this repo.':'GitHub error '+r.status); }
+      else { const j=await r.json(); sha=j.sha; remote=JSON.parse(b64dec(j.content)); }
+      const merged = mergeStates(S, remote);
+      const localChanged = canon(merged)!==canon(S);
+      S = merged; saveLocal();
+      if(localChanged) render();
+      if(!remote || canon(merged)!==canon(remote)){
+        const put = await gh('PUT', cfg, {message:`sync from ${device}`, content:b64enc(JSON.stringify(merged)), sha});
+        if(put.status===409 || put.status===422){ continue; }
+        if(!put.ok) throw new Error('GitHub write failed ('+put.status+')');
+      }
+      syncInfo.state='ok'; syncInfo.msg='Synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
+      break;
+    }
+  }catch(e){
+    syncInfo.state='err'; syncInfo.msg = (e.message||'Sync failed') + (navigator.onLine?'':' (offline — will retry)');
+  }finally{
+    syncing=false; renderSync();
+    if(tab==='settings') render();
+    if(syncAgain){ syncAgain=false; scheduleSync(); }
+  }
+}
+
+/* ---------- Toast ---------- */
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 3200); }
+
+/* ---------- Events ---------- */
+$('#tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; tab=b.dataset.t; selProv=null; render(); window.scrollTo(0,0); });
+$('#fab').addEventListener('click', ()=>openLog());
+$('#syncdot').addEventListener('click', ()=>{ if(getSyncCfg()) syncNow(); else { tab='settings'; render(); } });
+$('#sheetbg').addEventListener('click', e=>{ if(e.target.id==='sheetbg'){ closeSheet(); if(selProv){selProv=null; render();} } });
+
+document.addEventListener('click', e=>{
+  const p = e.target.closest('svg.map .prov');
+  if(p){ openProvince(p.dataset.p); return; }
+  const ls = e.target.closest('[data-ls]'); if(ls){ logDraft.src=ls.dataset.ls; keepLogInputs(drawLog); return; }
+  const lsys = e.target.closest('[data-lsys]'); if(lsys){ logDraft.sys=lsys.dataset.lsys||null; logDraft.split=false; keepLogInputs(drawLog); return; }
+  const lsp = e.target.closest('[data-lsplit]'); if(lsp){ logDraft.split=true; logDraft.sys=null; drawLog(); return; }
+  const b = e.target.closest('[data-a]'); if(!b) return;
+  const a = b.dataset.a;
+  if(a==='close'){ closeSheet(); if(selProv){selProv=null; render();} }
+  else if(a==='log-save') saveLog();
+  else if(a==='log-here'){ selProv=null; openLog(b.dataset.p); }
+  else if(a==='habit'){ const k=b.dataset.k, D=derive(S), cur=D.habits[today()+':'+k]; addEvent({id:`habit-${today()}-${k}`, type:'habit', kind:k, val: cur!==true}); }
+  else if(a==='anki-manual') openAnkiManual();
+  else if(a==='recon') openRecon();
+  else if(a==='recon-save'){ const sys={}; document.querySelectorAll('[data-rc]').forEach(i=>{ if(i.value!=='') sys[i.dataset.rc]=Math.max(0,Math.min(100,+i.value)); }); addEvent({type:'recon', sys}); closeSheet(); const D=derive(S); const weak=SYSTEMS.filter(x=>provInfo(D,x.id).weak).map(x=>x.short); toast(weak.length?`Weak fronts: ${weak.join(', ')}`:'Intel received. No weak fronts.'); }
+  else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} addEvent({id:'anki-'+today(), type:'anki', reviewed:r, due:d, auto:false}); closeSheet(); }
+  else if(a==='anki-pull' || a==='anki-test') ankiPull(false);
+  else if(a==='anki-auto'){ const on=localStorage.getItem(LS_ANKI)==='1'; localStorage.setItem(LS_ANKI, on?'0':'1'); render(); if(!on) ankiPull(false); }
+  else if(a==='cms') openCms(+b.dataset.f);
+  else if(a==='cms-save'){ const f=+b.dataset.f, c=+$('#cms-c').value; if($('#cms-c').value===''||c<0||c>50){toast('Enter 0–50.');return;} addEvent({id:'cms-'+f, type:'cms', form:f, pct:c*2, date:$('#cms-d').value||today()}); closeSheet(); toast(`Form ${f}: ${c*2}% reported.`); }
+  else if(a==='cms-del'){ removeEvent('cms-'+b.dataset.f); closeSheet(); }
+  else if(a==='del'){ if(confirm('Delete this entry? The front will pull back.')) removeEvent(b.dataset.id); }
+  else if(a==='offday'){ const d=b.dataset.d, o=S.settings.offDays; S.settings.offDays = o.includes(d)?o.filter(x=>x!==d):[...o,d]; touchSettings(); }
+  else if(a==='sync-save'){ const repo=$('#sg-repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''), token=$('#sg-token').value.trim(); if(!/^[\w.-]+\/[\w.-]+$/.test(repo)||!token){toast('Enter owner/repo and a token.');return;} localStorage.setItem(LS_SYNC, JSON.stringify({repo,token})); syncInfo.msg='Connecting…'; syncNow(); }
+  else if(a==='sync-now') syncNow();
+  else if(a==='sync-off'){ if(confirm('Disconnect sync on this device? Your data stays here.')){ localStorage.removeItem(LS_SYNC); syncInfo.state='off'; syncInfo.msg='Not connected — this device only.'; render(); } }
+  else if(a==='export'){ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const u=URL.createObjectURL(blob); const l=document.createElement('a'); l.href=u; l.download=`im-campaign-${today()}.json`; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+});
+function keepLogInputs(fn){ const n=$('#lg-n')?.value, c=$('#lg-c')?.value; fn(); if(n) $('#lg-n').value=n; if(c) $('#lg-c').value=c; }
+
+document.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ambossTotal','ankiGoal','ankiDueCap'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); }
+  else if(t.dataset.cms){ S.settings.cms = {...S.settings.cms, [t.dataset.cms]: t.value}; touchSettings(); }
+  else if(t.dataset.sys){ S.settings.sysCounts = {...S.settings.sysCounts, [t.dataset.sys]: Math.max(0,+t.value||0)}; S.settings.countsExact=true; touchSettings(); }
+  else if(t.id==='importfile' && t.files[0]){
+    t.files[0].text().then(txt=>{ try{ const imp=JSON.parse(txt); if(!imp.events) throw 0; S=mergeStates(S, imp); commit(); toast('Backup merged in.'); }catch(err){ toast('That file isn\'t a campaign backup.'); } });
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && !$('#sheetbg').classList.contains('hidden')) closeSheet();
+  if(e.key==='Enter' && $('#lg-n') && document.activeElement && document.activeElement.closest('#sheet')) saveLog();
+});
+
+/* ---------- Lifecycle ---------- */
+function onShow(){
+  syncNow();
+  if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true);
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') onShow(); });
+setInterval(()=>{ if(document.visibilityState==='visible'){ if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true); } }, 5*60*1000);
+let lastDay = today();
+setInterval(()=>{ if(today()!==lastDay){ lastDay=today(); render(); } }, 60*1000);
+
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+if(getSyncCfg()){ syncInfo.msg='Connecting…'; }
+render();
+onShow();
+</script>
+</body>
+</html>
