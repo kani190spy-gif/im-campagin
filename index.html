@@ -169,7 +169,7 @@ main{padding-bottom:110px}
 
 <script>
 'use strict';
-const APP_VERSION = '0.2';
+const APP_VERSION = '0.3';
 
 /* ---------- Provinces (UWorld-style IM systems) ---------- */
 const SYSTEMS = [
@@ -213,6 +213,7 @@ const DEFAULT_SETTINGS = () => ({
   ankiGoal: 250,
   ankiDueCap: 200,
   ankiQuery: 'is:due',
+  ankiDeck: 'AnKing*',
   offDays: [],
   cms: {1:'2026-11-14', 2:'2026-11-29', 3:'2026-12-08', 4:'2026-12-14'},
 });
@@ -664,8 +665,8 @@ function viewSettings(D){
         <div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div>
         <div class="field"><label>"Walls held" at ≤ due</label><input type="number" data-s="ankiDueCap" value="${set.ankiDueCap}"></div>
       </div>
-      <div class="field"><label>Due-card search</label><input type="text" data-s="ankiQuery" value="${esc(set.ankiQuery)}"></div>
-      <p class="note">Default <code>is:due</code> counts every deck. To count one deck: <code>deck:"Deck Name" is:due</code>.</p>
+      <div class="field"><label>Deck to track</label><input type="text" data-s="ankiDeck" value="${esc(set.ankiDeck)}" placeholder="AnKing*"></div>
+      <p class="note">Only this deck (and its subdecks) counts toward reviews and due cards. <code>AnKing*</code> matches any deck whose name starts with AnKing. Leave blank to count all decks.</p>
       ${ankiAuto?`<button class="btn sm" data-a="anki-test">Test Anki connection</button>`:''}
     </div>
 
@@ -810,11 +811,13 @@ async function ankiCall(action, params){
 }
 async function ankiPull(silent){
   try{
-    const reviewed = await ankiCall('getNumCardsReviewedToday');
-    const ids = await ankiCall('findCards', {query:S.settings.ankiQuery||'is:due'});
+    const dk = (S.settings.ankiDeck||'').trim().replace(/"/g,'');
+    const scope = dk ? `deck:"${dk}" ` : '';
+    const reviewed = dk ? (await ankiCall('findCards', {query: scope+'rated:1'})).length : await ankiCall('getNumCardsReviewedToday');
+    const ids = await ankiCall('findCards', {query: scope+'is:due'});
     const D=derive(S), cur=D.anki[today()];
     if(!cur || cur.reviewed!==reviewed || cur.due!==ids.length) addEvent({id:'anki-'+today(), type:'anki', reviewed, due:ids.length, auto:true});
-    if(!silent) toast(`Anki: ${reviewed} reviewed today, ${ids.length.toLocaleString()} due.`);
+    if(!silent) toast(`Anki${dk?' ('+dk.replace(/\*$/,'')+')':''}: ${reviewed} reviewed today, ${ids.length.toLocaleString()} due.`);
     return true;
   }catch(e){
     if(!silent) toast('Couldn\'t reach Anki. Is it open, with AnkiConnect set up? See Settings.');
@@ -912,7 +915,7 @@ function keepLogInputs(fn){ const n=$('#lg-n')?.value, c=$('#lg-c')?.value; fn()
 
 document.addEventListener('change', e=>{
   const t=e.target;
-  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ambossTotal','ankiGoal','ankiDueCap'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); }
+  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ambossTotal','ankiGoal','ankiDueCap'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); if(k==='ankiDeck' && localStorage.getItem(LS_ANKI)==='1') ankiPull(false); }
   else if(t.dataset.cms){ S.settings.cms = {...S.settings.cms, [t.dataset.cms]: t.value}; touchSettings(); }
   else if(t.dataset.sys){ S.settings.sysCounts = {...S.settings.sysCounts, [t.dataset.sys]: Math.max(0,+t.value||0)}; S.settings.countsExact=true; touchSettings(); }
   else if(t.id==='importfile' && t.files[0]){
