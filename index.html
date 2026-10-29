@@ -169,7 +169,7 @@ main{padding-bottom:110px}
 
 <script>
 'use strict';
-const APP_VERSION = '0.3';
+const APP_VERSION = '0.4';
 
 /* ---------- Provinces (UWorld-style IM systems) ---------- */
 const SYSTEMS = [
@@ -813,14 +813,27 @@ async function ankiPull(silent){
   try{
     const dk = (S.settings.ankiDeck||'').trim().replace(/"/g,'');
     const scope = dk ? `deck:"${dk}" ` : '';
+    // Which top-level decks to count (a parent's numbers already include its subdecks)
+    const names = await ankiCall('deckNames');
+    const re = dk ? new RegExp('^'+dk.replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*')+'$','i') : null;
+    let picked = names.filter(n=>!re || re.test(n));
+    picked = picked.filter(n=>!picked.some(o=>o!==n && n.startsWith(o+'::')));
+    if(dk && !picked.length) throw new Error(`No Anki deck matches "${dk}". Decks: ${names.filter(n=>!n.includes('::')).join(', ')}`);
+    let due;
+    try{
+      const st = await ankiCall('getDeckStats', {decks: picked});
+      due = Object.values(st).reduce((a,d)=>a+(d.review_count||0)+(d.learn_count||0),0);
+    }catch(e){
+      due = (await ankiCall('findCards', {query: scope+'is:due'})).length;
+    }
     const reviewed = dk ? (await ankiCall('findCards', {query: scope+'rated:1'})).length : await ankiCall('getNumCardsReviewedToday');
-    const ids = await ankiCall('findCards', {query: scope+'is:due'});
+    const ids = {length: due};
     const D=derive(S), cur=D.anki[today()];
     if(!cur || cur.reviewed!==reviewed || cur.due!==ids.length) addEvent({id:'anki-'+today(), type:'anki', reviewed, due:ids.length, auto:true});
     if(!silent) toast(`Anki${dk?' ('+dk.replace(/\*$/,'')+')':''}: ${reviewed} reviewed today, ${ids.length.toLocaleString()} due.`);
     return true;
   }catch(e){
-    if(!silent) toast('Couldn\'t reach Anki. Is it open, with AnkiConnect set up? See Settings.');
+    if(!silent) toast(/No Anki deck/.test(e.message) ? e.message : 'Couldn\'t reach Anki. Is it open, with AnkiConnect set up? See Settings.');
     return false;
   }
 }
