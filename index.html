@@ -161,6 +161,18 @@ main{padding-bottom:110px}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #op.show ~ #toast{bottom:auto;top:calc(64px + var(--safe-t))}
 .foot{color:var(--dim);font-size:12px;text-align:center;margin-top:22px}
+.tblwrap{overflow-x:auto;margin-top:8px}
+table.st{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+table.st th{font-family:var(--display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-size:12px;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}
+table.st td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);white-space:nowrap}
+table.st th:first-child,table.st td:first-child{text-align:left;font-family:var(--body)}
+table.st tr.today td{background:rgba(212,162,76,.06)}
+table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bottom:0}
+.wkhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.wkstats{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.wkstats b{color:var(--text);font-family:var(--mono)}
+.tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;font-family:var(--body)}
+.tag.siege{background:#3a1513;color:#f2a49b} .tag.atk{background:#162a40;color:#9cc4f0} .tag.leave{background:#222;color:var(--muted)}
 @media (max-width:600px){ svg.map{height:62vh} .brand b{font-size:19px} .brand span{font-size:9.5px} .countdown b{font-size:18px} .mapctl{top:auto;bottom:62px} }
 /* report */
 .rep h4{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-size:13px;margin:16px 0 6px}
@@ -201,6 +213,7 @@ main{padding-bottom:110px}
   <nav class="tabs" id="tabs">
     <button data-t="campaign" class="on">Campaign</button>
     <button data-t="battles">Battles</button>
+    <button data-t="stats">Stats</button>
     <button data-t="log">War log</button>
     <button data-t="settings">Settings</button>
   </nav>
@@ -216,7 +229,7 @@ main{padding-bottom:110px}
 
 <script>
 'use strict';
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 
 /* ================= Regions ================= */
 const REG = {
@@ -255,6 +268,7 @@ const DEFAULT_SETTINGS = () => ({
   targetPct: 65,
   ankiGoal: 250,
   backlogAt: 700,
+  clearBy: '2026-11-07',
   ankiDeck: 'AnKing*',
   defenseQ: 20,
   offDays: [],
@@ -334,17 +348,21 @@ function simulate(st, extra){
   const set = st.settings, start = set.campaignStart, tday = today();
   const evs = liveEvents(st); if(extra) evs.push(extra);
   const byDay = {};
-  for(const e of evs){ const d = e.date < start ? start : e.date; (byDay[d] ||= []).push(e); }
+  let preAnki=null;
+  for(const e of evs){
+    if(e.date < start && e.type==='anki'){ if(!preAnki || e.date>=preAnki.date) preAnki=e; continue; }
+    const d = e.date < start ? start : e.date; (byDay[d] ||= []).push(e);
+  }
   const names = {}; evs.filter(e=>e.type==='rename').forEach(e=>{ names[e.town]=e.name; });
   const town = T.map(t=>({id:t.id, owner:'enemy', status:'enemy', prog:0, capDay:null, consAt:null, lostDay:null}));
   town[HOME.id].owner='us'; town[HOME.id].status='held'; town[HOME.id].capDay=start;
   const G = {town, target:null, reserve:0, uwDone:0, ambDone:0, log:[], days:{}, regAcc:{}, lastBeach:null,
-             anki:null, ankiByDay:{}, missStreak:0, blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
-  const tagN={}, tagC={};
+             anki:null, ankiByDay:{}, missStreak:0, siege:false, siegeStart:null, blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
   const isUs = id => town[id].owner==='us';
   const attackable = id => town[id].owner==='enemy' && T[id].n.some(isUs);
   const add = (d,kind,html,extra) => G.log.push({d,kind,html,...(extra||{})});
   const tname = id => G.names[id] || T[id].name;
+  if(preAnki){ G.anki=preAnki; if(preAnki.due > set.backlogAt){ G.siege=true; G.siegeStart=start; add(start,'siege',`Backlog carried in: <b class="c-bad">${preAnki.due.toLocaleString()}</b> AnKing cards due (last read ${fmtD(preAnki.date)}). Siege — clear to 0.`); } }
 
   function capture(id, d, lowAcc){
     const x=town[id]; x.owner='us'; x.status='occupied'; x.prog=0; x.capDay=d; x.consAt=addDays(d, lowAcc?10:7); x.lostDay=null;
@@ -396,6 +414,14 @@ function simulate(st, extra){
     return fr[fr.length-1].id;
   }
 
+  function siegeGoal(d){
+    const snap=G.ankiByDay[d];
+    const B = snap ? (snap.reviewed + snap.due) : (G.anki ? G.anki.due : 0);
+    let by = set.clearBy && set.clearBy>=d ? set.clearBy : null;
+    if(!by){ const s0=G.siegeStart||d; by=addDays(s0,5); if(by<d) by=addDays(d,1); }
+    const left=Math.max(1, daysBetween(d,by)+1);
+    return {goal: Math.max(set.ankiGoal, Math.ceil(B/left)), by, B};
+  }
   const dayList=[]; for(let d=start; d<=tday; d=addDays(d,1)) dayList.push(d);
   for(const d of dayList){
     const R = G.days[d] = {d, quota:0, q:0, c:0, uw:0, amb:0, gained:0, lostGround:0, caps:[], losses:[], cons:[], attack:null, def:null, anki:null, goalMet:null, leave:set.offDays.includes(d), momentum:false, backlog:false};
@@ -405,7 +431,10 @@ function simulate(st, extra){
     // quota
     const remUW = Math.max(0, uwTotal(st) - G.uwDone);
     let sd=0; for(let x=d; x<set.shelf; x=addDays(x,1)) if(!set.offDays.includes(x)) sd++;
-    R.quota = (R.leave || d>=set.shelf) ? 0 : Math.ceil(remUW/Math.max(1,sd));
+    // siege state from the last known Anki reading (carries over from before the campaign)
+    if(!G.siege && G.anki && G.anki.due > set.backlogAt){ G.siege=true; G.siegeStart=d; }
+    R.siege = G.siege;
+    R.quota = (R.leave || d>=set.shelf || R.siege) ? 0 : Math.ceil(remUW/Math.max(1,sd));
     // momentum: goal met on >=5 of last 7 completed days (proportional early on)
     let met=0, cnt=0; for(let i=1;i<=7;i++){ const pd=addDays(d,-i); const pr=G.days[pd]; if(!pr) continue; cnt++; if(pr.goalMet) met++; }
     R.momentum = cnt>=3 && met/cnt >= 5/7;
@@ -447,7 +476,7 @@ function simulate(st, extra){
             lossInfo = applyLoss(0.3*nOff, d, 'enemy counterattack after a rough block', false);
             R.lostGround += lossInfo.lost;
           } else {
-            let mult = effOf(acc) * (R.momentum?1.15:1);
+            let mult = effOf(acc) * (R.momentum?1.15:1) * (G.siege?0.5:1);
             let bt = 0;
             if(e.tags && G.target!=null){ const tr=T[G.target].r; const hits=e.tags.filter(tg=>tg.r===tr).length; bt = hits/e.tags.length; }
             ground = nOff * mult * (1 + 0.5*bt);
@@ -459,12 +488,18 @@ function simulate(st, extra){
         G.blocks.push({e, d, n, c, acc, ground, lossInfo, def: n-nOff});
       } else if(e.type==='anki'){
         G.ankiByDay[d]=e; G.anki=e;
+        if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
+        else if(G.siege && e.due===0){ G.siege=false; R.siegeBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
       }
     }
     if(defN>0) R.def={n:defN, c:defC};
     // end of day (only completed days)
     if(d<tday){
-      R.goalMet = R.leave || R.q >= R.quota;
+      R.anki = G.ankiByDay[d] || null;
+      const sg = R.siege ? siegeGoal(d) : null;
+      if(sg) R.ankiGoal = sg.goal;
+      const rev0 = R.anki ? R.anki.reviewed : 0;
+      R.goalMet = !!(R.leave || (R.siege ? (rev0 >= R.ankiGoal || (R.anki && R.anki.due===0) || R.siegeBroken) : R.q >= R.quota));
       // defense
       if(R.attack!=null){
         const tid=R.attack;
@@ -477,8 +512,9 @@ function simulate(st, extra){
           } else { loseTown(tid,d,`defense not completed (${Math.round(defN)}/${set.defenseQ})`); R.losses.push(tid); R.defOutcome='lost'; }
         }
       }
-      // missed goal → enemy push
-      if(!R.goalMet){
+      // missed goal → enemy push (question days)
+      if(!R.goalMet && R.siege){ G.missStreak++; }
+      else if(!R.goalMet){
         G.missStreak++;
         const deficit = R.quota - R.q;
         const mult = Math.min(3, 1 + 0.5*(G.missStreak-1));
@@ -487,16 +523,13 @@ function simulate(st, extra){
         add(d,'miss',`Goal missed (${R.q}/${R.quota}). Enemy pushed back ${r1(li.lost)} ground${li.towns?`, ${li.towns} town${li.towns>1?'s':''} lost`:''}.`);
       } else if(!R.leave) G.missStreak=0;
       // Anki supply lines
-      const snap = G.anki; const due = snap ? snap.due : null;
-      R.backlog = due!=null && due > set.backlogAt;
-      R.anki = G.ankiByDay[d] || null;
-      if(R.backlog){
-        const rev = R.anki ? R.anki.reviewed : 0;
+      R.backlog = R.siege && G.siege;
+      if(G.siege){
         for(const x of town) if(x.status==='occupied' && x.consAt) x.consAt = addDays(x.consAt,1); // consolidation frozen
-        if(rev < set.ankiGoal && !R.leave){
+        if(R.siege && !R.goalMet){
           const occ = town.filter(x=>x.status==='occupied' && x.id!==HOME.id).sort((a,b)=>(b.capDay||'').localeCompare(a.capDay||''))[0];
-          if(occ){ loseTown(occ.id,d,'Anki backlog — supply lines failed'); R.losses.push(occ.id); }
-          else add(d,'supply',`Supply lines strained: ${rev}/${set.ankiGoal} reviews in backlog mode.`);
+          if(occ){ loseTown(occ.id,d,`siege goal missed (${rev0}/${R.ankiGoal} reviews)`); R.losses.push(occ.id); }
+          else add(d,'supply',`Siege goal missed: ${rev0}/${R.ankiGoal} reviews.`);
         }
       }
     }
@@ -505,8 +538,10 @@ function simulate(st, extra){
   // final derived
   const snap = G.anki;
   G.ankiDue = snap ? snap.due : null;
-  G.backlog = G.ankiDue!=null && G.ankiDue > set.backlogAt;
+  G.backlog = G.siege;
   G.today = G.days[tday];
+  if(G.today && G.siege){ const sg=siegeGoal(tday); G.today.ankiGoal=sg.goal; G.siegeBy=sg.by; G.siegeB=sg.B; }
+  if(G.today && !G.today.ankiGoal) G.today.ankiGoal=set.ankiGoal;
   G.remainingUW = Math.max(0, uwTotal(st) - G.uwDone);
   G.attackable = id => attackable(id);
   G.beachOk = !G.lastBeach || daysBetween(G.lastBeach,tday)>=7;
@@ -527,6 +562,7 @@ function render(){
   if(tab==='campaign'){ if(!v.querySelector('#mapsvg')) v.innerHTML = viewCampaignShell(); updateCampaign(); }
   else if(tab==='battles') v.innerHTML = viewBattles();
   else if(tab==='log') v.innerHTML = viewLog();
+  else if(tab==='stats') v.innerHTML = viewStats();
   else v.innerHTML = viewSettings();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
   $('#fabs').style.display = tab==='settings' ? 'none' : '';
@@ -692,7 +728,10 @@ function updateCampaign(){
   const set=S.settings, td=G.today||{quota:0,q:0,c:0}, t=today();
   // banners
   let bn='';
-  if(G.backlog) bn+=`<div class="banner siege"><b class="c-bad">⚠ Backlog mode — supply lines cut</b><span class="note">${G.ankiDue.toLocaleString()} AnKing cards due (limit ${set.backlogAt}). Anki first: ${set.ankiGoal}+ reviews today. Nothing consolidates until you're under ${set.backlogAt}.</span></div>`;
+  if(G.backlog){ const tg2=td.ankiGoal||set.ankiGoal, rv=(G.ankiByDay[t]||{}).reviewed||0; const peak=Math.max(G.siegeB||0, G.ankiDue||0, 1);
+    bn+=`<div class="banner siege" style="display:block"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><b class="c-bad">⚠ Siege — clear the AnKing backlog</b><span class="note">${(G.ankiDue||0).toLocaleString()} due · goal 0 by ${fmtDow(G.siegeBy||set.clearBy)}</span></div>
+      <div class="bar" style="margin-top:8px"><div style="width:${Math.min(100,rv/tg2*100)}%;background:${rv>=tg2?'var(--good)':'#e0705f'}"></div></div>
+      <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews. No question quota until the siege breaks. Questions now earn half ground and add cards to the pile.</div></div>`; }
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
     bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${set.defenseQ} questions today defend it. Progress: ${dn}/${set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
   if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
@@ -709,19 +748,21 @@ function updateCampaign(){
   $('#cards').innerHTML = `
     <div class="card">
       <h3>Today's orders</h3>
-      <div class="big">${td.q}<small> / ${td.quota} questions</small></div>
-      <div class="bar"><div style="width:${qpct}%;background:${td.q>=td.quota?'var(--good)':'var(--brass)'}"></div></div>
-      <div class="sub">${td.leave?'Leave day — no quota.':td.q>=td.quota?'Orders fulfilled. Everything extra is bonus ground.':`${td.quota-td.q} to go`} ${accT!=null?`· ${accT}% today (${effLabel(accT/100)})`:''}${td.momentum?' · <span class="c-good">Momentum +15%</span>':''}</div>
+      ${td.siege?`<div class="big">${rev}<small> / ${td.ankiGoal} reviews</small></div>
+      <div class="bar"><div style="width:${Math.min(100,rev/td.ankiGoal*100)}%;background:${rev>=td.ankiGoal?'var(--good)':'#e0705f'}"></div></div>`
+      :`<div class="big">${td.q}<small> / ${td.quota} questions</small></div>
+      <div class="bar"><div style="width:${qpct}%;background:${td.q>=td.quota?'var(--good)':'var(--brass)'}"></div></div>`}
+      <div class="sub">${td.leave?'Leave day — no quota.':td.siege?`Siege: Anki first — no question quota.${td.q?` ${td.q} questions done (half ground).`:''}`:td.q>=td.quota?'Orders fulfilled. Everything extra is bonus ground.':`${td.quota-td.q} to go`} ${accT!=null?`· ${accT}% today (${effLabel(accT/100)})`:''}${td.momentum?' · <span class="c-good">Momentum +15%</span>':''}</div>
       <div class="sub">UWorld IM left: ${G.remainingUW} · AMBOSS done: ${G.ambDone}</div>
     </div>
     <div class="card">
       <h3>Anki supply lines</h3>
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div class="big">${due==null?'–':due.toLocaleString()}<small> due</small></div>
-        <span class="pill ${due==null?'c-muted':G.backlog?'c-bad':due===0?'c-good':'c-warn'}">${due==null?'No data':G.backlog?'Backlog':due===0?'Clear':'Holding'}</span>
+        <span class="pill ${due==null?'c-muted':G.backlog?'c-bad':due===0?'c-good':'c-warn'}">${due==null?'No data':G.backlog?'Siege':due===0?'Clear':'Holding'}</span>
       </div>
-      <div class="bar"><div style="width:${Math.min(100,rev/set.ankiGoal*100)}%;background:${rev>=set.ankiGoal?'var(--good)':'var(--brass)'}"></div></div>
-      <div class="sub">${rev} / ${set.ankiGoal} reviews today${clearRate&&due>0?` · to hit 0 by ${fmtD(set.imStart)}: ~${clearRate}/day`:''}${G.anki?` · read ${agoText(G.anki.ts)}`:''}</div>
+      <div class="bar"><div style="width:${Math.min(100,rev/(td.ankiGoal||set.ankiGoal)*100)}%;background:${rev>=(td.ankiGoal||set.ankiGoal)?'var(--good)':'var(--brass)'}"></div></div>
+      <div class="sub">${rev} / ${td.ankiGoal||set.ankiGoal} reviews today${G.backlog?` · 0 by ${fmtD(G.siegeBy||set.clearBy)}`:''}${G.anki?` · read ${agoText(G.anki.ts)}`:''}</div>
       <div class="row" style="margin-top:9px;gap:8px">${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read Anki</button>`:''}<button class="btn sm" data-a="anki-manual">Enter manually</button></div>
     </div>
     <div class="card">
@@ -762,7 +803,7 @@ function openTown(id){
       <span>Garrison (ground to take)</span><span>${t.cost}</span>
       ${G.target===id?`<span>Progress</span><span>${r1(x.prog)} / ${t.cost}</span>`:''}
       ${x.owner==='us'&&x.capDay?`<span>Taken</span><span>${fmtD(x.capDay)}</span>`:''}
-      ${x.status==='occupied'&&x.consAt?`<span>Turns solid</span><span>${G.backlog?'frozen (backlog)':fmtD(x.consAt)}</span>`:''}
+      ${x.status==='occupied'&&x.consAt?`<span>Turns solid</span><span>${G.backlog?'frozen (siege)':fmtD(x.consAt)}</span>`:''}
       ${x.status==='lost'?`<span>Lost</span><span>${fmtD(x.lostDay)}</span>`:''}
       <span>${REG[t.r].name} accuracy</span><span>${ra&&ra.n?Math.round(ra.c/ra.n*100)+'% of '+ra.n:'– no intel yet'}</span>
     </div>
@@ -785,6 +826,55 @@ function viewBattles(){
   return `<div class="card final" style="margin-bottom:10px"><h3>The final battle</h3><div class="big" style="font-size:25px">IM Shelf · ${fmtDow(set.shelf)}</div>
     <div class="sub">${daysBetween(t,set.shelf)} days out. ${avg!=null?`CMS average: <b class="${avg>=set.targetPct?'c-good':'c-warn'}">${avg.toFixed(0)}%</b>.`:'CMS forms count as 50-question operations on the map.'}</div></div>
     <div class="grid battles">${cards}</div>`;
+}
+function weekMonday(d){ const dt=parseD(d); const dow=(dt.getDay()+6)%7; return addDays(d,-dow); }
+function spark(vals, w=150, h=34){
+  const pts=vals.map((v,i)=>[i,v]).filter(p=>p[1]!=null); if(pts.length<2) return '';
+  const mx=Math.max(...pts.map(p=>p[1]),1), n=vals.length-1||1;
+  const xy=pts.map(([i,v])=>`${(i/n*(w-6)+3).toFixed(1)},${(h-3-(v/mx)*(h-8)).toFixed(1)}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-label="Due cards trend"><polyline points="${xy}" fill="none" stroke="#e0705f" stroke-width="2"/>${pts.map(([i,v])=>`<circle cx="${(i/n*(w-6)+3).toFixed(1)}" cy="${(h-3-(v/mx)*(h-8)).toFixed(1)}" r="2.2" fill="#e0705f"/>`).join('')}</svg>`;
+}
+function viewStats(){
+  const set=S.settings, t=today();
+  const days=Object.values(G.days);
+  const hab=(d,k)=>habitVal(d,k);
+  const dayRow=R=>{
+    const ev=G.log.slice(R.logFrom,R.logTo); const caps=ev.filter(x=>x.kind==='cap').length, lost=ev.filter(x=>x.kind==='lost').length;
+    const acc=R.q?Math.round(R.c/R.q*100):null; const net=R.gained-R.lostGround;
+    const rev=R.anki?R.anki.reviewed:(R.d===t&&G.ankiByDay[t]?G.ankiByDay[t].reviewed:null);
+    const due=R.anki?R.anki.due:(R.d===t&&G.ankiByDay[t]?G.ankiByDay[t].due:null);
+    const goal = R.leave?'<span class="c-muted">leave</span>' : R.d===t?'<span class="c-muted">today</span>' : R.goalMet?'<span class="c-good">✓</span>':'<span class="c-bad">✗</span>';
+    const mode = R.leave?'<span class="tag leave">Leave</span>':R.siege?'<span class="tag siege">Siege</span>':'<span class="tag atk">Attack</span>';
+    const tgt = R.siege ? (R.ankiGoal||set.ankiGoal) : set.ankiGoal;
+    return {R,caps,lost,acc,net,rev,due,html:`<tr class="${R.d===t?'today':''}"><td>${fmtDow(R.d)} ${mode}</td><td>${R.q}${R.siege?'':`<span class="c-muted">/${R.quota}</span>`}</td><td class="${acc==null?'':acc>=set.targetPct?'c-good':acc>=50?'c-warn':'c-bad'}">${acc==null?'–':acc+'%'}</td><td class="${net>0?'c-good':net<0?'c-bad':''}">${net>0?'+':''}${r1(net)}</td><td>${caps?`<span class="c-us">+${caps}</span>`:''}${lost?` <span class="c-bad">−${lost}</span>`:''}${!caps&&!lost?'–':''}</td><td>${rev==null?'–':rev}<span class="c-muted">/${tgt}</span></td><td>${due==null?'–':due.toLocaleString()}</td><td>${goal}</td><td>${hab(R.d,'gym')===true?'<span class="c-good">✓</span>':'–'}</td><td>${hab(R.d,'diet')===true?'<span class="c-good">✓</span>':'–'}</td></tr>`};
+  };
+  const weeks={}; for(const R of days){ (weeks[weekMonday(R.d)] ||= []).push(R); }
+  const keys=Object.keys(weeks).sort().reverse();
+  const allQ=days.reduce((a,R)=>a+R.q,0), allC=days.reduce((a,R)=>a+R.c,0);
+  const done=days.filter(R=>R.d<t && !R.leave), met=done.filter(R=>R.goalMet).length;
+  let streak=0; for(let i=done.length-1;i>=0;i--){ if(done[i].goalMet) streak++; else break; }
+  const ours=G.town.filter(x=>x.owner==='us').length;
+  const top=`<div class="grid stats" style="margin-bottom:10px">
+    <div class="card"><h3>Campaign so far</h3><div class="big">${allQ}<small> questions</small></div><div class="sub">${allQ?Math.round(allC/allQ*100)+'% overall':'No questions yet'} · ${G.remainingUW} UWorld IM left</div></div>
+    <div class="card"><h3>Consistency</h3><div class="big">${met}<small> / ${done.length} days goal met</small></div><div class="sub">Current streak: ${streak} day${streak===1?'':'s'}</div></div>
+    <div class="card"><h3>Territory</h3><div class="big">${ours}<small> / ${T.length} towns</small></div><div class="sub">${G.town.filter(x=>x.status==='lost').length} lost · ${G.backlog?`<span class="c-bad">siege: ${(G.ankiDue||0).toLocaleString()} due</span>`:'no siege'}</div></div>
+  </div>`;
+  const wk=keys.map(k=>{
+    const rows=weeks[k].sort((a,b)=>a.d.localeCompare(b.d)).map(dayRow);
+    const q=rows.reduce((a,r)=>a+r.R.q,0), c=rows.reduce((a,r)=>a+r.R.c,0);
+    const net=rows.reduce((a,r)=>a+r.net,0), caps=rows.reduce((a,r)=>a+r.caps,0), lost=rows.reduce((a,r)=>a+r.lost,0);
+    const rev=rows.reduce((a,r)=>a+(r.rev||0),0);
+    const dues=rows.map(r=>r.due); const firstDue=dues.find(v=>v!=null), lastDue=[...dues].reverse().find(v=>v!=null);
+    const comp=rows.filter(r=>r.R.d<t && !r.R.leave), wm=comp.filter(r=>r.R.goalMet).length;
+    const gym=rows.filter(r=>hab(r.R.d,'gym')===true).length, siegeD=rows.filter(r=>r.R.siege).length;
+    const acc=q?Math.round(c/q*100):null;
+    return `<div class="card" style="margin-bottom:10px">
+      <div class="wkhead"><h3 style="margin:0">Week of ${fmtD(k)}</h3>${spark(dues)}</div>
+      <div class="wkstats"><span>Questions <b>${q}</b></span><span>Accuracy <b>${acc==null?'–':acc+'%'}</b></span><span>Ground <b class="${net>=0?'c-good':'c-bad'}">${net>=0?'+':''}${r1(net)}</b></span><span>Towns <b>+${caps}${lost?' / −'+lost:''}</b></span><span>Reviews <b>${rev.toLocaleString()}</b></span><span>Due <b>${firstDue==null?'–':firstDue.toLocaleString()} → ${lastDue==null?'–':lastDue.toLocaleString()}</b></span><span>Goals <b>${wm}/${comp.length}</b></span><span>Gym <b>${gym}</b></span>${siegeD?`<span>Siege days <b>${siegeD}</b></span>`:''}</div>
+      <div class="tblwrap"><table class="st"><thead><tr><th>Day</th><th>Qs</th><th>Acc</th><th>Ground</th><th>Towns</th><th>Reviews</th><th>Due</th><th>Goal</th><th>Gym</th><th>Diet</th></tr></thead><tbody>${rows.map(r=>r.html).join('')}</tbody></table></div>
+    </div>`;
+  }).join('');
+  return top + wk + `<p class="note">Reviews and due counts come from the last Anki reading each day — open the app on your Mac with Anki running before bed so the day is recorded.</p>`;
 }
 function viewLog(){
   const items=[];
@@ -815,7 +905,9 @@ function viewSettings(){
     </div>
     <div class="card"><h3>Anki</h3>
       <div class="toggle" style="border:0"><div><div>This device runs Anki</div><div class="note">Mac only. Reads AnKing reviews and due count while Anki is open.</div></div><button class="sw ${ankiAuto?'on':''}" data-a="anki-auto" aria-label="This device runs Anki"></button></div>
-      <div class="pair"><div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div><div class="field"><label>Backlog mode above</label><input type="number" data-s="backlogAt" value="${set.backlogAt}"></div></div>
+      <div class="pair"><div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div><div class="field"><label>Siege starts above</label><input type="number" data-s="backlogAt" value="${set.backlogAt}"></div></div>
+      <div class="field"><label>Clear backlog by</label><input type="date" data-s="clearBy" value="${set.clearBy||''}"></div>
+      <p class="note">During a siege the daily review goal is whatever gets AnKing to 0 by this date (at least your daily goal). The siege ends when AnKing hits 0.</p>
       <div class="field"><label>Deck to track</label><input type="text" data-s="ankiDeck" value="${esc(set.ankiDeck)}" placeholder="AnKing*"></div>
       ${ankiAuto?`<button class="btn sm" data-a="anki-pull">Test Anki connection</button>`:''}
     </div>
@@ -829,8 +921,9 @@ function viewSettings(){
     <div class="card"><h3>Rules of war</h3>
       <div class="note">
       <b>Ground</b> comes from questions done. Block accuracy sets effectiveness: under 37% → counterattack · 37–49% ×0.8 · 50–64% ×1.0 · 65–74% ×1.15 · 75%+ ×1.3. Goal met 5 of 7 days → +15%. Pasted intel: questions in the target's system count +50%.<br><br>
-      <b>Losses</b>: missing the daily goal pushes you back (worse on consecutive days) · backlog days under the Anki goal lose your newest striped town · failed defenses lose the town.<br><br>
-      <b>Holding</b>: new towns are striped for 7 days (10 if taken under 50%), then solid. Backlog mode freezes this.</div>
+      <b>Losses</b>: missing the daily question goal pushes you back (worse on consecutive days) · failed defenses lose the town.<br><br>
+      <b>Holding</b>: new towns are striped for 7 days (10 if taken under 50%), then solid.<br><br>
+      <b>Siege</b>: starts when AnKing is over ${set.backlogAt} due and ends only at 0. No question quota; the daily goal is reviews (sized to hit 0 by your clear-by date). Missing it loses your newest striped town. Questions earn half ground. Consolidation is frozen. Breaking the siege gives 15 bonus ground.</div>
     </div>
   </div>
   <div class="card" style="margin-top:10px"><h3>Data</h3><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="export">Export backup</button><label class="btn sm" style="display:inline-block">Import backup<input type="file" accept="application/json" id="importfile" hidden></label></div></div>
@@ -946,9 +1039,9 @@ function openReport(){
   let yHtml='';
   if(R){
     const acc=R.q?Math.round(R.c/R.q*100):null;
-    const lines=G.log.slice(R.logFrom,R.logTo).filter(x=>['cap','lost','def','miss','supply'].includes(x.kind)).map(x=>`<li>${x.html}</li>`);
+    const lines=G.log.slice(R.logFrom,R.logTo).filter(x=>['cap','lost','def','miss','supply','siege'].includes(x.kind)).map(x=>`<li>${x.html}</li>`);
     yHtml=`<h4>Yesterday · ${fmtDow(y)}</h4><ul>
-      <li>${R.leave?'Leave day.':`${R.q} / ${R.quota} questions${acc!=null?` at ${acc}%`:''} — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}`}</li>
+      <li>${R.leave?'Leave day.':R.siege?`Siege day: ${R.anki?R.anki.reviewed:0} / ${R.ankiGoal} reviews — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}${R.q?` · ${R.q} questions${acc!=null?` at ${acc}%`:''}`:''}`:`${R.q} / ${R.quota} questions${acc!=null?` at ${acc}%`:''} — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}`}</li>
       <li>Ground: <span class="c-good">+${r1(R.gained)}</span>${R.lostGround?` · <span class="c-bad">−${r1(R.lostGround)}</span>`:''}</li>
       <li>Anki: ${R.anki?`${R.anki.reviewed} reviewed, ${R.anki.due.toLocaleString()} due`:'no report'}${R.backlog?' · <span class="c-bad">backlog</span>':''}</li>
       ${lines.join('')}</ul>`;
@@ -957,8 +1050,8 @@ function openReport(){
   const tg=G.target!=null?T[G.target]:null;
   const due=G.ankiDue;
   const orders=[
-    G.backlog?`<li class="c-bad"><b>Backlog mode:</b> ${due.toLocaleString()} due. Anki first — at least ${set.ankiGoal} reviews. Nothing consolidates until under ${set.backlogAt}.</li>`:`<li>Anki: ${set.ankiGoal} reviews${due!=null?` (${due.toLocaleString()} due)`:''}.</li>`,
-    Td&&Td.leave?'<li>Leave day — no question quota.</li>':`<li>Questions: <b>${Td?Td.quota:0}</b> today (${G.remainingUW} UWorld IM left).</li>`,
+    G.backlog?`<li class="c-bad"><b>Siege:</b> ${(due||0).toLocaleString()} AnKing due. Today's goal: <b>${Td?Td.ankiGoal:set.ankiGoal} reviews</b> to reach 0 by ${fmtDow(G.siegeBy||set.clearBy)}.</li>`:`<li>Anki: ${set.ankiGoal} reviews${due!=null?` (${due.toLocaleString()} due)`:''}.</li>`,
+    Td&&Td.leave?'<li>Leave day — no question quota.</li>':Td&&Td.siege?'<li>Questions: none required during the siege (they earn half ground).</li>':`<li>Questions: <b>${Td?Td.quota:0}</b> today (${G.remainingUW} UWorld IM left).</li>`,
     Td&&Td.attack!=null?`<li class="c-warn"><b>Enemy offensive</b> against ${esc(G.tname(Td.attack))} — your first ${set.defenseQ} questions defend it.</li>`:'',
     tg?`<li>Offensive: ${esc(G.tname(tg.id))} — ${r1(G.town[tg.id].prog)}/${tg.cost} ground.</li>`:`<li>No target set — choose one${G.reserve>0?` (${r1(G.reserve)} ground waiting)`:''}.</li>`,
     Td&&Td.momentum?'<li class="c-good">Momentum: +15% ground today.</li>':'',
@@ -981,6 +1074,7 @@ function startOperation(){
   if(G.target==null && !(G.today && G.today.attack!=null && G.town[G.today.attack].owner==='us')){
     toast('Choose a target first.'); tab='campaign'; render(); pickMode=true; updateCampaign(); return;
   }
+  if(G.backlog) toast('Siege active — questions earn half ground and add cards. Anki first.');
   OP={id:uid(), name:opName(), src:'uw', q:[], segs:[], startTarget:G.target, msg:'', base:{g:(G.today||{}).gained||0, l:(G.today||{}).lostGround||0}};
   OP.ownBefore=snapshotOwn();
   $('#op').classList.add('show'); drawOp(true);
