@@ -229,7 +229,7 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 
 <script>
 'use strict';
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.2';
 
 /* ================= Regions ================= */
 const REG = {
@@ -357,7 +357,7 @@ function simulate(st, extra){
   const town = T.map(t=>({id:t.id, owner:'enemy', status:'enemy', prog:0, capDay:null, consAt:null, lostDay:null}));
   town[HOME.id].owner='us'; town[HOME.id].status='held'; town[HOME.id].capDay=start;
   const G = {town, target:null, reserve:0, uwDone:0, ambDone:0, log:[], days:{}, regAcc:{}, lastBeach:null,
-             anki:null, ankiByDay:{}, missStreak:0, siege:false, siegeStart:null, blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
+             anki:null, ankiByDay:{}, missStreak:0, siege:false, siegeStart:null, inflow:0, inflows:[], blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
   const isUs = id => town[id].owner==='us';
   const attackable = id => town[id].owner==='enemy' && T[id].n.some(isUs);
   const add = (d,kind,html,extra) => G.log.push({d,kind,html,...(extra||{})});
@@ -414,13 +414,28 @@ function simulate(st, extra){
     return fr[fr.length-1].id;
   }
 
+  // Daily review goal during a siege:
+  //   (cards reviewed today + due right now + cards already scheduled for the remaining days) ÷ days left
+  // "Already scheduled" comes from Anki (prop:due=1..n), so it rises when cards are failed or new ones unlocked.
   function siegeGoal(d){
     const snap=G.ankiByDay[d];
-    const B = snap ? (snap.reviewed + snap.due) : (G.anki ? G.anki.due : 0);
     let by = set.clearBy && set.clearBy>=d ? set.clearBy : null;
     if(!by){ const s0=G.siegeStart||d; by=addDays(s0,5); if(by<d) by=addDays(d,1); }
     const left=Math.max(1, daysBetween(d,by)+1);
-    return {goal: Math.max(set.ankiGoal, Math.ceil(B/left)), by, B};
+    const reviewed = snap ? snap.reviewed : 0;
+    const dueNow = snap ? snap.due : (G.anki ? G.anki.due : 0);
+    let incoming=0, method='even';
+    if(snap && Array.isArray(snap.fut) && snap.fut.length){
+      for(let i=0;i<left-1;i++) incoming += (snap.fut[i] ?? snap.fut[snap.fut.length-1] ?? 0);
+      method='forecast';
+    } else if(G.inflow){ incoming = Math.round(G.inflow*(left-1)); method='estimate'; }
+    const W = reviewed + dueNow + incoming;
+    // forecasts run a little low: cards failed along the way come back. Pad by the observed "Again" rate.
+    let lapse = 0.08;
+    const ref = (snap && snap.again!=null && snap.reviewed>=30) ? snap : (G.lapseRef || null);
+    if(ref) lapse = Math.max(0.03, Math.min(0.25, ref.again/ref.reviewed));
+    return {goal: Math.max(set.ankiGoal, Math.ceil(W/left*(1+lapse))), by, B:reviewed+dueNow, incoming, left, method, lapse,
+            tomorrow: snap && Array.isArray(snap.fut) ? (snap.fut[0]||0) : null};
   }
   const dayList=[]; for(let d=start; d<=tday; d=addDays(d,1)) dayList.push(d);
   for(const d of dayList){
@@ -487,7 +502,7 @@ function simulate(st, extra){
         }
         G.blocks.push({e, d, n, c, acc, ground, lossInfo, def: n-nOff});
       } else if(e.type==='anki'){
-        G.ankiByDay[d]=e; G.anki=e;
+        G.ankiByDay[d]=e; G.anki=e; if(e.again!=null && e.reviewed>=30) G.lapseRef=e;
         if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
         else if(G.siege && e.due===0){ G.siege=false; R.siegeBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
       }
@@ -496,6 +511,8 @@ function simulate(st, extra){
     // end of day (only completed days)
     if(d<tday){
       R.anki = G.ankiByDay[d] || null;
+      const prevSnap = G.ankiByDay[addDays(d,-1)];
+      if(R.anki && prevSnap){ const inf=R.anki.reviewed+R.anki.due-prevSnap.due; if(inf>=0){ G.inflows.push(inf); G.inflows=G.inflows.slice(-4); G.inflow=G.inflows.reduce((a,b)=>a+b,0)/G.inflows.length; } }
       const sg = R.siege ? siegeGoal(d) : null;
       if(sg) R.ankiGoal = sg.goal;
       const rev0 = R.anki ? R.anki.reviewed : 0;
@@ -540,7 +557,7 @@ function simulate(st, extra){
   G.ankiDue = snap ? snap.due : null;
   G.backlog = G.siege;
   G.today = G.days[tday];
-  if(G.today && G.siege){ const sg=siegeGoal(tday); G.today.ankiGoal=sg.goal; G.siegeBy=sg.by; G.siegeB=sg.B; }
+  if(G.today && G.siege){ const sg=siegeGoal(tday); G.today.ankiGoal=sg.goal; G.siegeBy=sg.by; G.siegeB=sg.B; G.siegeInfo=sg; }
   if(G.today && !G.today.ankiGoal) G.today.ankiGoal=set.ankiGoal;
   G.remainingUW = Math.max(0, uwTotal(st) - G.uwDone);
   G.attackable = id => attackable(id);
@@ -731,7 +748,8 @@ function updateCampaign(){
   if(G.backlog){ const tg2=td.ankiGoal||set.ankiGoal, rv=(G.ankiByDay[t]||{}).reviewed||0; const peak=Math.max(G.siegeB||0, G.ankiDue||0, 1);
     bn+=`<div class="banner siege" style="display:block"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><b class="c-bad">⚠ Siege — clear the AnKing backlog</b><span class="note">${(G.ankiDue||0).toLocaleString()} due · goal 0 by ${fmtDow(G.siegeBy||set.clearBy)}</span></div>
       <div class="bar" style="margin-top:8px"><div style="width:${Math.min(100,rv/tg2*100)}%;background:${rv>=tg2?'var(--good)':'#e0705f'}"></div></div>
-      <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews. No question quota until the siege breaks. Questions now earn half ground and add cards to the pile.</div></div>`; }
+      <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews${G.siegeInfo&&G.siegeInfo.tomorrow!=null?` · tomorrow's pile so far: <b>${((G.ankiDue||0)+G.siegeInfo.tomorrow).toLocaleString()}</b> (${(G.ankiDue||0).toLocaleString()} left today + ${G.siegeInfo.tomorrow.toLocaleString()} scheduled)`:''}. No question quota until the siege breaks; questions earn half ground and add cards.</div>
+      ${G.siegeInfo?`<div class="note" style="margin-top:4px;font-size:12px">Goal = (${rv.toLocaleString()} reviewed + ${(G.siegeInfo.B-rv).toLocaleString()} due today${G.siegeInfo.left>1?` + ${G.siegeInfo.incoming.toLocaleString()} ${G.siegeInfo.method==='forecast'?'already scheduled':'estimated new'} through ${fmtD(addDays(G.siegeBy,0))}`:''}) ÷ ${G.siegeInfo.left} day${G.siegeInfo.left>1?'s':''}, +${Math.round(G.siegeInfo.lapse*100)}% for cards you'll fail along the way. ${G.siegeInfo.method==='forecast'?'Updates as you fail or unlock cards.':'Open the app with Anki running for an exact forecast.'}</div>`:''}</div>`; }
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
     bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${set.defenseQ} questions today defend it. Progress: ${dn}/${set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
   if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
@@ -1023,6 +1041,7 @@ function openAnkiManual(){
   openSheet(`<h2>Anki report</h2><div class="note">AnKing deck only. Use on your phone or if Anki isn't connected.</div>
     <div class="pair"><div class="field"><label>Reviewed today</label><input type="number" inputmode="numeric" id="ak-r" value="${snap?snap.reviewed:''}"></div>
     <div class="field"><label>Cards due now</label><input type="number" inputmode="numeric" id="ak-d" value="${snap?snap.due:''}"></div></div>
+    <div class="field"><label>Due tomorrow (optional)</label><input type="number" inputmode="numeric" id="ak-f" value="${snap&&snap.fut?snap.fut[0]:''}" placeholder="From Anki → Stats → Future due"></div>
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="anki-save">Save</button></div>`);
 }
 function openCms(f){
@@ -1205,9 +1224,13 @@ async function ankiPull(silent){
     try{ const st = await ankiCall('getDeckStats', {decks: picked}); due = Object.values(st).reduce((a,d)=>a+(d.review_count||0)+(d.learn_count||0),0); }
     catch(e){ due = (await ankiCall('findCards', {query: scope+'is:due'})).length; }
     const reviewed = dk ? (await ankiCall('findCards', {query: scope+'rated:1'})).length : await ankiCall('getNumCardsReviewedToday');
+    // cards already scheduled for the coming days (rises when cards are failed or new ones unlocked)
+    const horizon = Math.max(2, Math.min(14, S.settings.clearBy ? daysBetween(today(), S.settings.clearBy) : 5));
+    const fut=[]; for(let i=1;i<=horizon;i++) fut.push((await ankiCall('findCards', {query: scope+'prop:due='+i})).length);
+    let again=null; try{ again=(await ankiCall('findCards', {query: scope+'rated:1:1'})).length; }catch(e){}
     const cur=G && G.ankiByDay[today()];
-    if(!cur || cur.reviewed!==reviewed || cur.due!==due) addEvent({id:'anki-'+today(), type:'anki', reviewed, due, auto:true});
-    if(!silent) toast(`Anki (${dk||'all'}): ${reviewed} reviewed today, ${due.toLocaleString()} due.`);
+    if(!cur || cur.reviewed!==reviewed || cur.due!==due || JSON.stringify(cur.fut)!==JSON.stringify(fut) || cur.again!==again) addEvent({id:'anki-'+today(), type:'anki', reviewed, due, fut, again, auto:true});
+    if(!silent) toast(`Anki (${dk||'all'}): ${reviewed} reviewed today, ${due.toLocaleString()} due now, ${fut[0]} scheduled for tomorrow.`);
     return true;
   }catch(e){
     if(!silent) toast(/No Anki deck/.test(e.message) ? e.message : 'Couldn\'t reach Anki. Is it open, with AnkiConnect set up?');
@@ -1290,7 +1313,7 @@ document.addEventListener('click', e=>{
   else if(a==='log-save') saveLog();
   else if(a==='habit'){ const k=b.dataset.k, cur=habitVal(today(),k); addEvent({id:`habit-${today()}-${k}`, type:'habit', kind:k, val: cur!==true}); }
   else if(a==='anki-manual') openAnkiManual();
-  else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} addEvent({id:'anki-'+today(), type:'anki', reviewed:r, due:d, auto:false}); closeSheet(); }
+  else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} const f=$('#ak-f').value; addEvent({id:'anki-'+today(), type:'anki', reviewed:r, due:d, ...(f!==''?{fut:[+f]}:{}), auto:false}); closeSheet(); }
   else if(a==='anki-pull') ankiPull(false);
   else if(a==='anki-auto'){ const on=localStorage.getItem(LS_ANKI)==='1'; localStorage.setItem(LS_ANKI, on?'0':'1'); render(); if(!on) ankiPull(false); }
   else if(a==='cms') openCms(+b.dataset.f);
