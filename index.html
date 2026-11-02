@@ -20,10 +20,8 @@
   --bg:#0e1115; --panel:#161a20; --panel2:#1c2129; --line:#2a313b; --line2:#353e4a;
   --text:#e8e3d6; --muted:#8e96a3; --dim:#5f6774;
   --brass:#d4a24c; --brass-dim:#8a6a33;
-  --enemy:#4b2225; --enemy-line:#6b3236;
-  --ours:#4f7fa8; --held:#3c8a6c; --secured:#c9a23f; --weak:#c27c2c;
+  --us:#3f7fc4; --enemy-red:#c8463d;
   --good:#5fb38a; --warn:#d9a441; --bad:#d0584f;
-  --sea:#0b1a24;
   --display:"Barlow Condensed","Arial Narrow",sans-serif;
   --body:"Barlow",system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
@@ -33,53 +31,86 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;-webkit-font-smoothing:antialiased}
 body{min-height:100vh;padding-top:var(--safe-t)}
-button,input,select{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
-header.top{display:flex;align-items:center;gap:12px;padding:14px 0 10px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+header.top{display:flex;align-items:center;gap:10px;padding:12px 0 8px}
 .brand{display:flex;flex-direction:column;line-height:1}
-.brand b{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
+.brand b{font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:.06em;text-transform:uppercase}
 .brand span{font-size:11px;color:var(--brass);letter-spacing:.22em;text-transform:uppercase;margin-top:4px;font-weight:600}
 .top .spacer{flex:1}
 .countdown{text-align:right;line-height:1.05}
-.countdown b{font-family:var(--mono);font-size:22px;color:var(--brass)}
-.countdown span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
-.syncdot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
-.syncdot i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
-.syncdot.ok i{background:var(--good)} .syncdot.busy i{background:var(--warn)} .syncdot.err i{background:var(--bad)}
-nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
-nav.tabs button{background:none;border:0;padding:10px 14px;color:var(--muted);font-family:var(--display);font-size:16px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap}
+.countdown b{font-family:var(--mono);font-size:21px;color:var(--brass)}
+.countdown span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 10px;white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.chip.ok i{background:var(--good)} .chip.busy i{background:var(--warn)} .chip.err i{background:var(--bad)}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:9px 12px;color:var(--muted);font-family:var(--display);font-size:16px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap}
 nav.tabs button.on{color:var(--text);border-color:var(--brass)}
-.grid{display:grid;gap:12px}
+.grid{display:grid;gap:10px}
 .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (max-width:760px){.stats{grid-template-columns:1fr}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
-.card h3{margin:0 0 8px;font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.big{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
-.big small{font-size:14px;color:var(--muted);font-weight:500}
+@media (max-width:820px){.stats{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px}
+.card h3{margin:0 0 7px;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.big{font-family:var(--mono);font-size:27px;font-weight:700;line-height:1}
+.big small{font-size:13px;color:var(--muted);font-weight:500}
 .sub{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.4}
-.bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+.bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:9px;border:1px solid var(--line)}
 .bar>div{height:100%;background:var(--brass);transition:width .6s ease}
-.pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid currentColor}
-.c-good{color:var(--good)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)} .c-brass{color:var(--brass)} .c-muted{color:var(--muted)}
-.mapcard{padding:0;overflow:hidden;margin-top:12px;position:relative}
-.maphead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.maphead h3{margin:0}
-.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-svg.map{display:block;width:100%;height:auto;background:var(--sea)}
-svg.map .hex{stroke:#0b0e12;stroke-width:1;transition:fill .5s ease}
-svg.map .border{stroke:#e8e3d6;stroke-opacity:.55;stroke-width:1.6;fill:none;stroke-linecap:round;pointer-events:none}
-svg.map .prov{cursor:pointer}
-svg.map .prov:hover .hex{filter:brightness(1.18)}
-svg.map .prov.sel .hex{filter:brightness(1.3)}
-svg.map text{font-family:var(--display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:#f3eee2;paint-order:stroke;stroke:#0b0e12;stroke-width:3.2px;stroke-linejoin:round;pointer-events:none}
-svg.map text.pct{font-family:var(--mono);font-size:10px;fill:var(--brass);stroke-width:2.6px}
-svg.map .fresh{animation:pulse 1.6s ease 2}
-@keyframes pulse{50%{filter:brightness(1.8)}}
-.row{display:flex;gap:12px;align-items:center}
-.two{grid-template-columns:1fr 1fr;margin-top:12px}
-@media (max-width:760px){.two{grid-template-columns:1fr}}
+.pill{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.c-good{color:var(--good)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)} .c-brass{color:var(--brass)} .c-muted{color:var(--muted)} .c-us{color:#79aee8}
+.row{display:flex;gap:10px;align-items:center}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-weight:600}
+.btn:hover{border-color:var(--brass-dim)}
+.btn.pri{background:var(--brass);color:#1a1408;border-color:var(--brass)}
+.btn.red{background:#5a1f1c;border-color:#8a3530}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+/* banner */
+.banner{border-radius:10px;padding:11px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner b{font-family:var(--display);letter-spacing:.08em;text-transform:uppercase;font-size:16px}
+.banner.siege{background:linear-gradient(90deg,#3a1513,#22110f);border:1px solid #7a2c27}
+.banner.attack{background:linear-gradient(90deg,#3b2a0e,#1f1a10);border:1px solid #8a6a33}
+.banner.info{background:var(--panel);border:1px solid var(--line2)}
+/* map */
+.mapwrap{position:relative;margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0b1a24}
+svg.map{display:block;width:100%;height:min(66vh,760px,62vw);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+svg.map.dragging{cursor:grabbing}
+.mapctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.mapctl button{width:36px;height:36px;border-radius:8px;background:rgba(14,17,21,.85);border:1px solid var(--line2);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
+.mapctl button.on{border-color:var(--brass);color:var(--brass)}
+.maplegend{position:absolute;left:10px;bottom:10px;z-index:3;background:rgba(14,17,21,.82);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;max-width:calc(100% - 70px)}
+.maplegend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-2px;border:1px solid rgba(255,255,255,.25)}
+.maphint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:3;background:rgba(58,40,10,.92);border:1px solid var(--brass);border-radius:8px;padding:8px 12px;font-size:14px;display:none;gap:10px;align-items:center;white-space:nowrap}
+.maphint.show{display:flex}
+.town{cursor:pointer}
+.town path.t{stroke:rgba(10,8,6,.7);stroke-width:.9;vector-effect:non-scaling-stroke;transition:fill .5s}
+.town:hover path.t{stroke:#fff;stroke-width:1.4}
+.town.sel path.t{stroke:#ffe9b0;stroke-width:2.2}
+.town.cand path.t{stroke:#ffd27a;stroke-width:2;stroke-dasharray:5 4;animation:march 1s linear infinite}
+.town.target path.t{stroke:#ffb347;stroke-width:2.4;stroke-dasharray:7 4;animation:march 1.2s linear infinite}
+.town.attacked path.t{stroke:#ff4d40;stroke-width:2.6;animation:blink 1s ease infinite}
+@keyframes march{to{stroke-dashoffset:-22}}
+@keyframes blink{50%{stroke-opacity:.25}}
+.rborder{fill:none;stroke:rgba(245,236,214,.75);stroke-width:1.6;vector-effect:non-scaling-stroke;pointer-events:none}
+.marker{pointer-events:none}
+.lbl{font-family:var(--display);font-weight:700;letter-spacing:.04em;fill:#f6f0e2;paint-order:stroke;stroke:#14100c;stroke-linejoin:round;pointer-events:none}
+.rlbl{font-family:var(--display);font-weight:700;letter-spacing:.18em;text-transform:uppercase;fill:rgba(255,246,225,.88);paint-order:stroke;stroke:rgba(10,8,6,.85);stroke-linejoin:round;pointer-events:none}
+.arrow{fill:none;stroke:#ffb347;stroke-linecap:round;pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,.8))}
+.arrow.enemy{stroke:#ff4d40}
+.flash{animation:flash 1.4s ease 2}
+@keyframes flash{50%{filter:brightness(2)}}
+/* lists */
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+.log li:first-child{border-top:0}
+.log .d{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:52px;padding-top:2px}
+.log .x{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;padding:0 4px}
+.log .x:hover{color:var(--bad)}
+.two{grid-template-columns:1fr 1fr;margin-top:10px}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .toggle:first-of-type{border-top:0}
 .sw{position:relative;width:46px;height:26px;border-radius:13px;background:var(--panel2);border:1px solid var(--line2);flex:none}
@@ -88,63 +119,74 @@ svg.map .fresh{animation:pulse 1.6s ease 2}
 .dots{display:flex;gap:4px;margin-top:4px}
 .dots i{width:12px;height:12px;border-radius:3px;background:var(--panel2);border:1px solid var(--line)}
 .dots i.y{background:var(--good);border-color:var(--good)} .dots i.n{background:#3a1e20;border-color:#5a2a2d}
-.log{list-style:none;margin:0;padding:0}
-.log li{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
-.log li:first-child{border-top:0}
-.log .d{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:52px;padding-top:2px}
-.log .x{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;padding:0 4px}
-.log .x:hover{color:var(--bad)}
-.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:9px 14px;font-weight:600}
-.btn:hover{border-color:var(--brass-dim)}
-.btn.pri{background:var(--brass);color:#1a1408;border-color:var(--brass)}
-.btn.pri:hover{filter:brightness(1.08)}
-.btn.sm{padding:6px 10px;font-size:13px}
-.btn.danger{color:var(--bad)}
-.fab{position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:20;background:var(--brass);color:#1a1408;border:0;border-radius:999px;padding:14px 20px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.fabs{position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:20;display:flex;gap:8px;align-items:center}
+.fab{background:var(--brass);color:#1a1408;border:0;border-radius:999px;padding:14px 20px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.fab.alt{background:var(--panel2);color:var(--text);border:1px solid var(--line2);padding:13px 16px}
 main{padding-bottom:110px}
+/* sheets */
 .sheet-bg{position:fixed;inset:0;background:rgba(5,7,9,.7);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet-bg.hidden{display:none}
-.sheet{background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:14px 14px 0 0;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:18px 16px calc(18px + var(--safe-b))}
+.sheet{background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:14px 14px 0 0;width:100%;max-width:600px;max-height:90vh;overflow:auto;padding:18px 16px calc(18px + var(--safe-b))}
 @media (min-width:760px){.sheet-bg{align-items:center}.sheet{border-radius:14px;border-bottom:1px solid var(--line2)}}
 .sheet h2{margin:0 0 4px;font-family:var(--display);font-size:22px;letter-spacing:.06em;text-transform:uppercase}
-.field{margin-top:14px}
+.field{margin-top:13px}
 .field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600}
-.field input[type=number],.field input[type=text],.field input[type=password],.field input[type=date],.field select{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font-size:16px}
-.field input:focus,.field select:focus{outline:2px solid var(--brass-dim);outline-offset:0}
+.field input[type=number],.field input[type=text],.field input[type=password],.field input[type=date],.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font-size:16px}
+.field textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 .seg{display:flex;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:3px;gap:3px}
 .seg button{flex:1;background:none;border:0;border-radius:6px;padding:8px;color:var(--muted);font-weight:600}
 .seg button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--brass-dim)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{background:var(--bg);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted)}
-.chips button.on{color:#1a1408;background:var(--brass);border-color:var(--brass);font-weight:600}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
-.brk{display:grid;grid-template-columns:1fr 70px 70px;gap:6px;align-items:center;font-size:13px;margin-top:6px}
-.brk input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:6px 8px}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 .note{font-size:13px;color:var(--muted);line-height:1.5}
 .note code{font-family:var(--mono);font-size:12px;background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--text)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin-top:8px}
+.kv span:nth-child(odd){color:var(--muted)} .kv span:nth-child(even){font-family:var(--mono);text-align:right}
+.qrows{max-height:44vh;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+.qrow{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:7px 9px;border-top:1px solid var(--line);font-size:13px}
+.qrow:first-child{border-top:0}
+.qrow button{width:30px;height:30px;border-radius:6px;border:1px solid var(--line2);background:#173126;color:var(--good);font-weight:700}
+.qrow button.x{background:#3a1715;color:var(--bad)}
+.qrow .t{color:var(--muted);font-size:12px}
 .battles{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-.battle .when{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .battle .res{font-family:var(--mono);font-size:28px;font-weight:700;margin:8px 0}
 .final{border-color:var(--brass-dim);background:linear-gradient(180deg,#1f1a10,var(--panel))}
 .sysrow{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
 .sysrow input{background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:6px 8px;width:100%;text-align:right;font-family:var(--mono)}
-.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin-top:8px}
-.kv span:nth-child(odd){color:var(--muted)} .kv span:nth-child(even){font-family:var(--mono);text-align:right}
-#toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--panel2);border:1px solid var(--brass-dim);padding:10px 16px;border-radius:8px;z-index:60;transition:.3s;font-size:14px;max-width:90vw;text-align:center;pointer-events:none}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .offdays{display:flex;flex-wrap:wrap;gap:4px}
 .offdays button{width:36px;height:36px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted);padding:0}
 .offdays button.off{background:#3a1e20;border-color:#6b3236;color:var(--text)}
-.offdays button.wk{color:var(--dim)}
 .offdays .mo{width:100%;font-size:12px;color:var(--muted);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.1em}
-@media (max-width:600px){
-  .brand b{font-size:20px} .countdown b{font-size:19px}
-  nav.tabs button{padding:10px 9px;font-size:15px}
-  svg.map text{font-size:21px} svg.map text.pct{font-size:16px}
-  .legend{margin-left:0}
-}
-.foot{color:var(--dim);font-size:12px;text-align:center;margin-top:24px}
+#toast{position:fixed;left:50%;bottom:calc(88px + var(--safe-b));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--panel2);border:1px solid var(--brass-dim);padding:10px 16px;border-radius:8px;z-index:90;transition:.3s;font-size:14px;max-width:90vw;text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#op.show ~ #toast{bottom:auto;top:calc(64px + var(--safe-t))}
+.foot{color:var(--dim);font-size:12px;text-align:center;margin-top:22px}
+@media (max-width:600px){ svg.map{height:62vh} .brand b{font-size:19px} .brand span{font-size:9.5px} .countdown b{font-size:18px} .mapctl{top:auto;bottom:62px} }
+/* report */
+.rep h4{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-size:13px;margin:16px 0 6px}
+.rep ul{margin:0;padding-left:18px;line-height:1.55;font-size:14px}
+.rep li{margin:2px 0}
+/* live operation */
+#op{position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at 50% 30%,#1b2230,#090b0e 70%);display:none;flex-direction:column;padding:calc(12px + var(--safe-t)) 16px calc(16px + var(--safe-b))}
+#op.show{display:flex}
+.op-head{display:flex;align-items:center;gap:10px;max-width:760px;width:100%;margin:0 auto}
+.op-name{font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:none;border:0;border-bottom:1px dashed var(--line2);padding:2px 0;min-width:0;flex:1}
+.op-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:0}
+.op-city{width:min(78vw,46vh,420px);height:auto}
+.op-stats{display:flex;gap:18px;font-family:var(--mono);font-size:14px;color:var(--muted);flex-wrap:wrap;justify-content:center}
+.op-stats b{color:var(--text);font-size:18px}
+.op-msg{min-height:24px;font-family:var(--display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.op-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:520px;margin:0 auto}
+.op-btns button{height:76px;border-radius:14px;font-size:30px;font-weight:700;border:0}
+.op-ok{background:#1f5e43;color:#d9ffe9}
+.op-no{background:#6b2420;color:#ffe1dc}
+.op-ok:active,.op-no:active{transform:scale(.97)}
+.op-foot{display:flex;gap:10px;justify-content:space-between;max-width:520px;width:100%;margin:10px auto 0}
+.dist{transition:fill .35s ease}
+.dist.hit{animation:hit .5s ease}
+@keyframes hit{50%{filter:brightness(1.9)}}
+.shake{animation:shake .4s ease}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
@@ -152,7 +194,8 @@ main{padding-bottom:110px}
   <header class="top">
     <div class="brand"><b>IM Campaign</b><span>Operation Honors</span></div>
     <div class="spacer"></div>
-    <button class="syncdot" id="syncdot" title="Sync"><i></i><em id="synctxt">Local</em></button>
+    <button class="chip" id="repbtn" title="Morning report">☀ Report</button>
+    <button class="chip" id="syncdot" title="Sync"><i></i><em id="synctxt">Local</em></button>
     <div class="countdown"><b id="cd">–</b><span>days to shelf</span></div>
   </header>
   <nav class="tabs" id="tabs">
@@ -163,47 +206,47 @@ main{padding-bottom:110px}
   </nav>
   <main id="view"></main>
 </div>
-<button class="fab" id="fab">+ Log block</button>
+<div class="fabs" id="fabs">
+  <button class="fab alt" id="fablog">+ Log</button>
+  <button class="fab" id="fabop">⚔ Operation</button>
+</div>
 <div class="sheet-bg hidden" id="sheetbg"><div class="sheet" id="sheet"></div></div>
+<div id="op"></div>
 <div id="toast"></div>
 
 <script>
 'use strict';
-const APP_VERSION = '0.4';
+const APP_VERSION = '1.0';
 
-/* ---------- Provinces (UWorld-style IM systems) ---------- */
-const SYSTEMS = [
-  {id:'cardio', name:'Cardiovascular',                       short:'Cardio',   land:'The Cardiac Heartland', share:15.7, x:395,y:240},
-  {id:'pulm',   name:'Pulmonary & Critical Care',            short:'Pulm',     land:'The Pulmonary Steppe',  share:11.2, x:530,y:150},
-  {id:'id',     name:'Infectious Diseases',                  short:'ID',       land:'The Infectious Wastes', share:10.4, x:660,y:250},
-  {id:'gi',     name:'Gastrointestinal & Nutrition',         short:'GI',       land:'The GI Delta',          share:9.7,  x:275,y:315},
-  {id:'renal',  name:'Renal, Urinary & Male Reproductive',   short:'Renal/GU', land:'The Renal Basin',       share:9.7,  x:525,y:330},
-  {id:'neuro',  name:'Nervous System',                       short:'Neuro',    land:'The Neural Highlands',  share:8.7,  x:285,y:70},
-  {id:'heme',   name:'Hematology & Oncology (+ Breast)',     short:'Heme-Onc', land:'The Marrow Marches',    share:8.4,  x:255,y:185},
-  {id:'endo',   name:'Endocrine, Diabetes & Metabolism',     short:'Endo',     land:'The Endocrine Peaks',   share:8.0,  x:420,y:95},
-  {id:'rheum',  name:'Rheumatology, Orthopedics & Sports',   short:'Rheum',    land:'The Joint Frontier',    share:6.5,  x:125,y:250},
-  {id:'gen',    name:'Biostats, Ethics/Legal & Multisystem', short:'Biostat',  land:'The Capital District',  share:4.1,  x:395,y:395},
-  {id:'derm',   name:'Dermatology',                          short:'Derm',     land:'The Outer Reaches',     share:2.2,  x:705,y:145},
-  {id:'psych',  name:'Psychiatric, Behavioral & Substance',  short:'Psych',    land:'The Mindlands',         share:1.7,  x:140,y:140},
-  {id:'eye',    name:'ENT & Ophthalmology',                  short:'ENT/Eye',  land:'The Sensory Isles',     share:1.7,  x:690,y:360},
-  {id:'tox',    name:'Poisoning & Environmental',            short:'Tox',      land:'The Toxic Fens',        share:1.4,  x:150,y:360},
-  {id:'allergy',name:'Allergy & Immunology',                 short:'Immuno',   land:'The Immune Ramparts',   share:0.5,  x:575,y:62},
-];
-// Exact UWorld Step 2 CK "Medicine" unused counts, Oct 27 2026
-const EXACT_COUNTS = {cardio:171, pulm:122, id:114, gi:106, renal:106, neuro:95, heme:92, endo:87, rheum:71, gen:45, derm:24, psych:19, eye:19, tox:15, allergy:6};
-const SYS = Object.fromEntries(SYSTEMS.map(s=>[s.id,s]));
-
-function distribute(total){
-  const raw = SYSTEMS.map(s=>({id:s.id, v:total*s.share/100}));
-  const out = {}; let used=0;
-  raw.forEach(r=>{out[r.id]=Math.floor(r.v); used+=out[r.id];});
-  raw.sort((a,b)=>(b.v%1)-(a.v%1)).slice(0,total-used).forEach(r=>out[r.id]++);
-  return out;
+/* ================= Regions ================= */
+const REG = {
+  cardio:{name:'Cardiovascular',land:'The Cardiac Heartland',match:['cardio']},
+  pulm:{name:'Pulmonary & Critical Care',land:'The Bronchial Forest',match:['pulmonary']},
+  renal:{name:'Renal, GU & Electrolytes',land:'The Renal Basin',match:['renal','male repro']},
+  neuro:{name:'Nervous System',land:'The Neural Peaks',match:['nervous']},
+  endo:{name:'Endocrine & Metabolism',land:'The Endocrine Mesas',match:['endocrine']},
+  heme:{name:'Hematology & Oncology',land:'The Crimson Marrowlands',match:['hematology','female repro']},
+  id:{name:'Infectious Diseases',land:'The Fever Marshes',match:['infectious']},
+  gi:{name:'GI & Nutrition',land:'The GI Delta',match:['gastro']},
+  rheum:{name:'Rheumatology & MSK',land:'The Joint Badlands',match:['rheumat']},
+  gen:{name:'Biostats, Ethics & General',land:'The Capital District',match:['biostat','social','misc','general','pregnancy']},
+  derm:{name:'Dermatology',land:'The Outer Coast',match:['dermat']},
+  psych:{name:'Psychiatry & Behavioral',land:'The Mist Coast',match:['psychiat']},
+  eye:{name:'ENT & Ophthalmology',land:'The Sensory Isles',match:['ear, nose','ent','ophthal']},
+  tox:{name:'Poisoning & Environmental',land:'The Toxic Fens',match:['poison']},
+  allergy:{name:'Allergy & Immunology',land:'The Immune Isles',match:['allergy']},
+};
+function sysToReg(sys){
+  const s=(sys||'').toLowerCase().trim();
+  for(const [id,r] of Object.entries(REG)) if(r.match.some(m=>s.startsWith(m))) return id;
+  return null;
 }
+const EXACT_COUNTS = {cardio:171, pulm:122, id:114, gi:106, renal:106, neuro:95, heme:92, endo:87, rheum:71, gen:45, derm:24, psych:19, eye:19, tox:15, allergy:6};
 
 const DEFAULT_SETTINGS = () => ({
   updatedAt: 0,
   start: '2026-10-27',
+  campaignStart: '2026-11-02',
   imStart: '2026-11-09',
   shelf: '2026-12-18',
   sysCounts: {...EXACT_COUNTS},
@@ -211,14 +254,14 @@ const DEFAULT_SETTINGS = () => ({
   ambossTotal: 1687,
   targetPct: 65,
   ankiGoal: 250,
-  ankiDueCap: 200,
-  ankiQuery: 'is:due',
+  backlogAt: 700,
   ankiDeck: 'AnKing*',
+  defenseQ: 20,
   offDays: [],
   cms: {1:'2026-11-14', 2:'2026-11-29', 3:'2026-12-08', 4:'2026-12-14'},
 });
 
-/* ---------- Dates ---------- */
+/* ================= Utilities ================= */
 const pad = n => String(n).padStart(2,'0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today = () => ymd(new Date());
@@ -227,32 +270,35 @@ const addDays = (s,n) => { const d=parseD(s); d.setDate(d.getDate()+n); return y
 const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/864e5);
 const fmtD = s => parseD(s).toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const fmtDow = s => parseD(s).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = s => document.querySelector(s);
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } h^=h>>>13; h=Math.imul(h,0x5bd1e995); h^=h>>>15; return (h>>>0)/4294967296; }
+const r1 = x => Math.round(x*10)/10;
 
-/* ---------- State ---------- */
-const LS_STATE='imc.state', LS_SYNC='imc.sync', LS_DEV='imc.device', LS_ANKI='imc.ankiAuto';
+/* ================= State & storage ================= */
+const LS_STATE='imc.state', LS_SYNC='imc.sync', LS_DEV='imc.device', LS_ANKI='imc.ankiAuto', LS_REP='imc.reportSeen', LS_ARROWS='imc.arrows';
 let device = localStorage.getItem(LS_DEV);
 if(!device){ device = Math.random().toString(36).slice(2,7); localStorage.setItem(LS_DEV,device); }
 const uid = () => Date.now().toString(36)+'-'+device+Math.random().toString(36).slice(2,5);
-
 function freshState(){ return {v:1, settings:DEFAULT_SETTINGS(), events:[]}; }
 let S;
 try { S = JSON.parse(localStorage.getItem(LS_STATE)) || freshState(); } catch(e){ S = freshState(); }
 S.settings = Object.assign(DEFAULT_SETTINGS(), S.settings||{});
 S.events = S.events || [];
-if(!S.settings.countsExact || !('psych' in S.settings.sysCounts)){ S.settings.sysCounts={...EXACT_COUNTS}; S.settings.countsExact=true; }
-
 function saveLocal(){ try{ localStorage.setItem(LS_STATE, JSON.stringify(S)); }catch(e){} }
 function touchSettings(){ S.settings.updatedAt = Date.now(); commit(); }
 function addEvent(e){
-  e.id = e.id || uid(); e.ts = Date.now(); e.date = e.date || today();
+  e.id = e.id || uid(); e.date = e.date || today();
   const i = S.events.findIndex(x=>x.id===e.id);
+  const now = Math.max(Date.now(), lastTs+1); lastTs = now;
+  e.ord = (i>=0 && S.events[i].ord) ? S.events[i].ord : (e.ord || now);
+  e.ts = now;
   if(i>=0) S.events[i]=e; else S.events.push(e);
-  commit();
-  return e;
+  commit(); return e;
 }
+let lastTs=0;
 function removeEvent(id){ addEvent({id:'del-'+id, type:'del', target:id}); }
 function commit(){ saveLocal(); render(); scheduleSync(); }
-
 function mergeStates(a,b){
   if(!b) return a; if(!a) return b;
   const m = new Map();
@@ -261,547 +307,790 @@ function mergeStates(a,b){
   const settings = Object.assign(DEFAULT_SETTINGS(), (sb.updatedAt||0)>(sa.updatedAt||0) ? sb : sa);
   return {v:1, settings, events:[...m.values()].sort((x,y)=>x.ts-y.ts)};
 }
-
-/* ---------- Derived campaign state ---------- */
 const uwTotal = st => Object.values(st.settings.sysCounts).reduce((a,b)=>a+b,0);
 
-function derive(st){
-  const set = st.settings, counts = set.sysCounts;
+/* ================= Map data ================= */
+let MAP=null, T=null, HOME=null;   // T: towns by id
+async function loadMap(){
+  const r = await fetch('map.json', {cache:'no-cache'});
+  MAP = await r.json();
+  T = MAP.towns;
+  T.forEach(t=>{ t.nset=new Set(t.n); });
+  HOME = T.find(t=>t.r==='gen' && t.cap) || T.find(t=>t.r==='gen');
+}
+
+/* ================= Campaign engine =================
+   Replays every event day by day from campaignStart, so all devices agree.
+   Work sets how far you advance; accuracy sets how well you hold ground. */
+function effOf(acc){ return acc<0.37?0 : acc<0.5?0.8 : acc<0.65?1.0 : acc<0.75?1.15 : 1.3; }
+function effLabel(acc){ return acc<0.37?'Counterattack':acc<0.5?'×0.8':acc<0.65?'×1.0':acc<0.75?'×1.15':'×1.3'; }
+
+function liveEvents(st){
   const dead = new Set(st.events.filter(e=>e.type==='del').map(e=>e.target));
-  const evs = st.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>a.ts-b.ts);
-  const sys = {}; SYSTEMS.forEach(s=>sys[s.id]={total:counts[s.id]||0, uw:0, n:0, c:0, amb:0, last:null});
-  const D = {sys, uwDone:0, uwN:0, uwC:0, ambN:0, ambC:0, byDay:{}, anki:{}, habits:{}, cms:{}, blocks:[], ankiLatest:null, recon:null};
-  for(const e of evs){
-    if(e.type==='block'){
-      D.blocks.push(e);
-      const day = D.byDay[e.date] ||= {uw:0,uwc:0,amb:0,ambc:0};
-      const isUW = e.src==='uw';
-      if(isUW){ D.uwDone+=e.n; D.uwN+=e.n; D.uwC+=e.c; day.uw+=e.n; day.uwc+=e.c; }
-      else { D.ambN+=e.n; D.ambC+=e.c; day.amb+=e.n; day.ambc+=e.c; }
-      let assigned = 0;
-      if(e.sys){
-        for(const [id,v] of Object.entries(e.sys)){
-          if(!sys[id]) continue;
-          sys[id].n+=v.n; sys[id].c+=v.c; sys[id].last=e.date; assigned+=v.n;
-          if(isUW) sys[id].uw+=v.n; else sys[id].amb+=v.n;
+  return st.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>(a.ord||a.ts)-(b.ord||b.ts));
+}
+
+function simulate(st, extra){
+  const set = st.settings, start = set.campaignStart, tday = today();
+  const evs = liveEvents(st); if(extra) evs.push(extra);
+  const byDay = {};
+  for(const e of evs){ const d = e.date < start ? start : e.date; (byDay[d] ||= []).push(e); }
+  const names = {}; evs.filter(e=>e.type==='rename').forEach(e=>{ names[e.town]=e.name; });
+  const town = T.map(t=>({id:t.id, owner:'enemy', status:'enemy', prog:0, capDay:null, consAt:null, lostDay:null}));
+  town[HOME.id].owner='us'; town[HOME.id].status='held'; town[HOME.id].capDay=start;
+  const G = {town, target:null, reserve:0, uwDone:0, ambDone:0, log:[], days:{}, regAcc:{}, lastBeach:null,
+             anki:null, ankiByDay:{}, missStreak:0, blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
+  const tagN={}, tagC={};
+  const isUs = id => town[id].owner==='us';
+  const attackable = id => town[id].owner==='enemy' && T[id].n.some(isUs);
+  const add = (d,kind,html,extra) => G.log.push({d,kind,html,...(extra||{})});
+  const tname = id => G.names[id] || T[id].name;
+
+  function capture(id, d, lowAcc){
+    const x=town[id]; x.owner='us'; x.status='occupied'; x.prog=0; x.capDay=d; x.consAt=addDays(d, lowAcc?10:7); x.lostDay=null;
+    add(d,'cap',`<b class="c-us">${esc(tname(id))}</b> taken${T[id].cap?' — regional capital':''} (${REG[T[id].r].land}).`,{town:id});
+    if(G.target===id) G.target=null;
+  }
+  function addGround(g, d, lowAcc){
+    if(g<=0) return 0;
+    const earned=g;
+    if(G.target==null || town[G.target].owner==='us'){ G.reserve+=g; return earned; }
+    g += G.reserve; G.reserve=0;
+    const x=town[G.target], cost=T[G.target].cost;
+    x.prog += g;
+    if(x.prog >= cost){ const over=x.prog-cost; capture(G.target,d,lowAcc); G.reserve += over; }
+    return earned;
+  }
+  function loseTown(id,d,why){
+    const x=town[id]; x.owner='enemy'; x.status='lost'; x.prog=0; x.capDay=null; x.consAt=null; x.lostDay=d;
+    add(d,'lost',`<b class="c-bad">${esc(tname(id))}</b> lost — ${why}.`,{town:id});
+  }
+  function applyLoss(g, d, why, allowHeld){
+    let lost=0, towns=0;
+    if(G.target!=null && town[G.target].prog>0){ const t=Math.min(g, town[G.target].prog); town[G.target].prog-=t; g-=t; lost+=t; }
+    if(g>0 && G.reserve>0){ const t=Math.min(g,G.reserve); G.reserve-=t; g-=t; lost+=t; }
+    const pool = () => town.filter(x=>x.owner==='us' && x.id!==HOME.id && (x.status==='occupied' || allowHeld) && T[x.id].n.some(n=>town[n].owner==='enemy'))
+                       .sort((a,b)=>(a.status===b.status?0:a.status==='occupied'?-1:1) || (b.capDay||'').localeCompare(a.capDay||''));
+    while(g>0 && towns<2){
+      const c = pool()[0]; if(!c) break;
+      const cost=T[c.id].cost; if(g < cost*0.4) break;
+      loseTown(c.id,d,why); g-=cost; lost+=cost; towns++;
+    }
+    return {lost, towns};
+  }
+  function frontier(){ return town.filter(x=>x.owner==='us' && x.id!==HOME.id && T[x.id].n.some(n=>town[n].owner==='enemy')); }
+
+  // weekly enemy offensive plan
+  function attackDaysOfWeek(monday){
+    const r = hash('wk'+monday); const c = r<0.3?1 : r<0.8?2 : 3;
+    const days=[]; let k=0;
+    while(days.length<c && k<40){ const di=Math.floor(hash('wd'+monday+'-'+k)*6); const d=addDays(monday,di); if(!days.includes(d)) days.push(d); k++; }
+    return days;
+  }
+  const mondayOf = d => { const dt=parseD(d); const dow=(dt.getDay()+6)%7; return addDays(d,-dow); };
+  function pickAttackTarget(d){
+    const fr = frontier(); if(fr.length===0) return null;
+    const w = fr.map(x=>{ const ra=G.regAcc[T[x.id].r]; let wt=1; if(ra && ra.n>=5) wt += Math.max(0,(set.targetPct/100 - ra.c/ra.n))*8; return wt; });
+    const tot=w.reduce((a,b)=>a+b,0); let r=hash('atk'+d)*tot;
+    for(let i=0;i<fr.length;i++){ r-=w[i]; if(r<=0) return fr[i].id; }
+    return fr[fr.length-1].id;
+  }
+
+  const dayList=[]; for(let d=start; d<=tday; d=addDays(d,1)) dayList.push(d);
+  for(const d of dayList){
+    const R = G.days[d] = {d, quota:0, q:0, c:0, uw:0, amb:0, gained:0, lostGround:0, caps:[], losses:[], cons:[], attack:null, def:null, anki:null, goalMet:null, leave:set.offDays.includes(d), momentum:false, backlog:false};
+    const logStart = G.log.length;
+    // start of day: consolidation
+    for(const x of town){ if(x.status==='occupied' && x.consAt && d>=x.consAt){ x.status='held'; R.cons.push(x.id); add(d,'cons',`${esc(tname(x.id))} consolidated — now solid.`,{town:x.id}); } }
+    // quota
+    const remUW = Math.max(0, uwTotal(st) - G.uwDone);
+    let sd=0; for(let x=d; x<set.shelf; x=addDays(x,1)) if(!set.offDays.includes(x)) sd++;
+    R.quota = (R.leave || d>=set.shelf) ? 0 : Math.ceil(remUW/Math.max(1,sd));
+    // momentum: goal met on >=5 of last 7 completed days (proportional early on)
+    let met=0, cnt=0; for(let i=1;i<=7;i++){ const pd=addDays(d,-i); const pr=G.days[pd]; if(!pr) continue; cnt++; if(pr.goalMet) met++; }
+    R.momentum = cnt>=3 && met/cnt >= 5/7;
+    // enemy offensive
+    const ours = town.filter(x=>x.owner==='us').length;
+    if(!R.leave && ours>=3 && daysBetween(start,d)>=3 && attackDaysOfWeek(mondayOf(d)).includes(d)){
+      const tid = pickAttackTarget(d);
+      if(tid!=null){ R.attack=tid; G.attacks[d]=tid; add(d,'atk',`Enemy offensive against <b class="c-bad">${esc(tname(tid))}</b>. Defend with your first ${set.defenseQ} questions.`,{town:tid}); }
+    }
+    let defLeft = R.attack!=null ? set.defenseQ : 0, defN=0, defC=0;
+    // events
+    for(const e of (byDay[d]||[])){
+      if(e.type==='front'){
+        const id=e.target; if(id==null || !town[id] || town[id].owner==='us') continue;
+        const adj = attackable(id);
+        const beachOk = !G.lastBeach || daysBetween(G.lastBeach,d)>=7;
+        if(adj || beachOk){
+          if(!adj) G.lastBeach=d;
+          G.target=id;
+          const src = T[id].n.filter(isUs).sort((a,b)=>Math.hypot(T[a].x-T[id].x,T[a].y-T[id].y)-Math.hypot(T[b].x-T[id].x,T[b].y-T[id].y))[0];
+          G.sourceOf = src ?? null;
+          add(d,'front',`Offensive ordered on <b>${esc(tname(id))}</b>${adj?'':' (beachhead landing)'}.`,{town:id});
+          if(G.reserve>0){ const rs=G.reserve; G.reserve=0; G.reserve=0; const before=R.gained; addGround(rs,d,false); R.gained=before; }
+        }
+      } else if(e.type==='block' || e.type==='cms'){
+        const n = e.type==='cms'?50:e.n, c = e.type==='cms'?Math.round(e.pct/2):e.c;
+        if(!(n>0)) continue;
+        const acc = c/n;
+        R.q+=n; R.c+=c;
+        if(e.type==='block' && e.src==='uw'){ G.uwDone+=n; R.uw+=n; } else { G.ambDone+=n; R.amb+=n; }
+        if(e.type==='cms') G.cmsDone[e.form]=e;
+        // intel from tagged questions
+        if(e.tags && e.q){ e.tags.forEach((tg,i)=>{ const rg=tg.r; if(!rg || e.q[i]==null || i>=n) return; const ra=G.regAcc[rg] ||= {n:0,c:0,cats:{}}; ra.n++; ra.c+=e.q[i]?1:0; const ck=tg.cat||'?'; const cc=ra.cats[ck] ||= {n:0,c:0}; cc.n++; cc.c+=e.q[i]?1:0; }); }
+        let nOff=n;
+        if(defLeft>0){ const dq=Math.min(n,defLeft); defLeft-=dq; defN+=dq; defC+=c*dq/n; nOff=n-dq; }
+        let ground=0, lossInfo=null;
+        if(nOff>0){
+          if(acc<0.37){
+            lossInfo = applyLoss(0.3*nOff, d, 'enemy counterattack after a rough block', false);
+            R.lostGround += lossInfo.lost;
+          } else {
+            let mult = effOf(acc) * (R.momentum?1.15:1);
+            let bt = 0;
+            if(e.tags && G.target!=null){ const tr=T[G.target].r; const hits=e.tags.filter(tg=>tg.r===tr).length; bt = hits/e.tags.length; }
+            ground = nOff * mult * (1 + 0.5*bt);
+            const tBefore = G.target;
+            R.gained += addGround(ground, d, acc<0.5);
+            if(tBefore!=null && town[tBefore].owner==='us') R.caps.push(tBefore);
+          }
+        }
+        G.blocks.push({e, d, n, c, acc, ground, lossInfo, def: n-nOff});
+      } else if(e.type==='anki'){
+        G.ankiByDay[d]=e; G.anki=e;
+      }
+    }
+    if(defN>0) R.def={n:defN, c:defC};
+    // end of day (only completed days)
+    if(d<tday){
+      R.goalMet = R.leave || R.q >= R.quota;
+      // defense
+      if(R.attack!=null){
+        const tid=R.attack;
+        if(town[tid].owner==='us'){
+          if(defN >= set.defenseQ){
+            const da = defC/defN;
+            if(da < 0.5 && town[tid].status==='held'){ town[tid].status='occupied'; town[tid].consAt=addDays(d,7); add(d,'def',`${esc(tname(tid))} held, but shaken (defense at ${Math.round(da*100)}%). Back to striped.`,{town:tid}); }
+            else add(d,'def',`Enemy repelled at <b class="c-good">${esc(tname(tid))}</b>.`,{town:tid});
+            R.defOutcome='held';
+          } else { loseTown(tid,d,`defense not completed (${Math.round(defN)}/${set.defenseQ})`); R.losses.push(tid); R.defOutcome='lost'; }
         }
       }
-      const rest = e.n - assigned;
-      if(isUW && rest>0){ // mixed questions: spread across fronts by what's left in each
-        const rem = SYSTEMS.map(s=>[s.id, Math.max(0, sys[s.id].total - sys[s.id].uw)]);
-        const tot = rem.reduce((a,[,v])=>a+v,0);
-        if(tot>0) rem.forEach(([id,v])=>{ sys[id].uw += rest*v/tot; });
+      // missed goal → enemy push
+      if(!R.goalMet){
+        G.missStreak++;
+        const deficit = R.quota - R.q;
+        const mult = Math.min(3, 1 + 0.5*(G.missStreak-1));
+        const li = applyLoss(deficit*0.5*mult, d, R.q===0?'no work reported':'daily goal missed', G.missStreak>=2);
+        R.lostGround += li.lost;
+        add(d,'miss',`Goal missed (${R.q}/${R.quota}). Enemy pushed back ${r1(li.lost)} ground${li.towns?`, ${li.towns} town${li.towns>1?'s':''} lost`:''}.`);
+      } else if(!R.leave) G.missStreak=0;
+      // Anki supply lines
+      const snap = G.anki; const due = snap ? snap.due : null;
+      R.backlog = due!=null && due > set.backlogAt;
+      R.anki = G.ankiByDay[d] || null;
+      if(R.backlog){
+        const rev = R.anki ? R.anki.reviewed : 0;
+        for(const x of town) if(x.status==='occupied' && x.consAt) x.consAt = addDays(x.consAt,1); // consolidation frozen
+        if(rev < set.ankiGoal && !R.leave){
+          const occ = town.filter(x=>x.status==='occupied' && x.id!==HOME.id).sort((a,b)=>(b.capDay||'').localeCompare(a.capDay||''))[0];
+          if(occ){ loseTown(occ.id,d,'Anki backlog — supply lines failed'); R.losses.push(occ.id); }
+          else add(d,'supply',`Supply lines strained: ${rev}/${set.ankiGoal} reviews in backlog mode.`);
+        }
       }
-    } else if(e.type==='anki'){ D.anki[e.date]=e; if(!D.ankiLatest || e.ts>D.ankiLatest.ts) D.ankiLatest=e; }
-    else if(e.type==='habit'){ D.habits[e.date+':'+e.kind]=e.val; }
-    else if(e.type==='cms'){ D.cms[e.form]=e; }
-    else if(e.type==='recon'){ D.recon=e; }
+    }
+    R.logFrom = logStart; R.logTo = G.log.length;
   }
-  return D;
+  // final derived
+  const snap = G.anki;
+  G.ankiDue = snap ? snap.due : null;
+  G.backlog = G.ankiDue!=null && G.ankiDue > set.backlogAt;
+  G.today = G.days[tday];
+  G.remainingUW = Math.max(0, uwTotal(st) - G.uwDone);
+  G.attackable = id => attackable(id);
+  G.beachOk = !G.lastBeach || daysBetween(G.lastBeach,tday)>=7;
+  G.tname = tname;
+  return G;
 }
 
-function provInfo(D, id){
-  const p = D.sys[id], t = S.settings.targetPct;
-  const ctl = p.total>0 ? Math.min(1, p.uw/p.total) : 1;
-  const rc = D.recon && D.recon.sys && D.recon.sys[id]!=null ? D.recon.sys[id] : null;
-  const acc = rc!=null ? rc : (p.n ? p.c/p.n*100 : null);
-  const weak = acc!=null && (rc!=null || p.n>=20) && acc < t-10;
-  let state = 'enemy';
-  if(ctl>=1 && acc!=null && acc>=t) state='secured';
-  else if(ctl>=0.75) state='held';
-  else if(ctl>=0.25) state='contested';
-  return {...p, ctl, acc, weak, state, fromRecon: rc!=null};
-}
-const STATE_LABEL = {enemy:'Enemy-held', contested:'Contested', held:'Held', secured:'Secured'};
-
-function studyDays(fromDate){
-  const set=S.settings; let n=0;
-  for(let d=fromDate; d<set.shelf; d=addDays(d,1)) if(!set.offDays.includes(d)) n++;
-  return n;
-}
-function orders(D){
-  const t = today(), set = S.settings, total = uwTotal(S);
-  const td = D.byDay[t] || {uw:0,uwc:0,amb:0,ambc:0};
-  const remStart = Math.max(0, total - (D.uwDone - td.uw));
-  const left = studyDays(t);
-  const isOff = set.offDays.includes(t);
-  const quota = (t>=set.shelf) ? 0 : isOff ? 0 : Math.ceil(remStart/Math.max(1,left));
-  return {quota, done:td.uw, amb:td.amb, remaining:Math.max(0,total-D.uwDone), daysLeft:left, isOff, td};
-}
-function outlook(D){
-  const t=today(), set=S.settings;
-  const span = Math.max(1, Math.min(7, daysBetween(set.start, t)+1));
-  let n7=0,c7=0;
-  for(let i=0;i<span;i++){ const d=D.byDay[addDays(t,-i)]; if(d){ n7+=d.uw; c7+=d.uwc; } }
-  const o = orders(D);
-  const pace = n7/span;
-  const need = o.remaining / Math.max(1, studyDays(t));
-  const proj = Math.min(100, (D.uwDone + pace*studyDays(t)) / Math.max(1,uwTotal(S)) * 100);
-  const acc = n7>=30 ? c7/n7*100 : (D.uwN>=30 ? D.uwC/D.uwN*100 : null);
-  const paceOk = need===0 || pace >= need*0.95;
-  const accOk = acc==null || acc >= set.targetPct;
-  let level, label;
-  if(D.uwN===0){ level='muted'; label='Awaiting first report'; }
-  else if(paceOk && accOk){ level='good'; label='On course'; }
-  else if(pace >= need*0.8 && (acc==null || acc >= set.targetPct-5)){ level='warn'; label='Pressing'; }
-  else { level='bad'; label='Off course'; }
-  const why = D.uwN===0 ? 'Log a block to start the campaign.'
-    : (!paceOk && !accOk) ? 'Behind pace and under your honors line.'
-    : !paceOk ? 'Accuracy is there — volume is behind.'
-    : !accOk ? 'Volume is there — accuracy is under your line. Slow down on explanations.'
-    : 'Volume and accuracy both on target.';
-  return {pace, need, proj, acc, level, label, span, why};
-}
-function ankiFront(D){
-  const set=S.settings, t=today();
-  const snap = D.anki[t], latest = D.ankiLatest;
-  const due = latest ? latest.due : null;
-  const reviewed = snap ? snap.reviewed : 0;
-  let streak=0;
-  for(let d = (snap && snap.reviewed>=set.ankiGoal) ? t : addDays(t,-1); ; d=addDays(d,-1)){
-    const s=D.anki[d]; if(s && s.reviewed>=set.ankiGoal) streak++; else break;
-  }
-  let status='Unknown', level='muted';
-  if(due!=null){
-    if(due<=set.ankiDueCap){status='Walls held'; level='good';}
-    else if(due<=set.ankiDueCap*3){status='Under pressure'; level='warn';}
-    else {status='Under siege'; level='bad';}
-  }
-  return {due, reviewed, streak, status, level, latest};
-}
-const RANKS=[[0,'Recruit'],[100,'Corporal'],[250,'Sergeant'],[500,'Lieutenant'],[800,'Captain'],[1200,'Major'],[1700,'Colonel'],[2300,'General'],[2800,'Field Marshal']];
-function rank(D){
-  const q = D.uwN + D.ambN + Object.values(D.cms).length*50;
-  let r=RANKS[0], nx=null;
-  for(let i=0;i<RANKS.length;i++){ if(q>=RANKS[i][0]){ r=RANKS[i]; nx=RANKS[i+1]||null; } }
-  return {q, name:r[1], next:nx};
-}
-
-/* ---------- Map geometry (built once) ---------- */
-const HEX = 21, COLS = 21, ROWS = 14, SQ3 = Math.sqrt(3);
-const MAP_W = Math.ceil(HEX*SQ3*(COLS+0.5)), MAP_H = Math.ceil(HEX*1.5*(ROWS-1)+HEX*2);
-function hash(a,b){ let h = (a*374761393 + b*668265263) ^ 0x5bd1e995; h = (h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967296; }
-const GEO = (()=>{
-  const hexes=[]; const at={};
-  const cx=MAP_W/2, cy=MAP_H/2, rx=MAP_W*0.47, ry=MAP_H*0.46;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const x = HEX*SQ3*(c+0.5*(r&1)) + HEX*SQ3/2, y = HEX*1.5*r + HEX;
-    const e = ((x-cx)/rx)**2 + ((y-cy)/ry)**2;
-    if(e > 1 - hash(c,r)*0.28) continue;
-    if(hash(r+11,c+7) > 0.975 && e>0.35) continue; // a few lakes near coasts
-    let best=null, bd=1e9;
-    for(const s of SYSTEMS){ const d = Math.hypot(x-s.x,y-s.y)/Math.sqrt(s.share+3); if(d<bd){bd=d;best=s.id;} }
-    const h={c,r,x,y,p:best}; hexes.push(h); at[c+','+r]=h;
-  }
-  const nb = (c,r)=> (r&1)
-    ? [[c+1,r],[c+1,r+1],[c,r+1],[c-1,r],[c,r-1],[c+1,r-1]]
-    : [[c+1,r],[c,r+1],[c-1,r+1],[c-1,r],[c-1,r-1],[c,r-1]];
-  const corner = (h,i)=>{ const a=Math.PI/180*(60*i-30); return [h.x+HEX*Math.cos(a), h.y+HEX*Math.sin(a)]; };
-  const borders=[];
-  for(const h of hexes){
-    h.pts = [0,1,2,3,4,5].map(i=>corner(h,i).map(v=>v.toFixed(1)).join(',')).join(' ');
-    nb(h.c,h.r).forEach(([c2,r2],i)=>{
-      const o = at[c2+','+r2];
-      if(!o || o.p!==h.p){ if(!o || h.p<o.p || !o){ const a=corner(h,i), b=corner(h,(i+1)%6); borders.push(`M${a[0].toFixed(1)},${a[1].toFixed(1)}L${b[0].toFixed(1)},${b[1].toFixed(1)}`); } }
-    });
-  }
-  const prov={};
-  SYSTEMS.forEach(s=>{
-    let hs = hexes.filter(h=>h.p===s.id);
-    const mx = hs.reduce((a,h)=>a+h.x,0)/hs.length, my = hs.reduce((a,h)=>a+h.y,0)/hs.length;
-    let lab = hs.reduce((best,h)=>Math.hypot(h.x-mx,h.y-my)<Math.hypot(best.x-mx,best.y-my)?h:best, hs[0]);
-    // territory grows outward from the province's capital hex
-    hs = hs.sort((a,b)=>(Math.hypot(a.x-lab.x,a.y-lab.y)+hash(a.c,a.r)*6)-(Math.hypot(b.x-lab.x,b.y-lab.y)+hash(b.c,b.r)*6));
-    prov[s.id]={hexes:hs, lx:lab.x, ly:lab.y};
-  });
-  const xs=hexes.map(h=>h.x), ys=hexes.map(h=>h.y);
-  const vb=[Math.min(...xs)-HEX-6, Math.min(...ys)-HEX-6, Math.max(...xs)-Math.min(...xs)+2*HEX+12, Math.max(...ys)-Math.min(...ys)+2*HEX+12].map(v=>v.toFixed(0)).join(' ');
-  return {hexes, prov, borders:borders.join(''), vb};
-})();
-
-function stateColor(info){
-  if(info.state==='secured') return 'var(--secured)';
-  if(info.weak) return 'var(--weak)';
-  if(info.state==='held') return 'var(--held)';
-  return 'var(--ours)';
-}
-let selProv=null, freshProvs=new Set();
-function mapSVG(D){
-  let g='';
-  for(const s of SYSTEMS){
-    const info = provInfo(D,s.id), P = GEO.prov[s.id];
-    const k = Math.round(info.ctl * P.hexes.length);
-    const col = stateColor(info);
-    g += `<g class="prov${selProv===s.id?' sel':''}${freshProvs.has(s.id)?' fresh':''}" data-p="${s.id}">`;
-    P.hexes.forEach((h,i)=>{ g+=`<polygon class="hex" points="${h.pts}" style="fill:${i<k?col:'var(--enemy)'}"/>`; });
-    g += `</g>`;
-  }
-  g += `<path class="border" d="${GEO.borders}"/>`;
-  for(const s of SYSTEMS){
-    const info = provInfo(D,s.id), P=GEO.prov[s.id];
-    const fs = P.hexes.length>14 ? 13 : 11;
-    g += `<text x="${P.lx.toFixed(0)}" y="${(P.ly-2).toFixed(0)}" text-anchor="middle" font-size="${fs}">${s.short}</text>`;
-    g += `<text class="pct" x="${P.lx.toFixed(0)}" y="${(P.ly+(innerWidth<600?17:11)).toFixed(0)}" text-anchor="middle">${Math.round(info.ctl*100)}%</text>`;
-  }
-  return `<svg class="map" viewBox="${GEO.vb}" role="img" aria-label="Campaign map">${g}</svg>`;
-}
-
-/* ---------- Rendering ---------- */
-let tab = 'campaign';
-const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const pct = (c,n) => n ? Math.round(c/n*100) : null;
+/* ================= Rendering ================= */
+let tab='campaign', G=null, selTown=null, pickMode=false;
+let showArrows = localStorage.getItem(LS_ARROWS)!=='0';
 
 function render(){
-  const D = derive(S);
-  const left = daysBetween(today(), S.settings.shelf);
-  $('#cd').textContent = Math.max(0,left);
+  if(!T) return;
+  G = simulate(S);
+  $('#cd').textContent = Math.max(0, daysBetween(today(), S.settings.shelf));
   renderSync();
   const v = $('#view');
-  if(tab==='campaign') v.innerHTML = viewCampaign(D);
-  else if(tab==='battles') v.innerHTML = viewBattles(D);
-  else if(tab==='log') v.innerHTML = viewLog(D);
-  else v.innerHTML = viewSettings(D);
+  if(tab==='campaign'){ if(!v.querySelector('#mapsvg')) v.innerHTML = viewCampaignShell(); updateCampaign(); }
+  else if(tab==='battles') v.innerHTML = viewBattles();
+  else if(tab==='log') v.innerHTML = viewLog();
+  else v.innerHTML = viewSettings();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
-  $('#fab').style.display = tab==='settings' ? 'none' : '';
+  $('#fabs').style.display = tab==='settings' ? 'none' : '';
 }
 
-function viewCampaign(D){
-  const o = orders(D), ol = outlook(D), ak = ankiFront(D), rk = rank(D), t = today();
-  const set = S.settings;
-  const qpct = o.quota ? Math.min(100, o.done/o.quota*100) : 100;
-  const qMsg = o.isOff ? 'Leave day — no quota. Anything you log still counts.'
-    : o.quota===0 ? 'Campaign complete.'
-    : o.done>=o.quota ? `Orders fulfilled. ${o.done-o.quota>0?`+${o.done-o.quota} beyond orders.`:''}`
-    : `${o.quota-o.done} to go today · ${o.remaining} UWorld left over ${o.daysLeft} study day${o.daysLeft===1?'':'s'}`;
-  const ambLine = o.amb ? ` · ${o.amb} AMBOSS` : '';
-  const dots = kind => { let h=''; for(let i=6;i>=0;i--){ const d=addDays(t,-i); const v=D.habits[d+':'+kind]; h+=`<i class="${v===true?'y':v===false?'n':''}" title="${fmtD(d)}"></i>`; } return h; };
-  const gym = D.habits[t+':gym']===true, diet = D.habits[t+':diet']===true;
+function viewCampaignShell(){
+  return `<div id="banners"></div>
+  <div class="grid stats" id="cards"></div>
+  <div class="mapwrap" id="mapwrap">
+    <div class="maphint" id="maphint"><span>Choose a town to attack</span><button class="btn sm" data-a="pick-cancel">Cancel</button></div>
+    <div class="mapctl">
+      <button data-a="zin" title="Zoom in">+</button>
+      <button data-a="zout" title="Zoom out">−</button>
+      <button data-a="zreset" title="Whole map">⤢</button>
+      <button data-a="zfront" title="Go to front">◎</button>
+      <button data-a="arrows" id="arrowbtn" title="Arrows on/off">➶</button>
+    </div>
+    ${mapSVG()}
+    <div class="maplegend">
+      <span><i style="background:rgba(63,127,196,.75)"></i>Held</span>
+      <span><i style="background:repeating-linear-gradient(45deg,rgba(63,127,196,.9) 0 3px,transparent 3px 6px)"></i>Recently taken</span>
+      <span><i style="background:repeating-linear-gradient(45deg,rgba(200,70,61,.95) 0 3px,transparent 3px 6px)"></i>Lost</span>
+      <span><i style="background:rgba(20,14,10,.55)"></i>Not yet taken</span>
+    </div>
+  </div>
+  <div class="grid two" id="lower"></div>
+  <div class="foot">Scroll or pinch to zoom · drag to pan · tap a town · v${APP_VERSION}</div>`;
+}
+
+/* ---------- Map SVG ---------- */
+function mapSVG(){
+  const W=MAP.w, H=MAP.h;
+  let towns='';
+  for(const t of T) towns += `<g class="town" data-t="${t.id}"><path class="t" d="${t.d}" fill-rule="evenodd"/></g>`;
+  let rb=''; for(const r of MAP.regs) rb += `<path class="rborder" d="${MAP.regPaths[r]}" fill-rule="evenodd"/>`;
+  return `<svg class="map" id="mapsvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <pattern id="pUs" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill="rgba(63,127,196,.18)"/><rect width="3.2" height="7" fill="rgba(63,127,196,.72)"/></pattern>
+      <pattern id="pLost" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-45)"><rect width="7" height="7" fill="rgba(200,70,61,.12)"/><rect width="3.2" height="7" fill="rgba(200,70,61,.75)"/></pattern>
+      <pattern id="pProg" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)"><rect width="10" height="10" fill="rgba(20,14,10,.4)"/><rect width="2" height="10" fill="rgba(255,179,71,.55)"/></pattern>
+      <marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#ffb347"/></marker>
+      <marker id="ahr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#ff4d40"/></marker>
+    </defs>
+    <image href="map.jpg" x="0" y="0" width="${W}" height="${H}"/>
+    <g id="gtowns">${towns}</g>
+    <g>${rb}</g>
+    <g id="garrows"></g>
+    <g id="gmarkers"></g>
+    <g id="glabels"></g>
+  </svg>`;
+}
+function townFill(x){
+  if(x.owner==='us') return x.status==='held' ? 'rgba(63,127,196,.46)' : 'url(#pUs)';
+  if(x.status==='lost') return 'url(#pLost)';
+  return 'rgba(20,14,10,.42)';
+}
+function regionCentroids(){
+  const c={}; for(const t of T){ const a=c[t.r] ||= {x:0,y:0,n:0,w:0}; const w=t.cost; a.x+=t.x*w; a.y+=t.y*w; a.w+=w; }
+  for(const k in c){ c[k].x/=c[k].w; c[k].y/=c[k].w; } return c;
+}
+let RC=null;
+function updateMap(){
+  const svg=$('#mapsvg'); if(!svg) return;
+  const td=G.today||{};
+  const cands = pickMode ? new Set(T.filter(t=>G.town[t.id].owner==='enemy' && (G.attackable(t.id) || G.beachOk)).map(t=>t.id)) : null;
+  svg.querySelectorAll('#gtowns .town').forEach(g=>{
+    const id=+g.dataset.t, x=G.town[id];
+    const p=g.firstChild; p.setAttribute('fill', townFill(x));
+    g.classList.toggle('sel', selTown===id);
+    g.classList.toggle('target', G.target===id);
+    g.classList.toggle('attacked', td.attack===id && x.owner==='us');
+    g.classList.toggle('cand', !!(cands && cands.has(id)));
+  });
+  // markers
+  const z = zoomLevel();
+  let mk='', lb='';
+  for(const t of T){
+    const x=G.town[t.id]; const s=(t.cap?7:4.5)/Math.sqrt(z);
+    const col = x.owner==='us' ? (x.status==='held'?'#3f7fc4':'#79aee8') : x.status==='lost' ? '#c8463d' : '#7a6a58';
+    if(t.cap) mk+=`<g class="marker" transform="translate(${t.x},${t.y})"><rect x="${-s}" y="${-s}" width="${2*s}" height="${2*s}" transform="rotate(45)" fill="${col}" stroke="#f4ead2" stroke-width="${1.4/Math.sqrt(z)}"/></g>`;
+    else mk+=`<circle class="marker" cx="${t.x}" cy="${t.y}" r="${s}" fill="${col}" stroke="#f4ead2" stroke-width="${1.1/Math.sqrt(z)}"/>`;
+    if(G.target===t.id){ const pr=x.prog/t.cost; const R=s+4/Math.sqrt(z), C=2*Math.PI*R; mk+=`<circle class="marker" cx="${t.x}" cy="${t.y}" r="${R}" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="${3/Math.sqrt(z)}"/><circle class="marker" cx="${t.x}" cy="${t.y}" r="${R}" fill="none" stroke="#ffb347" stroke-width="${3/Math.sqrt(z)}" stroke-dasharray="${C*pr} ${C}" transform="rotate(-90 ${t.x} ${t.y})"/>`; }
+    const showLbl = t.cap ? z>=1.4 : z>=2.6;
+    if(showLbl || G.target===t.id || selTown===t.id || td.attack===t.id){ const fs=(t.cap?13:11)/Math.sqrt(z)*(z<2?1.1:1); lb+=`<text class="lbl" x="${t.x}" y="${t.y - s - 4/Math.sqrt(z)}" text-anchor="middle" font-size="${fs}" stroke-width="${3/Math.sqrt(z)}">${esc(G.tname(t.id))}</text>`; }
+  }
+  if(z<2.2){ RC ||= regionCentroids(); for(const r of MAP.regs){ const c=RC[r]; const big=['allergy','tox','eye','psych','derm'].includes(r)?0.75:1; const fs=15*big/Math.sqrt(z); lb+=`<text class="rlbl" x="${c.x}" y="${c.y+18/Math.sqrt(z)}" text-anchor="middle" font-size="${fs}" stroke-width="${3.5/Math.sqrt(z)}">${esc(REG[r].land.replace(/^The /,''))}</text>`; } }
+  $('#gmarkers').innerHTML=mk; $('#glabels').innerHTML=lb;
+  // arrows
+  let ar='';
+  if(showArrows){
+    if(G.target!=null){ const src = G.sourceOf!=null && G.town[G.sourceOf].owner==='us' ? G.sourceOf : nearestOurs(G.target); if(src!=null) ar+=arrowPath(T[src],T[G.target],false,z); }
+    if(td.attack!=null && G.town[td.attack].owner==='us'){ const e=T[td.attack].n.filter(n=>G.town[n].owner==='enemy').sort((a,b)=>dist(a,td.attack)-dist(b,td.attack))[0]; if(e!=null) ar+=arrowPath(T[e],T[td.attack],true,z); }
+  }
+  $('#garrows').innerHTML=ar;
+  const ab=$('#arrowbtn'); if(ab) ab.classList.toggle('on',showArrows);
+  $('#maphint')?.classList.toggle('show',pickMode);
+}
+const dist=(a,b)=>Math.hypot(T[a].x-T[b].x,T[a].y-T[b].y);
+function nearestOurs(id){ const c=T[id].n.filter(n=>G.town[n].owner==='us'); const pool=c.length?c:T.filter(t=>G.town[t.id].owner==='us').map(t=>t.id); return pool.sort((a,b)=>dist(a,id)-dist(b,id))[0]; }
+function arrowPath(a,b,enemy,z){
+  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1;
+  const sx=a.x+dx/L*10, sy=a.y+dy/L*10, ex=b.x-dx/L*14, ey=b.y-dy/L*14;
+  const mx=(sx+ex)/2 - dy/L*L*0.18, my=(sy+ey)/2 + dx/L*L*0.18;
+  return `<path class="arrow ${enemy?'enemy':''}" d="M${sx},${sy} Q${mx},${my} ${ex},${ey}" stroke-width="${6/Math.sqrt(z)}" marker-end="url(#${enemy?'ahr':'ah'})"/>`;
+}
+
+/* ---------- Pan / zoom ---------- */
+let VB=null;
+function zoomLevel(){ return VB ? MAP.w/VB.w : 1; }
+function elAspect(){ const el=$('#mapsvg'); if(!el) return MAP.h/MAP.w; const r=el.getBoundingClientRect(); return r.width>0 ? r.height/r.width : MAP.h/MAP.w; }
+function setVB(v){
+  const W=MAP.w,H=MAP.h, minW=W/7, asp=elAspect(), maxW=Math.min(W, H/asp);
+  v.w=Math.max(minW,Math.min(maxW,v.w)); v.h=v.w*asp;
+  if(v.h>H){ v.h=H; }
+  v.x=Math.max(0,Math.min(W-v.w,v.x)); v.y=Math.max(0,Math.min(H-v.h,v.y));
+  VB=v; const svg=$('#mapsvg'); if(svg) svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);
+}
+function svgPoint(svg,cx,cy){ const r=svg.getBoundingClientRect(); const sc=Math.max(VB.w/r.width, VB.h/r.height); const ox=(r.width*sc-VB.w)/2, oy=(r.height*sc-VB.h)/2; return {x:VB.x+(cx-r.left)*sc-ox, y:VB.y+(cy-r.top)*sc-oy, sc}; }
+function zoomAt(f,cx,cy){
+  const svg=$('#mapsvg'); const p=svgPoint(svg,cx,cy); const nw=VB.w/f;
+  const kx=(p.x-VB.x)/VB.w, ky=(p.y-VB.y)/VB.h;
+  setVB({x:p.x-kx*nw, y:p.y-ky*nw*elAspect(), w:nw}); scheduleMarkers();
+}
+let mkT=null; function scheduleMarkers(){ clearTimeout(mkT); mkT=setTimeout(updateMap,60); }
+function zoomTo(x,y,w){ setVB({x:x-w/2,y:y-w*elAspect()/2,w}); updateMap(); }
+function bindMap(){
+  const svg=$('#mapsvg'); if(!svg || svg.dataset.bound) return; svg.dataset.bound=1;
+  if(!VB){ const maxW=Math.min(MAP.w, MAP.h/elAspect()); const c=T[HOME.id]; VB={x:c.x-maxW/2, y:c.y-maxW*elAspect()/2, w:maxW}; }
+  setVB({...VB});
+  const ptrs=new Map(); let moved=0, last=null, pinch=null;
+  svg.addEventListener('wheel',e=>{ e.preventDefault(); zoomAt(Math.exp(-e.deltaY*0.0016), e.clientX, e.clientY); },{passive:false});
+  svg.addEventListener('pointerdown',e=>{ svg.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=0; last={x:e.clientX,y:e.clientY};
+    if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}; } });
+  svg.addEventListener('pointermove',e=>{
+    if(!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2 && pinch){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(pinch.d>0){ zoomAt(d/pinch.d,(a.x+b.x)/2,(a.y+b.y)/2); } pinch.d=d; moved+=10; return; }
+    if(ptrs.size===1 && last){ const dx=e.clientX-last.x, dy=e.clientY-last.y; moved+=Math.abs(dx)+Math.abs(dy);
+      if(moved>4){ svg.classList.add('dragging'); const r=svg.getBoundingClientRect(); const sc=Math.max(VB.w/r.width,VB.h/r.height); setVB({x:VB.x-dx*sc,y:VB.y-dy*sc,w:VB.w}); }
+      last={x:e.clientX,y:e.clientY}; }
+  });
+  const up=e=>{ const wasTap = ptrs.size===1 && moved<=4; ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null; svg.classList.remove('dragging');
+    if(wasTap){ const el=document.elementFromPoint(e.clientX,e.clientY); const g=el && el.closest && el.closest('.town'); if(g) onTownTap(+g.dataset.t); }
+    if(ptrs.size===0) last=null; };
+  svg.addEventListener('pointerup',up); svg.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;});
+}
+function onTownTap(id){
+  if(pickMode){
+    const x=G.town[id];
+    if(x.owner==='us'){ toast('That town is already yours. Pick an enemy town.'); return; }
+    const adj=G.attackable(id);
+    if(!adj && !G.beachOk){ toast('Not adjacent to your territory. Beachhead landings: once a week.'); return; }
+    pickMode=false; selTown=null;
+    addEvent({type:'front', target:id});
+    toast(`Offensive ordered: ${G.tname(id)}${adj?'':' (beachhead)'}.`);
+    return;
+  }
+  selTown=id; updateMap(); openTown(id);
+}
+
+/* ---------- Campaign cards ---------- */
+function updateCampaign(){
+  bindMap();
+  const set=S.settings, td=G.today||{quota:0,q:0,c:0}, t=today();
+  // banners
+  let bn='';
+  if(G.backlog) bn+=`<div class="banner siege"><b class="c-bad">⚠ Backlog mode — supply lines cut</b><span class="note">${G.ankiDue.toLocaleString()} AnKing cards due (limit ${set.backlogAt}). Anki first: ${set.ankiGoal}+ reviews today. Nothing consolidates until you're under ${set.backlogAt}.</span></div>`;
+  if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
+    bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${set.defenseQ} questions today defend it. Progress: ${dn}/${set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
+  if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
+  $('#banners').innerHTML=bn;
+  // cards
+  const qpct = td.quota? Math.min(100, td.q/td.quota*100) : 100;
+  const accT = td.q ? Math.round(td.c/td.q*100) : null;
+  const tg = G.target!=null ? T[G.target] : null, tx = tg ? G.town[tg.id] : null;
+  const due=G.ankiDue, ankiSnap=G.ankiByDay[t], rev=ankiSnap?ankiSnap.reviewed:0;
+  const dToIM = Math.max(1, daysBetween(t, set.imStart));
+  const clearRate = due!=null ? Math.ceil(due/dToIM) : null;
   const ankiAuto = localStorage.getItem(LS_ANKI)==='1';
-  const sinceAnki = ak.latest ? agoText(ak.latest.ts) : null;
-
-  const counts = {enemy:0,contested:0,held:0,secured:0};
-  SYSTEMS.forEach(s=>counts[provInfo(D,s.id).state]++);
-
-  return `
-  <div class="grid stats">
+  const ours=G.town.filter(x=>x.owner==='us'), held=ours.filter(x=>x.status==='held').length;
+  $('#cards').innerHTML = `
     <div class="card">
       <h3>Today's orders</h3>
-      <div class="big">${o.done}<small> / ${o.quota} UWorld${ambLine}</small></div>
-      <div class="bar"><div style="width:${qpct}%;background:${o.done>=o.quota?'var(--good)':'var(--brass)'}"></div></div>
-      <div class="sub">${qMsg}</div>
+      <div class="big">${td.q}<small> / ${td.quota} questions</small></div>
+      <div class="bar"><div style="width:${qpct}%;background:${td.q>=td.quota?'var(--good)':'var(--brass)'}"></div></div>
+      <div class="sub">${td.leave?'Leave day — no quota.':td.q>=td.quota?'Orders fulfilled. Everything extra is bonus ground.':`${td.quota-td.q} to go`} ${accT!=null?`· ${accT}% today (${effLabel(accT/100)})`:''}${td.momentum?' · <span class="c-good">Momentum +15%</span>':''}</div>
+      <div class="sub">UWorld IM left: ${G.remainingUW} · AMBOSS done: ${G.ambDone}</div>
     </div>
     <div class="card">
-      <h3>Anki front</h3>
+      <h3>Anki supply lines</h3>
       <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div class="big">${ak.due==null?'–':ak.due.toLocaleString()}<small> due</small></div>
-        <span class="pill c-${ak.level}">${ak.status}</span>
+        <div class="big">${due==null?'–':due.toLocaleString()}<small> due</small></div>
+        <span class="pill ${due==null?'c-muted':G.backlog?'c-bad':due===0?'c-good':'c-warn'}">${due==null?'No data':G.backlog?'Backlog':due===0?'Clear':'Holding'}</span>
       </div>
-      <div class="bar"><div style="width:${Math.min(100,ak.reviewed/set.ankiGoal*100)}%;background:${ak.reviewed>=set.ankiGoal?'var(--good)':'var(--brass)'}"></div></div>
-      <div class="sub">${ak.reviewed} / ${set.ankiGoal} reviews today${ak.streak?` · ${ak.streak}-day streak`:''}${sinceAnki?` · updated ${sinceAnki}`:''}</div>
-      <div class="row" style="margin-top:10px;gap:8px">
-        ${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read from Anki</button>`:''}
-        <button class="btn sm" data-a="anki-manual">Enter manually</button>
-      </div>
+      <div class="bar"><div style="width:${Math.min(100,rev/set.ankiGoal*100)}%;background:${rev>=set.ankiGoal?'var(--good)':'var(--brass)'}"></div></div>
+      <div class="sub">${rev} / ${set.ankiGoal} reviews today${clearRate&&due>0?` · to hit 0 by ${fmtD(set.imStart)}: ~${clearRate}/day`:''}${G.anki?` · read ${agoText(G.anki.ts)}`:''}</div>
+      <div class="row" style="margin-top:9px;gap:8px">${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read Anki</button>`:''}<button class="btn sm" data-a="anki-manual">Enter manually</button></div>
     </div>
     <div class="card">
-      <h3>Campaign outlook</h3>
-      <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div class="big c-${ol.level}" style="font-size:24px">${ol.label}</div>
-        <span class="pill c-brass">${rk.name}</span>
-      </div>
-      <div class="kv">
-        <span>Pace (last ${ol.span}d)</span><span class="${ol.pace>=ol.need*0.95?'c-good':'c-warn'}">${ol.pace.toFixed(0)}/day</span>
-        <span>Needed</span><span>${ol.need.toFixed(0)}/day</span>
-        <span>UWorld accuracy</span><span class="${ol.acc==null?'':ol.acc>=set.targetPct?'c-good':'c-warn'}">${ol.acc==null?'–':ol.acc.toFixed(0)+'%'} <span class="c-muted">/ ${set.targetPct}%</span></span>
-        <span>Projected bank done by shelf</span><span>${ol.proj.toFixed(0)}%</span>
-      </div>
-      <div class="sub">${ol.why}</div>
-    </div>
-  </div>
-
-  <div class="card mapcard">
-    <div class="maphead">
-      <h3>The Medicine Front</h3>
-      <button class="btn sm" data-a="recon">Intel report${D.recon?` · ${fmtD(D.recon.date)}`:''}</button>
-      <span class="c-muted" style="font-size:13px">${counts.secured} secured · ${counts.held} held · ${counts.contested} contested · ${counts.enemy} enemy</span>
-      <div class="legend">
-        <span><i style="background:var(--enemy)"></i>Enemy</span>
-        <span><i style="background:var(--ours)"></i>Advancing</span>
-        <span><i style="background:var(--held)"></i>Held 75%+</span>
-        <span><i style="background:var(--weak)"></i>Weak front</span>
-        <span><i style="background:var(--secured)"></i>Secured</span>
-      </div>
-    </div>
-    ${mapSVG(D)}
-  </div>
-
-  <div class="grid two">
-    <div class="card">
-      <h3>Supply & troops</h3>
+      <h3>Offensive</h3>
+      ${tg?`<div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="big" style="font-size:21px;font-family:var(--display);letter-spacing:.04em">${esc(G.tname(tg.id))}</div><div class="sub" style="margin-top:3px">${REG[tg.r].land}${tg.cap?' · capital':''}</div></div><button class="btn sm" data-a="goto" data-t="${tg.id}">Show</button></div>
+        <div class="bar"><div style="width:${Math.min(100,tx.prog/tg.cost*100)}%;background:#ffb347"></div></div>
+        <div class="sub">${r1(tx.prog)} / ${tg.cost} ground${G.reserve>0?` · ${r1(G.reserve)} in reserve`:''}</div>`
+      :`<div class="big" style="font-size:20px">No target</div><div class="sub">${G.reserve>0?`${r1(G.reserve)} ground waiting. `:''}Choose where to attack next.</div><div class="row" style="margin-top:9px"><button class="btn pri sm" data-a="pick">Choose target</button></div>`}
+      <div class="sub">${ours.length}/${T.length} towns · ${held} solid · ${ours.length-held} striped · ${G.town.filter(x=>x.status==='lost').length} lost</div>
+    </div>`;
+  // lower
+  const dots = kind => { let h=''; for(let i=6;i>=0;i--){ const d=addDays(t,-i); const v=habitVal(d,kind); h+=`<i class="${v===true?'y':v===false?'n':''}" title="${fmtD(d)}"></i>`; } return h; };
+  const gym=habitVal(t,'gym')===true, diet=habitVal(t,'diet')===true;
+  const recent = G.log.slice(-6).reverse();
+  $('#lower').innerHTML = `
+    <div class="card"><h3>Latest dispatches</h3><ul class="log">${recent.map(x=>`<li><span class="d">${fmtD(x.d)}</span><span>${x.html}</span></li>`).join('')||'<li class="c-muted">No reports yet. Start an operation.</li>'}</ul></div>
+    <div class="card"><h3>Body & supply</h3>
       <div class="toggle"><div><div>Gym today</div><div class="dots">${dots('gym')}</div></div><button class="sw ${gym?'on':''}" data-a="habit" data-k="gym" aria-label="Gym today"></button></div>
       <div class="toggle"><div><div>Low-carb held today</div><div class="dots">${dots('diet')}</div></div><button class="sw ${diet?'on':''}" data-a="habit" data-k="diet" aria-label="Low-carb today"></button></div>
+      <p class="note" style="margin:8px 0 0">Gym and diet tracking only for now — they'll join the campaign later.</p>
+    </div>`;
+  updateMap();
+}
+function habitVal(d,k){ const e=liveEvents(S).filter(e=>e.type==='habit' && e.date===d && e.kind===k).pop(); return e?e.val:undefined; }
+function agoText(ts){ const m=Math.round((Date.now()-ts)/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago'; }
+
+/* ---------- Town panel ---------- */
+function openTown(id){
+  const t=T[id], x=G.town[id], ra=G.regAcc[t.r], set=S.settings;
+  const st = x.owner==='us' ? (x.status==='held'?'<span class="pill c-us">Held</span>':'<span class="pill c-us">Recently taken</span>') : x.status==='lost'?'<span class="pill c-bad">Lost</span>':'<span class="pill c-muted">Enemy</span>';
+  const canAttack = x.owner==='enemy' && (G.attackable(id) || G.beachOk);
+  const cats = ra ? Object.entries(ra.cats).sort((a,b)=>b[1].n-a[1].n).slice(0,8) : [];
+  openSheet(`
+    <h2>${esc(G.tname(id))}</h2>
+    <div class="note">${REG[t.r].land} · ${REG[t.r].name}${t.cap?' · regional capital':''}${id===HOME.id?' · your home capital':''}</div>
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${st}${G.target===id?'<span class="pill c-warn">Current target</span>':''}${(G.today||{}).attack===id?'<span class="pill c-bad">Under attack</span>':''}</div>
+    <div class="kv">
+      <span>Garrison (ground to take)</span><span>${t.cost}</span>
+      ${G.target===id?`<span>Progress</span><span>${r1(x.prog)} / ${t.cost}</span>`:''}
+      ${x.owner==='us'&&x.capDay?`<span>Taken</span><span>${fmtD(x.capDay)}</span>`:''}
+      ${x.status==='occupied'&&x.consAt?`<span>Turns solid</span><span>${G.backlog?'frozen (backlog)':fmtD(x.consAt)}</span>`:''}
+      ${x.status==='lost'?`<span>Lost</span><span>${fmtD(x.lostDay)}</span>`:''}
+      <span>${REG[t.r].name} accuracy</span><span>${ra&&ra.n?Math.round(ra.c/ra.n*100)+'% of '+ra.n:'– no intel yet'}</span>
     </div>
-    <div class="card">
-      <h3>Latest dispatches</h3>
-      <ul class="log">${dispatches(D).slice(0,5).map(x=>`<li><span class="d">${fmtD(x.date)}</span><span>${x.html}</span></li>`).join('') || '<li class="c-muted">No reports yet. Log your first block.</li>'}</ul>
-    </div>
-  </div>
-  <div class="foot">Tap a province for details · v${APP_VERSION}</div>`;
+    ${cats.length?`<div class="note" style="margin-top:10px">Intel by category:<br>${cats.map(([k,v])=>`${esc(k)} — ${Math.round(v.c/v.n*100)}% (${v.n})`).join('<br>')}</div>`:''}
+    ${x.owner==='us'?`<div class="field"><label>Rename town</label><div class="row"><input type="text" id="rn" value="${esc(G.tname(id))}" maxlength="32" style="flex:1"><button class="btn sm" data-a="rename" data-t="${id}">Save</button></div></div>`:'<p class="note" style="margin-top:10px">Take the town to rename it.</p>'}
+    <div class="actions"><button class="btn" data-a="close">Close</button>${canAttack && G.target!==id?`<button class="btn pri" data-a="attack" data-t="${id}">${G.attackable(id)?'Attack here':'Beachhead landing'}</button>`:''}</div>
+  `);
 }
 
-function agoText(ts){
-  const m = Math.round((Date.now()-ts)/60000);
-  if(m<1) return 'just now'; if(m<60) return m+'m ago';
-  const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago';
-}
-
-function blockVerdict(p){
-  if(p>=75) return 'decisive advance';
-  if(p>=60) return 'steady push';
-  if(p>=45) return 'costly gains — review the casualties';
-  return 'repelled — study every miss';
-}
-function dispatches(D){
-  const out=[];
-  const dead = new Set(S.events.filter(e=>e.type==='del').map(e=>e.target));
-  const evs = S.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>b.ts-a.ts);
-  for(const e of evs){
-    if(e.type==='block'){
-      const p = pct(e.c,e.n);
-      const ids = e.sys ? Object.keys(e.sys) : [];
-      const where = ids.length===1 ? SYS[ids[0]].land : ids.length>1 ? ids.map(i=>SYS[i].short).join(', ')+' fronts' : 'all fronts';
-      const src = e.src==='uw'?'UWorld':'AMBOSS';
-      out.push({id:e.id, date:e.date, kind:'block', html:`<b>${e.n}</b> ${src} on ${esc(where)} at <b class="${p>=S.settings.targetPct?'c-good':p>=50?'c-warn':'c-bad'}">${p}%</b> — ${blockVerdict(p)}.`});
-    } else if(e.type==='cms'){
-      out.push({id:e.id, date:e.date, kind:'cms', html:`<b class="c-brass">Battle of CMS Form ${e.form}</b>: ${e.pct}% — ${e.pct>=S.settings.targetPct+10?'a rout of the enemy':e.pct>=S.settings.targetPct?'the field is ours':'the line wavered; regroup'}.`});
-    } else if(e.type==='recon'){
-      out.push({id:e.id, date:e.date, kind:'recon', html:`Intel report filed for ${Object.keys(e.sys||{}).length} fronts.`});
-    } else if(e.type==='anki'){
-      out.push({id:e.id, date:e.date, kind:'anki', html:`Anki: ${e.reviewed} reviewed, ${e.due.toLocaleString()} still at the gates.`});
-    }
-  }
-  return out;
-}
-
-function viewBattles(D){
+/* ---------- Other tabs ---------- */
+function viewBattles(){
   const set=S.settings, t=today();
-  const cards = [1,2,3,4].map(f=>{
-    const r = D.cms[f], when = set.cms[f];
-    const dleft = daysBetween(t, when);
-    const status = r ? `<div class="res ${r.pct>=set.targetPct?'c-good':'c-warn'}">${r.pct}%</div><div class="sub">Fought ${fmtD(r.date)}</div>`
-      : `<div class="res c-muted">—</div><div class="sub">${dleft>0?`In ${dleft} day${dleft===1?'':'s'}`:dleft===0?'Scheduled today':'Overdue'}</div>`;
-    return `<div class="card battle"><h3>CMS Medicine · Form ${f}</h3><div class="when">Planned ${fmtDow(when)}</div>${status}
-      <div class="row" style="margin-top:12px;gap:8px"><button class="btn sm ${r?'':'pri'}" data-a="cms" data-f="${f}">${r?'Edit result':'Report result'}</button></div></div>`;
+  const cards=[1,2,3,4].map(f=>{
+    const r=G.cmsDone[f], when=set.cms[f], dl=daysBetween(t,when);
+    return `<div class="card battle"><h3>CMS Medicine · Form ${f}</h3><div class="note">Planned ${fmtDow(when)}</div>
+      ${r?`<div class="res ${r.pct>=set.targetPct?'c-good':'c-warn'}">${r.pct}%</div><div class="sub">Fought ${fmtD(r.date)} · 50 questions of ground</div>`:`<div class="res c-muted">—</div><div class="sub">${dl>0?`In ${dl} day${dl===1?'':'s'}`:dl===0?'Scheduled today':'Overdue'}</div>`}
+      <div class="row" style="margin-top:10px"><button class="btn sm ${r?'':'pri'}" data-a="cms" data-f="${f}">${r?'Edit result':'Report result'}</button></div></div>`;
   }).join('');
-  const done = Object.values(D.cms);
-  const avg = done.length ? done.reduce((a,b)=>a+b.pct,0)/done.length : null;
-  const shelfLeft = daysBetween(t, set.shelf);
-  return `
-  <div class="card final" style="margin-bottom:12px">
-    <h3>The final battle</h3>
-    <div class="big" style="font-size:26px">IM Shelf · ${fmtDow(set.shelf)}</div>
-    <div class="sub">${shelfLeft>0?`${shelfLeft} days out.`:'Today.'} Your honors line is set at <b>${set.targetPct}%</b> UWorld accuracy — your own bar, editable in Settings. ${avg!=null?`CMS average so far: <b class="${avg>=set.targetPct?'c-good':'c-warn'}">${avg.toFixed(0)}%</b>.`:'Your CMS forms are the closest preview of the real thing.'}</div>
-  </div>
-  <div class="grid battles">${cards}</div>
-  <p class="note" style="margin-top:14px">Suggested rhythm: Form 1 as a baseline after your first IM week, then the rest in the final three weeks when they predict best. Change the dates in Settings.</p>`;
+  const done=Object.values(G.cmsDone); const avg=done.length?done.reduce((a,b)=>a+b.pct,0)/done.length:null;
+  return `<div class="card final" style="margin-bottom:10px"><h3>The final battle</h3><div class="big" style="font-size:25px">IM Shelf · ${fmtDow(set.shelf)}</div>
+    <div class="sub">${daysBetween(t,set.shelf)} days out. ${avg!=null?`CMS average: <b class="${avg>=set.targetPct?'c-good':'c-warn'}">${avg.toFixed(0)}%</b>.`:'CMS forms count as 50-question operations on the map.'}</div></div>
+    <div class="grid battles">${cards}</div>`;
 }
-
-function viewLog(D){
-  const items = dispatches(D);
-  return `<div class="card"><h3>War log</h3><ul class="log">${items.map(x=>`<li><span class="d">${fmtD(x.date)}</span><span>${x.html}</span>${x.kind!=='anki'?`<button class="x" data-a="del" data-id="${x.id}" title="Delete entry" aria-label="Delete entry">×</button>`:''}</li>`).join('') || '<li class="c-muted">Nothing logged yet.</li>'}</ul></div>
-  <div class="card" style="margin-top:12px"><h3>Totals</h3><div class="kv">
-    <span>UWorld IM done (campaign)</span><span>${D.uwDone} / ${uwTotal(S)}</span>
-    <span>UWorld accuracy</span><span>${D.uwN?pct(D.uwC,D.uwN)+'%':'–'}</span>
-    <span>AMBOSS done</span><span>${D.ambN} / ${S.settings.ambossTotal}</span>
-    <span>AMBOSS accuracy</span><span>${D.ambN?pct(D.ambC,D.ambN)+'%':'–'}</span>
-    <span>CMS forms fought</span><span>${Object.keys(D.cms).length} / 4</span>
-  </div></div>`;
+function viewLog(){
+  const items=[];
+  for(const b of G.blocks){ const e=b.e; if(e.type==='cms') continue;
+    items.push({d:b.d, ts:e.ts, html:`<b>${esc(e.name||'Block')}</b> — ${b.n} ${e.src==='uw'?'UWorld':'AMBOSS'} at <b class="${b.acc>=0.65?'c-good':b.acc>=0.5?'c-warn':'c-bad'}">${Math.round(b.acc*100)}%</b>${b.def?` · ${Math.round(b.def)} on defense`:''}${b.lossInfo?` · <span class="c-bad">counterattack −${r1(b.lossInfo.lost)}</span>`:` · +${r1(b.ground)} ground`}${e.tags?' · intel ✓':''}`, id:e.id, del:true}); }
+  G.log.forEach((x,i)=>{ if(x.kind!=='cap'&&x.kind!=='lost'&&x.kind!=='def'&&x.kind!=='miss'&&x.kind!=='atk'&&x.kind!=='cons'&&x.kind!=='front'&&x.kind!=='supply') return; items.push({d:x.d, ts:i, html:x.html}); });
+  items.sort((a,b)=>b.d.localeCompare(a.d) || (b.ts-a.ts));
+  return `<div class="card"><h3>War log</h3><ul class="log">${items.map(x=>`<li><span class="d">${fmtD(x.d)}</span><span>${x.html}</span>${x.del?`<button class="x" data-a="del" data-id="${x.id}" title="Delete" aria-label="Delete entry">×</button>`:''}</li>`).join('')||'<li class="c-muted">Nothing yet.</li>'}</ul></div>`;
 }
-
 function offDayPicker(){
   const set=S.settings; let h='', month='';
-  for(let d=today(); d<set.shelf; d=addDays(d,1)){
+  for(let d=set.campaignStart; d<set.shelf; d=addDays(d,1)){
     const dt=parseD(d), m=dt.toLocaleDateString(undefined,{month:'long'});
     if(m!==month){ month=m; h+=`<div class="mo">${m}</div>`; }
-    const wk = dt.getDay()===0||dt.getDay()===6;
-    h+=`<button class="${set.offDays.includes(d)?'off':''} ${wk?'wk':''}" data-a="offday" data-d="${d}" title="${fmtDow(d)}">${dt.getDate()}</button>`;
+    h+=`<button class="${set.offDays.includes(d)?'off':''}" data-a="offday" data-d="${d}" title="${fmtDow(d)}">${dt.getDate()}</button>`;
   }
   return `<div class="offdays">${h}</div>`;
 }
-
-function viewSettings(D){
+function viewSettings(){
   const set=S.settings, cfg=getSyncCfg()||{}, ankiAuto=localStorage.getItem(LS_ANKI)==='1';
-  const total=uwTotal(S);
-  return `
-  <div class="grid two" style="margin-top:0">
-    <div class="card">
-      <h3>Campaign</h3>
-      <div class="pair">
-        <div class="field"><label>IM starts</label><input type="date" data-s="imStart" value="${set.imStart}"></div>
-        <div class="field"><label>Shelf</label><input type="date" data-s="shelf" value="${set.shelf}"></div>
-      </div>
-      <div class="pair">
-        <div class="field"><label>Honors line (UWorld %)</label><input type="number" data-s="targetPct" value="${set.targetPct}"></div>
-        <div class="field"><label>AMBOSS IM total</label><input type="number" data-s="ambossTotal" value="${set.ambossTotal}"></div>
-      </div>
-      <div class="field"><label>CMS form dates</label>
-        <div class="pair">${[1,2,3,4].map(f=>`<input type="date" data-cms="${f}" value="${set.cms[f]}" aria-label="Form ${f} date">`).join('')}</div>
-      </div>
-      <div class="field"><label>Leave days (tap to mark — no quota, quota redistributes)</label>${offDayPicker()}</div>
+  return `<div class="grid two" style="margin-top:0">
+    <div class="card"><h3>Campaign</h3>
+      <div class="pair"><div class="field"><label>IM starts</label><input type="date" data-s="imStart" value="${set.imStart}"></div><div class="field"><label>Shelf</label><input type="date" data-s="shelf" value="${set.shelf}"></div></div>
+      <div class="pair"><div class="field"><label>Honors line (%)</label><input type="number" data-s="targetPct" value="${set.targetPct}"></div><div class="field"><label>Defense questions</label><input type="number" data-s="defenseQ" value="${set.defenseQ}"></div></div>
+      <div class="field"><label>CMS form dates</label><div class="pair">${[1,2,3,4].map(f=>`<input type="date" data-cms="${f}" value="${set.cms[f]}" aria-label="Form ${f} date">`).join('')}</div></div>
+      <div class="field"><label>Leave days (no quota, no penalties)</label>${offDayPicker()}</div>
+      <p class="note">Campaign started ${fmtD(set.campaignStart)}. UWorld IM bank: ${uwTotal(S)} questions.</p>
     </div>
-
-    <div class="card">
-      <h3>UWorld IM by province</h3>
-      <p class="note">${set.countsExact?'Loaded from your UWorld screen (Oct 27). Edit if your bank changes.':'These are <b>estimates</b> split from your 1,092 unused. For a true map, copy the unused count for each system from UWorld\'s Create Test screen (IM filter).'}</p>
-      ${SYSTEMS.map(s=>`<div class="sysrow"><span>${s.name}</span><input type="number" min="0" data-sys="${s.id}" value="${set.sysCounts[s.id]}"></div>`).join('')}
-      <div class="sysrow" style="font-weight:600"><span>Total unused at campaign start</span><span style="text-align:right;font-family:var(--mono)">${total}</span></div>
-    </div>
-
-    <div class="card">
-      <h3>Anki</h3>
-      <div class="toggle" style="border:0"><div><div>This device runs Anki</div><div class="note">Turn on for your Mac only. Reads reviews and due count automatically while Anki is open.</div></div><button class="sw ${ankiAuto?'on':''}" data-a="anki-auto" aria-label="This device runs Anki"></button></div>
-      <div class="pair">
-        <div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div>
-        <div class="field"><label>"Walls held" at ≤ due</label><input type="number" data-s="ankiDueCap" value="${set.ankiDueCap}"></div>
-      </div>
+    <div class="card"><h3>Anki</h3>
+      <div class="toggle" style="border:0"><div><div>This device runs Anki</div><div class="note">Mac only. Reads AnKing reviews and due count while Anki is open.</div></div><button class="sw ${ankiAuto?'on':''}" data-a="anki-auto" aria-label="This device runs Anki"></button></div>
+      <div class="pair"><div class="field"><label>Daily review goal</label><input type="number" data-s="ankiGoal" value="${set.ankiGoal}"></div><div class="field"><label>Backlog mode above</label><input type="number" data-s="backlogAt" value="${set.backlogAt}"></div></div>
       <div class="field"><label>Deck to track</label><input type="text" data-s="ankiDeck" value="${esc(set.ankiDeck)}" placeholder="AnKing*"></div>
-      <p class="note">Only this deck (and its subdecks) counts toward reviews and due cards. <code>AnKing*</code> matches any deck whose name starts with AnKing. Leave blank to count all decks.</p>
-      ${ankiAuto?`<button class="btn sm" data-a="anki-test">Test Anki connection</button>`:''}
+      ${ankiAuto?`<button class="btn sm" data-a="anki-pull">Test Anki connection</button>`:''}
     </div>
-
-    <div class="card">
-      <h3>Sync between devices</h3>
-      <p class="note">Your campaign is stored in a private GitHub repo. Every device connected with the same repo and token stays on the same page. The token stays on this device.</p>
+    <div class="card"><h3>Sync between devices</h3>
+      <p class="note">Your campaign is stored in a private GitHub repo. Every device connected with the same repo and token stays on the same page.</p>
       <div class="field"><label>GitHub repo (owner/name)</label><input type="text" id="sg-repo" placeholder="kani190spy-gif/im-campagin-data" value="${esc(cfg.repo||'')}"></div>
       <div class="field"><label>Access token</label><input type="password" id="sg-token" placeholder="github_pat_…" value="${esc(cfg.token||'')}" autocomplete="off"></div>
-      <div class="actions" style="justify-content:flex-start">
-        <button class="btn pri sm" data-a="sync-save">Save & sync</button>
-        ${cfg.repo?`<button class="btn sm" data-a="sync-now">Sync now</button><button class="btn sm danger" data-a="sync-off">Disconnect</button>`:''}
-      </div>
+      <div class="actions" style="justify-content:flex-start"><button class="btn pri sm" data-a="sync-save">Save & sync</button>${cfg.repo?`<button class="btn sm" data-a="sync-now">Sync now</button><button class="btn sm danger" data-a="sync-off">Disconnect</button>`:''}</div>
       <p class="note" style="margin-top:10px">Status: ${esc(syncInfo.msg)}</p>
     </div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <h3>Data</h3>
-    <div class="row" style="gap:8px;flex-wrap:wrap">
-      <button class="btn sm" data-a="export">Export backup</button>
-      <label class="btn sm" style="display:inline-block">Import backup<input type="file" accept="application/json" id="importfile" hidden></label>
+    <div class="card"><h3>Rules of war</h3>
+      <div class="note">
+      <b>Ground</b> comes from questions done. Block accuracy sets effectiveness: under 37% → counterattack · 37–49% ×0.8 · 50–64% ×1.0 · 65–74% ×1.15 · 75%+ ×1.3. Goal met 5 of 7 days → +15%. Pasted intel: questions in the target's system count +50%.<br><br>
+      <b>Losses</b>: missing the daily goal pushes you back (worse on consecutive days) · backlog days under the Anki goal lose your newest striped town · failed defenses lose the town.<br><br>
+      <b>Holding</b>: new towns are striped for 7 days (10 if taken under 50%), then solid. Backlog mode freezes this.</div>
     </div>
   </div>
+  <div class="card" style="margin-top:10px"><h3>Data</h3><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="export">Export backup</button><label class="btn sm" style="display:inline-block">Import backup<input type="file" accept="application/json" id="importfile" hidden></label></div></div>
   <div class="foot">IM Campaign v${APP_VERSION} · device ${device}</div>`;
 }
 
-/* ---------- Sheets ---------- */
-function openSheet(html){ $('#sheet').innerHTML = html; $('#sheetbg').classList.remove('hidden'); }
-function closeSheet(){ $('#sheetbg').classList.add('hidden'); $('#sheet').innerHTML=''; }
+/* ================= Sheets ================= */
+function openSheet(html){ $('#sheet').innerHTML=html; $('#sheetbg').classList.remove('hidden'); }
+function closeSheet(){ $('#sheetbg').classList.add('hidden'); $('#sheet').innerHTML=''; if(selTown!=null){ selTown=null; if(tab==='campaign') updateMap(); } }
 
-let logDraft=null;
-function openLog(preSys){
-  logDraft = {src:'uw', sys: preSys||null, split:false};
+/* ---- Log sheet: quick numbers or paste ---- */
+let LD=null;
+function openLog(attachTo){
+  const ids = attachTo ? (Array.isArray(attachTo)?attachTo:[attachTo]) : null;
+  LD={mode: ids?'paste':'quick', src:'uw', attachTo:ids, rows:null, score:null, date:today()};
   drawLog();
 }
 function drawLog(){
-  const d=logDraft;
-  openSheet(`
-    <h2>Report a block</h2>
-    <div class="note">Every block you log moves the front.</div>
-    <div class="field"><label>Source</label><div class="seg">
-      <button data-ls="uw" class="${d.src==='uw'?'on':''}">UWorld</button>
-      <button data-ls="amboss" class="${d.src==='amboss'?'on':''}">AMBOSS</button></div></div>
-    <div class="pair">
-      <div class="field"><label>Questions</label><input type="number" inputmode="numeric" id="lg-n" min="1" placeholder="40"></div>
-      <div class="field"><label>Correct</label><input type="number" inputmode="numeric" id="lg-c" min="0" placeholder="28"></div>
-    </div>
-    <div class="field"><label>Front</label>
-      <div class="chips">
-        <button data-lsys="" class="${!d.sys&&!d.split?'on':''}">Mixed</button>
-        ${SYSTEMS.map(s=>`<button data-lsys="${s.id}" class="${d.sys===s.id?'on':''}">${s.short}</button>`).join('')}
-        <button data-lsplit="1" class="${d.split?'on':''}">Split by system…</button>
-      </div>
-    </div>
-    ${d.split?`<div class="field"><label>Per-system breakdown (from UWorld's test analysis)</label>
-      <div class="brk" style="color:var(--muted);font-size:11px"><span></span><span>Qs</span><span>Correct</span></div>
-      ${SYSTEMS.map(s=>`<div class="brk"><span>${s.short}</span><input type="number" inputmode="numeric" data-bn="${s.id}"><input type="number" inputmode="numeric" data-bc="${s.id}"></div>`).join('')}
-      <p class="note">Leave blank rows empty. Questions/correct above are filled from these totals.</p></div>`:''}
-    ${!d.sys && !d.split && d.src==='uw' ? `<p class="note">Mixed blocks advance every front in proportion to what's left there. Use a single front or split for sharper intel.</p>`:''}
-    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="log-save">Send report</button></div>
-  `);
-  if(d.split){
-    const sync=()=>{ let n=0,c=0; document.querySelectorAll('[data-bn]').forEach(i=>{ n+=+i.value||0; }); document.querySelectorAll('[data-bc]').forEach(i=>{ c+=+i.value||0; }); $('#lg-n').value=n||''; $('#lg-c').value=c||''; };
-    document.querySelectorAll('[data-bn],[data-bc]').forEach(i=>i.addEventListener('input',sync));
+  const d=LD, att=attachedOp();
+  let body='';
+  if(d.mode==='quick'){
+    body=`<div class="field"><label>Source</label><div class="seg"><button data-ls="uw" class="${d.src==='uw'?'on':''}">UWorld</button><button data-ls="amboss" class="${d.src==='amboss'?'on':''}">AMBOSS</button></div></div>
+      <div class="pair"><div class="field"><label>Questions</label><input type="number" inputmode="numeric" id="lg-n" placeholder="40"></div><div class="field"><label>Correct</label><input type="number" inputmode="numeric" id="lg-c" placeholder="26"></div></div>`;
+  } else {
+    body=`<div class="field"><label>Paste the UWorld results page</label><textarea id="lg-paste" placeholder="On the results page: Cmd+A, Cmd+C, then paste here">${d.raw?esc(d.raw):''}</textarea></div>
+      ${d.rows?`<div class="note">${d.rows.length} questions found${d.score!=null?` · UWorld score ${d.score}% (${Math.round(d.score*d.rows.length/100)} correct)`:''}. ${att&&att.q.length===d.rows.length?'Your live taps are filled in.':att?(att.segs.length>1?`Your live count was ${att.n}; intel will be matched in order to the first ${Math.min(att.n,d.rows.length)}. Tap the ones you got wrong.`:`Your live count was ${att.n}; these ${d.rows.length} results will replace it. Tap the ones you got wrong.`):'Tap the ones you got wrong.'} Marked correct: <b id="lg-cnt">${d.rows.filter(r=>r.ok).length}</b></div>
+        <div class="qrows">${d.rows.map((r,i)=>`<div class="qrow"><button class="${r.ok?'':'x'}" data-qi="${i}">${r.ok?'✓':'✗'}</button><div><div>${esc(r.cat||'')}</div><div class="t">${esc(r.topic||'')} · ${esc(r.sys||'')}</div></div><span class="t">${r.r?esc(REG[r.r].land.replace(/^The /,'')):''}</span></div>`).join('')}</div>`:''}`;
   }
-  setTimeout(()=>{ const n=$('#lg-n'); if(n && !d.split) n.focus(); }, 50);
+  openSheet(`<h2>${att?'Add intel to '+esc(att.name||'operation'):'Report work'}</h2>
+    <div class="note">${att?'Paste the results so the map knows which systems you hit.':'Use this when you did questions without live mode.'}</div>
+    ${att?'':`<div class="field"><label>How</label><div class="seg"><button data-lm="quick" class="${d.mode==='quick'?'on':''}">Numbers</button><button data-lm="paste" class="${d.mode==='paste'?'on':''}">Paste UWorld results</button></div></div>`}
+    ${att?'':`<div class="field"><label>Day</label><div class="seg"><button data-ld="${today()}" class="${d.date===today()?'on':''}">Today</button><button data-ld="${addDays(today(),-1)}" class="${d.date!==today()?'on':''}">Yesterday</button></div></div>`}
+    ${body}
+    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="log-save">${att?'Add intel':'Send report'}</button></div>`);
+  const ta=$('#lg-paste'); if(ta) ta.addEventListener('input',()=>{ LD.raw=ta.value; parsePaste(); });
+}
+function attachedOp(){
+  if(!LD || !LD.attachTo) return null;
+  const evs=liveEvents(S); const segs=LD.attachTo.map(id=>evs.find(e=>e.id===id)).filter(Boolean);
+  if(!segs.length) return null;
+  return {name:segs[0].name, n:segs.reduce((a,e)=>a+e.n,0), q:segs.flatMap(e=>e.q||[]), segs};
+}
+function parsePaste(){
+  const txt=LD.raw||''; const rows=[];
+  for(const line of txt.split(/\r?\n/)){
+    const m=line.match(/^\s*(\d+)\s*-\s*(\d+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)/);
+    if(m) rows.push({num:+m[1], qid:m[2], subj:m[3].trim(), sys:m[4].trim(), cat:m[5].trim(), topic:m[6].trim(), r:sysToReg(m[4]), ok:true});
+  }
+  const sm=txt.match(/Your Score\s*([\d.]+)\s*%/i);
+  LD.score = sm ? +sm[1] : null;
+  rows.sort((a,b)=>a.num-b.num);
+  const att = attachedOp();
+  if(att && att.q.length===rows.length) rows.forEach((r,i)=>r.ok=!!att.q[i]);
+  else if(LD.score!=null && rows.length){ // can't know which; default all correct, user marks misses
+  }
+  LD.rows = rows.length ? rows : null;
+  const keep=LD.raw; drawLog(); const ta=$('#lg-paste'); if(ta){ ta.value=keep; }
 }
 function saveLog(){
-  const d=logDraft, n=+$('#lg-n').value, c=+$('#lg-c').value;
-  let sys=null;
-  if(d.split){
-    sys={};
-    SYSTEMS.forEach(s=>{ const bn=+document.querySelector(`[data-bn="${s.id}"]`).value||0, bc=+document.querySelector(`[data-bc="${s.id}"]`).value||0; if(bn>0) sys[s.id]={n:bn,c:Math.min(bc,bn)}; });
-    if(!Object.keys(sys).length) sys=null;
-  } else if(d.sys){ sys={[d.sys]:{n,c}}; }
-  if(!(n>0)) return toast('Enter how many questions.');
-  if(c<0 || c>n || $('#lg-c').value==='') return toast('Correct must be between 0 and '+n+'.');
-  const before = derive(S);
-  addEvent({type:'block', src:d.src, n, c, sys});
-  const after = derive(S);
-  freshProvs = new Set();
-  const changes=[];
-  SYSTEMS.forEach(s=>{
-    const a=provInfo(before,s.id), b=provInfo(after,s.id);
-    if(b.uw-a.uw>0.5 || (b.n>a.n && sys && sys[s.id])) freshProvs.add(s.id);
-    if(a.state!==b.state) changes.push(`${s.short} is now ${STATE_LABEL[b.state].toUpperCase()}`);
-  });
-  closeSheet(); tab='campaign'; render();
-  const p = pct(c,n);
-  toast(changes.length ? changes.join(' · ') : `${n} questions at ${p}% — ${blockVerdict(p)}.`);
-  setTimeout(()=>{ freshProvs=new Set(); }, 3500);
+  const d=LD;
+  if(d.mode==='quick'){
+    const n=+$('#lg-n').value, c=+$('#lg-c').value;
+    if(!(n>0)) return toast('Enter how many questions.');
+    if($('#lg-c').value==='' || c<0 || c>n) return toast('Correct must be between 0 and '+n+'.');
+    const before=snapshotOwn();
+    addEvent({type:'block', src:d.src, n, c, name:opName(), date:d.date});
+    closeSheet(); afterReport(before, n, c);
+  } else {
+    if(!d.rows) return toast('Paste the results page first.');
+    const q=d.rows.map(r=>r.ok?1:0), tags=d.rows.map(r=>({r:r.r, sys:r.sys, cat:r.cat, topic:r.topic}));
+    const c=q.reduce((a,b)=>a+b,0);
+    if(d.attachTo){
+      const att=attachedOp();
+      if(att){
+        if(att.segs.length===1){ const e=att.segs[0]; addEvent({...e, tags, q, c, n:q.length}); }
+        else { let i=0; for(const e of att.segs){ const sq=q.slice(i,i+e.n), st=tags.slice(i,i+e.n); i+=e.n; if(sq.length) addEvent({...e, tags:st, q:sq}); } }
+      }
+      closeSheet(); toast('Intel added. Systems hit are now on the map.');
+    } else {
+      const before=snapshotOwn();
+      addEvent({type:'block', src:'uw', n:q.length, c, q, tags, name:opName(), date:d.date});
+      closeSheet(); afterReport(before, q.length, c);
+    }
+  }
 }
+function snapshotOwn(){ return G.town.map(x=>x.owner+x.status); }
+function afterReport(before,n,c){
+  const now=G.town.map(x=>x.owner+x.status); const caps=[]; now.forEach((v,i)=>{ if(v!==before[i] && G.town[i].owner==='us') caps.push(i); });
+  const acc=c/n;
+  if(caps.length){ toast(`${caps.map(i=>G.tname(i)).join(', ')} taken!`); flashTowns(caps); }
+  else toast(acc<0.37?`${Math.round(acc*100)}% — the enemy counterattacked.`:`${n} questions at ${Math.round(acc*100)}% (${effLabel(acc)}).`);
+}
+function flashTowns(ids){ if(tab!=='campaign') return; ids.forEach(id=>{ const g=document.querySelector(`.town[data-t="${id}"]`); if(g){ g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),3000);} }); }
 
-function openProvince(id){
-  const D=derive(S), info=provInfo(D,id), s=SYS[id], set=S.settings;
-  selProv=id; render();
-  openSheet(`
-    <h2>${s.land}</h2>
-    <div class="note">${s.name}</div>
-    <div class="row" style="margin-top:12px;gap:8px"><span class="pill ${info.state==='secured'?'c-brass':info.state==='held'?'c-good':info.state==='contested'?'c-warn':'c-bad'}">${STATE_LABEL[info.state]}</span>${info.weak?'<span class="pill c-warn">Weak front</span>':''}</div>
-    <div class="bar"><div style="width:${info.ctl*100}%"></div></div>
-    <div class="kv">
-      <span>UWorld taken</span><span>${Math.round(info.uw)} / ${info.total}${set.countsExact?'':' <span class="c-muted">est.</span>'}</span>
-      <span>Accuracy here</span><span class="${info.acc==null?'':info.acc>=set.targetPct?'c-good':'c-warn'}">${info.acc==null?'– (send an intel report)':info.acc.toFixed(0)+'%'+(info.fromRecon?' <span class="c-muted">UWorld intel</span>':' of '+info.n)}</span>
-      <span>AMBOSS reinforcements</span><span>${info.amb}</span>
-      <span>Last engaged</span><span>${info.last?fmtD(info.last):'never'}</span>
-    </div>
-    <p class="note" style="margin-top:12px">${info.state==='secured'?'Secured: bank cleared here at or above your honors line.':info.weak?`Accuracy here is more than 10 points under your ${set.targetPct}% line. Re-read the explanations and hit this front with AMBOSS.`:info.ctl<1?`Take it to 75% to hold it. Clear it at ${set.targetPct}%+ accuracy to secure it.`:`Bank cleared — lift accuracy to ${set.targetPct}% (AMBOSS counts) to secure it.`}</p>
-    <div class="actions"><button class="btn" data-a="close">Close</button><button class="btn pri" data-a="log-here" data-p="${id}">Log a block here</button></div>
-  `);
-}
-
-function openRecon(){
-  const D=derive(S), r=(D.recon&&D.recon.sys)||{};
-  openSheet(`<h2>Intel report</h2>
-    <div class="note">From UWorld: Performance → Reports, filtered to Medicine. Enter your % correct for each system. Leave blank where you haven't done any. Every few days is plenty.</div>
-    ${SYSTEMS.map(s=>`<div class="sysrow"><span>${s.name}</span><input type="number" inputmode="decimal" min="0" max="100" data-rc="${s.id}" value="${r[s.id]??''}" placeholder="%"></div>`).join('')}
-    <p class="note">Renal/GU includes Male Reproductive; Heme-Onc includes Female Reproductive & Breast; Biostat includes Social Sciences and Miscellaneous. If a province combines several UWorld systems, enter the one with the most questions.</p>
-    <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="recon-save">Update map</button></div>`);
-}
 function openAnkiManual(){
-  const D=derive(S), snap=D.anki[today()];
-  openSheet(`<h2>Anki report</h2><div class="note">Use this on your phone or if the connection isn't set up.</div>
+  const snap=G.ankiByDay[today()];
+  openSheet(`<h2>Anki report</h2><div class="note">AnKing deck only. Use on your phone or if Anki isn't connected.</div>
     <div class="pair"><div class="field"><label>Reviewed today</label><input type="number" inputmode="numeric" id="ak-r" value="${snap?snap.reviewed:''}"></div>
     <div class="field"><label>Cards due now</label><input type="number" inputmode="numeric" id="ak-d" value="${snap?snap.due:''}"></div></div>
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="anki-save">Save</button></div>`);
 }
 function openCms(f){
-  const D=derive(S), r=D.cms[f];
-  openSheet(`<h2>CMS Form ${f}</h2><div class="note">Report your percent correct (out of 50).</div>
+  const r=G.cmsDone[f];
+  openSheet(`<h2>CMS Form ${f}</h2><div class="note">Counts as a 50-question operation.</div>
     <div class="pair"><div class="field"><label>Correct (of 50)</label><input type="number" inputmode="numeric" id="cms-c" min="0" max="50" value="${r?Math.round(r.pct/2):''}"></div>
     <div class="field"><label>Date taken</label><input type="date" id="cms-d" value="${r?r.date:today()}"></div></div>
     <div class="actions">${r?`<button class="btn danger" data-a="cms-del" data-f="${f}">Clear</button>`:''}<button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="cms-save" data-f="${f}">Save</button></div>`);
 }
 
-/* ---------- Anki (AnkiConnect, Mac only) ---------- */
+/* ================= Morning report ================= */
+function openReport(){
+  const set=S.settings, t=today(), y=addDays(t,-1), R=G.days[y], Td=G.today;
+  let yHtml='';
+  if(R){
+    const acc=R.q?Math.round(R.c/R.q*100):null;
+    const lines=G.log.slice(R.logFrom,R.logTo).filter(x=>['cap','lost','def','miss','supply'].includes(x.kind)).map(x=>`<li>${x.html}</li>`);
+    yHtml=`<h4>Yesterday · ${fmtDow(y)}</h4><ul>
+      <li>${R.leave?'Leave day.':`${R.q} / ${R.quota} questions${acc!=null?` at ${acc}%`:''} — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}`}</li>
+      <li>Ground: <span class="c-good">+${r1(R.gained)}</span>${R.lostGround?` · <span class="c-bad">−${r1(R.lostGround)}</span>`:''}</li>
+      <li>Anki: ${R.anki?`${R.anki.reviewed} reviewed, ${R.anki.due.toLocaleString()} due`:'no report'}${R.backlog?' · <span class="c-bad">backlog</span>':''}</li>
+      ${lines.join('')}</ul>`;
+  } else yHtml=`<h4>Campaign day one</h4><ul><li>You hold ${esc(G.tname(HOME.id))} in the Capital District. Pick your first target and start an operation.</li></ul>`;
+  const overnight = Td ? G.log.slice(Td.logFrom,Td.logTo).filter(x=>x.kind==='cons').map(x=>`<li>${x.html}</li>`) : [];
+  const tg=G.target!=null?T[G.target]:null;
+  const due=G.ankiDue;
+  const orders=[
+    G.backlog?`<li class="c-bad"><b>Backlog mode:</b> ${due.toLocaleString()} due. Anki first — at least ${set.ankiGoal} reviews. Nothing consolidates until under ${set.backlogAt}.</li>`:`<li>Anki: ${set.ankiGoal} reviews${due!=null?` (${due.toLocaleString()} due)`:''}.</li>`,
+    Td&&Td.leave?'<li>Leave day — no question quota.</li>':`<li>Questions: <b>${Td?Td.quota:0}</b> today (${G.remainingUW} UWorld IM left).</li>`,
+    Td&&Td.attack!=null?`<li class="c-warn"><b>Enemy offensive</b> against ${esc(G.tname(Td.attack))} — your first ${set.defenseQ} questions defend it.</li>`:'',
+    tg?`<li>Offensive: ${esc(G.tname(tg.id))} — ${r1(G.town[tg.id].prog)}/${tg.cost} ground.</li>`:`<li>No target set — choose one${G.reserve>0?` (${r1(G.reserve)} ground waiting)`:''}.</li>`,
+    Td&&Td.momentum?'<li class="c-good">Momentum: +15% ground today.</li>':'',
+  ].join('');
+  const ours=G.town.filter(x=>x.owner==='us').length;
+  openSheet(`<div class="rep"><h2>Morning report</h2><div class="note">${fmtDow(t)} · ${ours}/${T.length} towns held · ${daysBetween(t,set.shelf)} days to the shelf</div>
+    ${yHtml}
+    ${overnight.length?`<h4>Overnight</h4><ul>${overnight.join('')}</ul>`:''}
+    <h4>Today's orders</h4><ul>${orders}</ul></div>
+    <div class="actions"><button class="btn pri" data-a="close">To the map</button></div>`);
+  try{ localStorage.setItem(LS_REP, t); }catch(e){}
+}
+
+/* ================= Live operation ================= */
+const OP_A=['Iron','Crimson','Silent','Northern','Broken','Rising','Hollow','Swift','Burning','Pale','Final','Steel','Thunder','Winter','Ashen','Midnight','Granite','Scarlet','Hidden','Vigilant','Black','Golden','Restless','Long'];
+const OP_N=['Ventricle','Nephron','Alveolus','Lancet','Synapse','Marrow','Aorta','Sentinel','Bastion','Scalpel','Harbor','Hammer','Spear','Dawn','Tide','Vanguard','Bulwark','Gauntlet','Atrium','Glomerulus','Cortex','Pylorus','Hilum','Septum','Trident','Anvil','Lantern'];
+function opName(){ return 'Operation '+OP_A[Math.floor(Math.random()*OP_A.length)]+' '+OP_N[Math.floor(Math.random()*OP_N.length)]; }
+let OP=null;
+function startOperation(){
+  if(G.target==null && !(G.today && G.today.attack!=null && G.town[G.today.attack].owner==='us')){
+    toast('Choose a target first.'); tab='campaign'; render(); pickMode=true; updateCampaign(); return;
+  }
+  OP={id:uid(), name:opName(), src:'uw', q:[], segs:[], startTarget:G.target, msg:'', base:{g:(G.today||{}).gained||0, l:(G.today||{}).lostGround||0}};
+  OP.ownBefore=snapshotOwn();
+  $('#op').classList.add('show'); drawOp(true);
+}
+function opEvent(){ const c=OP.q.reduce((a,b)=>a+b,0); const now=Math.max(Date.now(), lastTs+1); return {id:OP.id, type:'block', src:OP.src, n:OP.q.length, c, q:[...OP.q], name:OP.name, date:today(), ts:now, ord:now}; }
+function cityDistricts(t){
+  const k = t.cap ? 8 : (t.cost>=12 ? 6 : 5);
+  return k;
+}
+function citySVG(t, prog, frac0){
+  // radial city: k wedge districts around a keep, seeded per town
+  const k=cityDistricts(t), cost=t.cost, per=cost/k;
+  const seed=t.id*97+13, rnd=(i)=>hash('c'+seed+'-'+i);
+  const cx=150, cy=150, r0=38, r1o=128, rot=rnd(0)*360;
+  let s=`<svg class="op-city" viewBox="0 0 300 300"><defs><pattern id="opUs" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><rect width="8" height="8" fill="#2c5a8c"/><rect width="3.5" height="8" fill="#4f8fd4"/></pattern></defs>`;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${r1o+8}" fill="#1a1612" stroke="#4a3d2c" stroke-width="3"/>`;
+  // river
+  if(rnd(1)>0.45){ const a=rnd(2)*Math.PI; s+=`<path d="M${cx-Math.cos(a)*150},${cy-Math.sin(a)*150} Q${cx+(rnd(3)-.5)*80},${cy+(rnd(4)-.5)*80} ${cx+Math.cos(a)*150},${cy+Math.sin(a)*150}" stroke="#2c5566" stroke-width="9" fill="none" opacity=".8"/>`; }
+  for(let i=0;i<k;i++){
+    const a0=(rot+i*360/k)*Math.PI/180, a1=(rot+(i+1)*360/k)*Math.PI/180;
+    const jit=(j)=>r1o-rnd(10+i*3+j)*18;
+    const ro=jit(0), rm=jit(1);
+    const p=(r,a)=>`${(cx+r*Math.cos(a)).toFixed(1)},${(cy+r*Math.sin(a)).toFixed(1)}`;
+    const am=(a0+a1)/2;
+    const d=`M${p(r0,a0)} L${p(ro,a0)} Q${p(rm+6,am)} ${p(ro,a1)} L${p(r0,a1)} Z`;
+    const filled = Math.max(0,Math.min(1,(prog - i*per)/per));
+    const fill = filled>=0.999 ? 'url(#opUs)' : '#3a2e24';
+    s+=`<path class="dist" id="dist${i}" d="${d}" fill="${fill}" stroke="#0e0b08" stroke-width="2"/>`;
+    if(filled>0 && filled<0.999){ const rr=r0+(ro-r0)*filled; s+=`<path d="M${p(r0,a0)} L${p(rr,a0)} A${rr},${rr} 0 0 1 ${p(rr,a1)} L${p(r0,a1)} Z" fill="#ffb347" opacity=".55"/>`; }
+    // buildings
+    const nb=4+Math.floor(rnd(50+i)*5);
+    for(let b=0;b<nb;b++){ const ab=a0+(a1-a0)*(0.15+0.7*rnd(60+i*9+b)); const rb=r0+12+(ro-r0-24)*rnd(70+i*9+b); const bx=cx+rb*Math.cos(ab), by=cy+rb*Math.sin(ab); const w=5+rnd(80+b)*7;
+      s+=`<rect x="${(bx-w/2).toFixed(1)}" y="${(by-w/2).toFixed(1)}" width="${w.toFixed(1)}" height="${(w*0.8).toFixed(1)}" fill="${filled>=0.999?'#a9c8ea':'#8a7458'}" opacity=".75" transform="rotate(${(ab*180/Math.PI).toFixed(0)} ${bx.toFixed(1)} ${by.toFixed(1)})"/>`; }
+  }
+  const done = prog>=cost;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${r0-4}" fill="${done?'#4f8fd4':'#5a3a2a'}" stroke="#0e0b08" stroke-width="3"/>`;
+  s+=`<path d="M${cx-12},${cy+8} L${cx-12},${cy-6} L${cx-6},${cy-6} L${cx-6},${cy-12} L${cx+6},${cy-12} L${cx+6},${cy-6} L${cx+12},${cy-6} L${cx+12},${cy+8} Z" fill="${done?'#dceaff':'#d9c3a0'}"/>`;
+  s+=`</svg>`;
+  return s;
+}
+function drawOp(first){
+  const set=S.settings;
+  const Gs = simulate(S, OP.q.length? opEvent() : null);
+  const td = Gs.today || {};
+  const allQ=[...OP.segs.flatMap(sg=>sg.q), ...OP.q];
+  const n=allQ.length, c=allQ.reduce((a,b)=>a+b,0), acc=n?c/n:null;
+  // which town to draw: current target (or the one just captured in this op)
+  let tid = Gs.target!=null ? Gs.target : (OP.startTarget!=null ? OP.startTarget : td.attack);
+  const capturedNow = OP.startTarget!=null && Gs.town[OP.startTarget].owner==='us' && (OP.q.length>0 || G.town[OP.startTarget].owner!=='us');
+  if(capturedNow) tid = OP.startTarget;
+  const t = tid!=null ? T[tid] : HOME;
+  const prog = capturedNow ? t.cost : (Gs.town[t.id] ? Gs.town[t.id].prog : 0);
+  const defN = Gs.today && Gs.today.def ? Gs.today.def.n : 0;
+  const inDef = td.attack!=null && G.town[td.attack].owner==='us' && defN < set.defenseQ;
+  const gain = (Gs.today?Gs.today.gained:0) - OP.base.g;
+  const lostG = (Gs.today?Gs.today.lostGround:0) - OP.base.l;
+  let nextHtml='';
+  if(capturedNow && Gs.target==null){
+    const own=id=>Gs.town[id].owner==='us';
+    const cand=T.filter(x=>Gs.town[x.id].owner==='enemy' && x.n.some(own)).sort((a,b)=>dist(a.id,t.id)-dist(b.id,t.id)).slice(0,4);
+    nextHtml=`<div class="row" style="flex-wrap:wrap;justify-content:center;gap:6px"><span class="note">Next target:</span>${cand.map(x=>`<button class="btn sm" data-a="op-next" data-t="${x.id}">${esc(Gs.tname(x.id))}<span class="c-muted"> · ${esc(REG[x.r].land.replace(/^The /,''))}</span></button>`).join('')}</div>`;
+  }
+  let mood = '';
+  if(n>=10 && acc<0.37) mood='<span class="c-bad">Under 37% — counterattack risk</span>';
+  else if(acc!=null) mood=`<span class="${acc>=0.65?'c-good':acc>=0.5?'c-warn':'c-bad'}">${effLabel(acc)} effectiveness</span>`;
+  $('#op').innerHTML=`
+    <div class="op-head"><input class="op-name" id="opname" value="${esc(OP.name)}" aria-label="Operation name"><button class="btn sm" data-a="op-dice" title="New name">🎲</button>
+      <div class="seg" style="width:auto"><button data-os="uw" class="${OP.src==='uw'?'on':''}">UW</button><button data-os="amboss" class="${OP.src==='amboss'?'on':''}">AMB</button></div></div>
+    <div class="op-body">
+      <div class="note" style="text-align:center">${inDef?`<b class="c-warn">DEFENDING ${esc(G.tname(td.attack))}</b> · question ${Math.min(defN+1,set.defenseQ)} of ${set.defenseQ}`:capturedNow?`<b class="c-good">${esc(G.tname(t.id))} has fallen</b>${Gs.target==null?' · extra ground goes to reserve':''}`:`Assaulting <b>${esc(G.tname(t.id))}</b> · ${REG[t.r].land}`}</div>
+      <div id="opcity">${citySVG(t, prog)}</div>
+      <div class="op-stats"><span>Questions <b>${n}</b></span><span>Correct <b>${c}</b></span><span>Accuracy <b>${acc==null?'–':Math.round(acc*100)+'%'}</b></span><span>Ground <b class="${lostG>0?'c-bad':'c-good'}">${lostG>0?'−'+r1(lostG):'+'+r1(gain)}</b></span></div>
+      <div class="op-msg" id="opmsg">${OP.msg||mood}</div>
+      ${nextHtml}
+    </div>
+    <div class="op-btns"><button class="op-ok" data-a="op-ok" aria-label="Correct">✓</button><button class="op-no" data-a="op-no" aria-label="Wrong">✗</button></div>
+    <div class="op-foot"><button class="btn sm" data-a="op-undo" ${OP.q.length?'':'disabled'}>Undo</button><span class="note">Keys: 1 = ✓ · 2 = ✗</span><button class="btn sm pri" data-a="op-end">${n?'End operation':'Cancel'}</button></div>`;
+  $('#opname').addEventListener('change',e=>{ OP.name=e.target.value.trim()||OP.name; });
+}
+function opTap(ok){
+  const prevCap = OP.q.length ? simulate(S, opEvent()).town.map(x=>x.owner) : G.town.map(x=>x.owner);
+  OP.q.push(ok?1:0);
+  const Gs=simulate(S, opEvent());
+  const newly = Gs.town.filter((x,i)=>x.owner==='us' && prevCap[i]!=='us').map(x=>x.id);
+  OP.msg = newly.length ? `<span class="c-good">⚑ ${esc(newly.map(i=>G.tname(i)).join(', '))} taken!</span>` : ok ? '<span class="c-good">District pressed</span>' : '<span class="c-bad">Assault repelled</span>';
+  drawOp();
+  if(!ok){ $('#opcity').classList.add('shake'); }
+  const k=$('#opcity svg'); if(k && ok){ k.querySelectorAll('.dist').forEach(p=>p.classList.add('hit')); }
+  clearTimeout(OP.mt); OP.mt=setTimeout(()=>{ if(OP){ OP.msg=''; const m=$('#opmsg'); if(m) m.innerHTML=''; } },1400);
+}
+function opNext(id){
+  if(OP.q.length){ const e=opEvent(); addEvent(e); OP.segs.push({id:e.id, q:[...OP.q]}); }
+  OP.q=[]; OP.id=uid();
+  addEvent({type:'front', target:id});
+  OP.startTarget=id; OP.msg=`<span class="c-warn">Advancing on ${esc(G.tname(id))}</span>`; drawOp();
+}
+function endOperation(){
+  if(!OP) return;
+  const segs=[...OP.segs]; let e=null;
+  if(OP.q.length){ e=opEvent(); segs.push({id:e.id,q:[...OP.q]}); }
+  if(!segs.length){ $('#op').classList.remove('show'); OP=null; return; }
+  const before=OP.ownBefore || snapshotOwn(); const src=OP.src;
+  const all=segs.flatMap(s=>s.q);
+  OP=null; $('#op').classList.remove('show');
+  if(e) addEvent(e);
+  afterReport(before, all.length, all.reduce((a,b)=>a+b,0));
+  if(src==='uw') setTimeout(()=>openLog(segs.map(s=>s.id)), 400);
+}
+
+/* ================= Anki (AnkiConnect, Mac) ================= */
 async function ankiCall(action, params){
   const ctl = new AbortController(); const tm=setTimeout(()=>ctl.abort(), 4000);
   try{
@@ -813,43 +1102,36 @@ async function ankiPull(silent){
   try{
     const dk = (S.settings.ankiDeck||'').trim().replace(/"/g,'');
     const scope = dk ? `deck:"${dk}" ` : '';
-    // Which top-level decks to count (a parent's numbers already include its subdecks)
     const names = await ankiCall('deckNames');
     const re = dk ? new RegExp('^'+dk.replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*')+'$','i') : null;
     let picked = names.filter(n=>!re || re.test(n));
     picked = picked.filter(n=>!picked.some(o=>o!==n && n.startsWith(o+'::')));
-    if(dk && !picked.length) throw new Error(`No Anki deck matches "${dk}". Decks: ${names.filter(n=>!n.includes('::')).join(', ')}`);
+    if(dk && !picked.length) throw new Error(`No Anki deck matches "${dk}".`);
     let due;
-    try{
-      const st = await ankiCall('getDeckStats', {decks: picked});
-      due = Object.values(st).reduce((a,d)=>a+(d.review_count||0)+(d.learn_count||0),0);
-    }catch(e){
-      due = (await ankiCall('findCards', {query: scope+'is:due'})).length;
-    }
+    try{ const st = await ankiCall('getDeckStats', {decks: picked}); due = Object.values(st).reduce((a,d)=>a+(d.review_count||0)+(d.learn_count||0),0); }
+    catch(e){ due = (await ankiCall('findCards', {query: scope+'is:due'})).length; }
     const reviewed = dk ? (await ankiCall('findCards', {query: scope+'rated:1'})).length : await ankiCall('getNumCardsReviewedToday');
-    const ids = {length: due};
-    const D=derive(S), cur=D.anki[today()];
-    if(!cur || cur.reviewed!==reviewed || cur.due!==ids.length) addEvent({id:'anki-'+today(), type:'anki', reviewed, due:ids.length, auto:true});
-    if(!silent) toast(`Anki${dk?' ('+dk.replace(/\*$/,'')+')':''}: ${reviewed} reviewed today, ${ids.length.toLocaleString()} due.`);
+    const cur=G && G.ankiByDay[today()];
+    if(!cur || cur.reviewed!==reviewed || cur.due!==due) addEvent({id:'anki-'+today(), type:'anki', reviewed, due, auto:true});
+    if(!silent) toast(`Anki (${dk||'all'}): ${reviewed} reviewed today, ${due.toLocaleString()} due.`);
     return true;
   }catch(e){
-    if(!silent) toast(/No Anki deck/.test(e.message) ? e.message : 'Couldn\'t reach Anki. Is it open, with AnkiConnect set up? See Settings.');
+    if(!silent) toast(/No Anki deck/.test(e.message) ? e.message : 'Couldn\'t reach Anki. Is it open, with AnkiConnect set up?');
     return false;
   }
 }
 
-/* ---------- Sync (GitHub private repo, Anki-style merge) ---------- */
+/* ================= Sync (GitHub private repo) ================= */
 const syncInfo = {state:'off', msg:'Not connected — this device only.'};
 function getSyncCfg(){ try{ return JSON.parse(localStorage.getItem(LS_SYNC)); }catch(e){ return null; } }
 function renderSync(){
-  const el=$('#syncdot'); el.className='syncdot '+({ok:'ok',busy:'busy',err:'err'}[syncInfo.state]||'');
+  const el=$('#syncdot'); el.className='chip '+({ok:'ok',busy:'busy',err:'err'}[syncInfo.state]||'');
   $('#synctxt').textContent = syncInfo.state==='ok'?'Synced':syncInfo.state==='busy'?'Syncing':syncInfo.state==='err'?'Sync error':'Local';
 }
 const b64enc = s => btoa(unescape(encodeURIComponent(s)));
 const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
 async function gh(method, cfg, body){
-  const url = `https://api.github.com/repos/${cfg.repo}/contents/campaign.json`;
-  return fetch(url, {method, cache:'no-store', headers:{'Authorization':'Bearer '+cfg.token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28'}, body: body?JSON.stringify(body):undefined});
+  return fetch(`https://api.github.com/repos/${cfg.repo}/contents/campaign.json`, {method, cache:'no-store', headers:{'Authorization':'Bearer '+cfg.token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28'}, body: body?JSON.stringify(body):undefined});
 }
 let syncing=false, syncAgain=false, syncTimer=null;
 function scheduleSync(){ if(!getSyncCfg()) return; clearTimeout(syncTimer); syncTimer=setTimeout(syncNow, 1500); }
@@ -863,7 +1145,7 @@ async function syncNow(){
       const r = await gh('GET', cfg);
       let remote=null, sha;
       if(r.status===404){ remote=null; }
-      else if(!r.ok){ throw new Error(r.status===401?'Token rejected (401). Check the token.':r.status===403?'No permission (403). Token needs Contents: read & write on this repo.':'GitHub error '+r.status); }
+      else if(!r.ok){ throw new Error(r.status===401?'Token rejected (401). Check the token.':r.status===403?'No permission (403). Token needs Contents: read & write.':'GitHub error '+r.status); }
       else { const j=await r.json(); sha=j.sha; remote=JSON.parse(b64dec(j.content)); }
       const merged = mergeStates(S, remote);
       const localChanged = canon(merged)!==canon(S);
@@ -871,91 +1153,94 @@ async function syncNow(){
       if(localChanged) render();
       if(!remote || canon(merged)!==canon(remote)){
         const put = await gh('PUT', cfg, {message:`sync from ${device}`, content:b64enc(JSON.stringify(merged)), sha});
-        if(put.status===409 || put.status===422){ continue; }
+        if(put.status===409 || put.status===422) continue;
         if(!put.ok) throw new Error('GitHub write failed ('+put.status+')');
       }
       syncInfo.state='ok'; syncInfo.msg='Synced '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
       break;
     }
-  }catch(e){
-    syncInfo.state='err'; syncInfo.msg = (e.message||'Sync failed') + (navigator.onLine?'':' (offline — will retry)');
-  }finally{
-    syncing=false; renderSync();
-    if(tab==='settings') render();
-    if(syncAgain){ syncAgain=false; scheduleSync(); }
-  }
+  }catch(e){ syncInfo.state='err'; syncInfo.msg=(e.message||'Sync failed')+(navigator.onLine?'':' (offline)'); }
+  finally{ syncing=false; renderSync(); if(tab==='settings') render(); if(syncAgain){ syncAgain=false; scheduleSync(); } }
 }
 
-/* ---------- Toast ---------- */
-let toastT;
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 3200); }
+/* ================= Toast ================= */
+let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 3400); }
 
-/* ---------- Events ---------- */
-$('#tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; tab=b.dataset.t; selProv=null; render(); window.scrollTo(0,0); });
-$('#fab').addEventListener('click', ()=>openLog());
-$('#syncdot').addEventListener('click', ()=>{ if(getSyncCfg()) syncNow(); else { tab='settings'; render(); } });
-$('#sheetbg').addEventListener('click', e=>{ if(e.target.id==='sheetbg'){ closeSheet(); if(selProv){selProv=null; render();} } });
+/* ================= Events ================= */
+$('#tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; tab=b.dataset.t; selTown=null; pickMode=false; $('#view').innerHTML=''; render(); window.scrollTo(0,0); });
+$('#fabop').addEventListener('click', startOperation);
+$('#fablog').addEventListener('click', ()=>openLog());
+$('#repbtn').addEventListener('click', openReport);
+$('#syncdot').addEventListener('click', ()=>{ if(getSyncCfg()) syncNow(); else { tab='settings'; $('#view').innerHTML=''; render(); } });
+$('#sheetbg').addEventListener('click', e=>{ if(e.target.id==='sheetbg') closeSheet(); });
 
 document.addEventListener('click', e=>{
-  const p = e.target.closest('svg.map .prov');
-  if(p){ openProvince(p.dataset.p); return; }
-  const ls = e.target.closest('[data-ls]'); if(ls){ logDraft.src=ls.dataset.ls; keepLogInputs(drawLog); return; }
-  const lsys = e.target.closest('[data-lsys]'); if(lsys){ logDraft.sys=lsys.dataset.lsys||null; logDraft.split=false; keepLogInputs(drawLog); return; }
-  const lsp = e.target.closest('[data-lsplit]'); if(lsp){ logDraft.split=true; logDraft.sys=null; drawLog(); return; }
-  const b = e.target.closest('[data-a]'); if(!b) return;
-  const a = b.dataset.a;
-  if(a==='close'){ closeSheet(); if(selProv){selProv=null; render();} }
+  const ls=e.target.closest('[data-ls]'); if(ls){ const n=$('#lg-n')?.value, c=$('#lg-c')?.value; LD.src=ls.dataset.ls; drawLog(); if(n) $('#lg-n').value=n; if(c) $('#lg-c').value=c; return; }
+  const lm=e.target.closest('[data-lm]'); if(lm){ LD.mode=lm.dataset.lm; drawLog(); return; }
+  const ld=e.target.closest('[data-ld]'); if(ld){ LD.date=ld.dataset.ld; const n=$('#lg-n')?.value, c=$('#lg-c')?.value, raw=$('#lg-paste')?.value; drawLog(); if(n) $('#lg-n').value=n; if(c) $('#lg-c').value=c; if(raw!=null && $('#lg-paste')) $('#lg-paste').value=raw; return; }
+  const qi=e.target.closest('[data-qi]'); if(qi){ const r=LD.rows[+qi.dataset.qi]; r.ok=!r.ok; qi.classList.toggle('x',!r.ok); qi.textContent=r.ok?'✓':'✗'; const cn=$('#lg-cnt'); if(cn) cn.textContent=LD.rows.filter(x=>x.ok).length; return; }
+  const os=e.target.closest('[data-os]'); if(os && OP){ OP.src=os.dataset.os; drawOp(); return; }
+  const b=e.target.closest('[data-a]'); if(!b) return;
+  const a=b.dataset.a;
+  if(a==='close') closeSheet();
+  else if(a==='zin'){ const r=$('#mapsvg').getBoundingClientRect(); zoomAt(1.6,r.left+r.width/2,r.top+r.height/2); }
+  else if(a==='zout'){ const r=$('#mapsvg').getBoundingClientRect(); zoomAt(1/1.6,r.left+r.width/2,r.top+r.height/2); }
+  else if(a==='zreset'){ setVB({x:0,y:0,w:MAP.w}); updateMap(); }
+  else if(a==='zfront'){ const id=G.target!=null?G.target:(G.today&&G.today.attack!=null?G.today.attack:HOME.id); zoomTo(T[id].x,T[id].y,MAP.w/3.2); }
+  else if(a==='arrows'){ showArrows=!showArrows; localStorage.setItem(LS_ARROWS, showArrows?'1':'0'); updateMap(); }
+  else if(a==='goto'){ const id=+b.dataset.t; zoomTo(T[id].x,T[id].y,MAP.w/3.2); selTown=id; updateMap(); $('#mapwrap').scrollIntoView({behavior:'smooth',block:'center'}); }
+  else if(a==='pick'){ pickMode=true; selTown=null; closeSheet(); if(tab!=='campaign'){ tab='campaign'; $('#view').innerHTML=''; render(); } else updateCampaign(); $('#mapwrap').scrollIntoView({behavior:'smooth',block:'center'}); }
+  else if(a==='pick-cancel'){ pickMode=false; updateCampaign(); }
+  else if(a==='attack'){ const id=+b.dataset.t; closeSheet(); pickMode=true; onTownTap(id); }
+  else if(a==='rename'){ const v=$('#rn').value.trim(); if(v){ addEvent({id:'rename-'+b.dataset.t, type:'rename', town:+b.dataset.t, name:v.slice(0,32)}); closeSheet(); toast('Renamed.'); } }
   else if(a==='log-save') saveLog();
-  else if(a==='log-here'){ selProv=null; openLog(b.dataset.p); }
-  else if(a==='habit'){ const k=b.dataset.k, D=derive(S), cur=D.habits[today()+':'+k]; addEvent({id:`habit-${today()}-${k}`, type:'habit', kind:k, val: cur!==true}); }
+  else if(a==='habit'){ const k=b.dataset.k, cur=habitVal(today(),k); addEvent({id:`habit-${today()}-${k}`, type:'habit', kind:k, val: cur!==true}); }
   else if(a==='anki-manual') openAnkiManual();
-  else if(a==='recon') openRecon();
-  else if(a==='recon-save'){ const sys={}; document.querySelectorAll('[data-rc]').forEach(i=>{ if(i.value!=='') sys[i.dataset.rc]=Math.max(0,Math.min(100,+i.value)); }); addEvent({type:'recon', sys}); closeSheet(); const D=derive(S); const weak=SYSTEMS.filter(x=>provInfo(D,x.id).weak).map(x=>x.short); toast(weak.length?`Weak fronts: ${weak.join(', ')}`:'Intel received. No weak fronts.'); }
   else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} addEvent({id:'anki-'+today(), type:'anki', reviewed:r, due:d, auto:false}); closeSheet(); }
-  else if(a==='anki-pull' || a==='anki-test') ankiPull(false);
+  else if(a==='anki-pull') ankiPull(false);
   else if(a==='anki-auto'){ const on=localStorage.getItem(LS_ANKI)==='1'; localStorage.setItem(LS_ANKI, on?'0':'1'); render(); if(!on) ankiPull(false); }
   else if(a==='cms') openCms(+b.dataset.f);
   else if(a==='cms-save'){ const f=+b.dataset.f, c=+$('#cms-c').value; if($('#cms-c').value===''||c<0||c>50){toast('Enter 0–50.');return;} addEvent({id:'cms-'+f, type:'cms', form:f, pct:c*2, date:$('#cms-d').value||today()}); closeSheet(); toast(`Form ${f}: ${c*2}% reported.`); }
   else if(a==='cms-del'){ removeEvent('cms-'+b.dataset.f); closeSheet(); }
-  else if(a==='del'){ if(confirm('Delete this entry? The front will pull back.')) removeEvent(b.dataset.id); }
+  else if(a==='del'){ if(confirm('Delete this entry? The campaign will be recalculated.')) removeEvent(b.dataset.id); }
   else if(a==='offday'){ const d=b.dataset.d, o=S.settings.offDays; S.settings.offDays = o.includes(d)?o.filter(x=>x!==d):[...o,d]; touchSettings(); }
   else if(a==='sync-save'){ const repo=$('#sg-repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''), token=$('#sg-token').value.trim(); if(!/^[\w.-]+\/[\w.-]+$/.test(repo)||!token){toast('Enter owner/repo and a token.');return;} localStorage.setItem(LS_SYNC, JSON.stringify({repo,token})); syncInfo.msg='Connecting…'; syncNow(); }
   else if(a==='sync-now') syncNow();
   else if(a==='sync-off'){ if(confirm('Disconnect sync on this device? Your data stays here.')){ localStorage.removeItem(LS_SYNC); syncInfo.state='off'; syncInfo.msg='Not connected — this device only.'; render(); } }
   else if(a==='export'){ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const u=URL.createObjectURL(blob); const l=document.createElement('a'); l.href=u; l.download=`im-campaign-${today()}.json`; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+  else if(a==='op-ok') opTap(true);
+  else if(a==='op-no') opTap(false);
+  else if(a==='op-undo'){ OP.q.pop(); OP.msg=''; drawOp(); }
+  else if(a==='op-dice'){ OP.name=opName(); drawOp(); }
+  else if(a==='op-end') endOperation();
+  else if(a==='op-next') opNext(+b.dataset.t);
 });
-function keepLogInputs(fn){ const n=$('#lg-n')?.value, c=$('#lg-c')?.value; fn(); if(n) $('#lg-n').value=n; if(c) $('#lg-c').value=c; }
-
 document.addEventListener('change', e=>{
   const t=e.target;
-  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ambossTotal','ankiGoal','ankiDueCap'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); if(k==='ankiDeck' && localStorage.getItem(LS_ANKI)==='1') ankiPull(false); }
-  else if(t.dataset.cms){ S.settings.cms = {...S.settings.cms, [t.dataset.cms]: t.value}; touchSettings(); }
-  else if(t.dataset.sys){ S.settings.sysCounts = {...S.settings.sysCounts, [t.dataset.sys]: Math.max(0,+t.value||0)}; S.settings.countsExact=true; touchSettings(); }
-  else if(t.id==='importfile' && t.files[0]){
-    t.files[0].text().then(txt=>{ try{ const imp=JSON.parse(txt); if(!imp.events) throw 0; S=mergeStates(S, imp); commit(); toast('Backup merged in.'); }catch(err){ toast('That file isn\'t a campaign backup.'); } });
-  }
+  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ankiGoal','backlogAt','defenseQ'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); if(k==='ankiDeck' && localStorage.getItem(LS_ANKI)==='1') ankiPull(false); }
+  else if(t.dataset.cms){ S.settings.cms={...S.settings.cms,[t.dataset.cms]:t.value}; touchSettings(); }
+  else if(t.id==='importfile' && t.files[0]){ t.files[0].text().then(txt=>{ try{ const imp=JSON.parse(txt); if(!imp.events) throw 0; S=mergeStates(S,imp); commit(); toast('Backup merged in.'); }catch(err){ toast('That file isn\'t a campaign backup.'); } }); }
 });
 document.addEventListener('keydown', e=>{
+  if(OP && $('#op').classList.contains('show') && document.activeElement?.id!=='opname'){
+    if(e.key==='1'||e.key==='ArrowLeft'){ e.preventDefault(); opTap(true); }
+    else if(e.key==='2'||e.key==='ArrowRight'){ e.preventDefault(); opTap(false); }
+    else if(e.key==='Backspace'&&OP.q.length){ e.preventDefault(); OP.q.pop(); OP.msg=''; drawOp(); }
+    return;
+  }
   if(e.key==='Escape' && !$('#sheetbg').classList.contains('hidden')) closeSheet();
-  if(e.key==='Enter' && $('#lg-n') && document.activeElement && document.activeElement.closest('#sheet')) saveLog();
 });
 
-/* ---------- Lifecycle ---------- */
-function onShow(){
-  syncNow();
-  if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true);
-}
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') onShow(); });
-setInterval(()=>{ if(document.visibilityState==='visible'){ if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true); } }, 5*60*1000);
-let lastDay = today();
-setInterval(()=>{ if(today()!==lastDay){ lastDay=today(); render(); } }, 60*1000);
-
-if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
-if(getSyncCfg()){ syncInfo.msg='Connecting…'; }
-render();
-onShow();
+/* ================= Lifecycle ================= */
+function onShow(){ syncNow(); if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ onShow(); maybeReport(); } });
+setInterval(()=>{ if(document.visibilityState==='visible' && localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }, 5*60*1000);
+window.addEventListener('resize', ()=>{ if(VB && $('#mapsvg')){ setVB({...VB}); updateMap(); } });
+let lastDay=today(); setInterval(()=>{ if(today()!==lastDay){ lastDay=today(); render(); maybeReport(); } }, 60*1000);
+function maybeReport(){ let seen=null; try{ seen=localStorage.getItem(LS_REP); }catch(e){} if(seen!==today() && !OP && $('#sheetbg').classList.contains('hidden')) openReport(); }
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(getSyncCfg()) syncInfo.msg='Connecting…';
+loadMap().then(()=>{ render(); onShow(); setTimeout(maybeReport, 600); }).catch(err=>{ $('#view').innerHTML=`<div class="card">Couldn't load the map (${esc(err.message)}). Check your connection and reload.</div>`; });
 </script>
 </body>
 </html>
