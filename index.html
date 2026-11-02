@@ -229,7 +229,7 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 
 <script>
 'use strict';
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 
 /* ================= Regions ================= */
 const REG = {
@@ -431,10 +431,13 @@ function simulate(st, extra){
     } else if(G.inflow){ incoming = Math.round(G.inflow*(left-1)); method='estimate'; }
     const W = reviewed + dueNow + incoming;
     // forecasts run a little low: cards failed along the way come back. Pad by the observed "Again" rate.
-    let lapse = 0.08;
-    const ref = (snap && snap.again!=null && snap.reviewed>=30) ? snap : (G.lapseRef || null);
-    if(ref) lapse = Math.max(0.03, Math.min(0.25, ref.again/ref.reviewed));
-    return {goal: Math.max(set.ankiGoal, Math.ceil(W/left*(1+lapse))), by, B:reviewed+dueNow, incoming, left, method, lapse,
+    // Blend an 8% starting guess with the measured rate, so the goal eases toward reality instead of jumping.
+    const ref = (snap && snap.again!=null && snap.reviewed>0) ? snap : (G.lapseRef || null);
+    const measured = ref ? ref.again/ref.reviewed : null;
+    const lapse = ref ? Math.max(0.03, Math.min(0.3, (0.08*100 + ref.again)/(100 + ref.reviewed))) : 0.08;
+    // only cards still ahead of you can come back failed; cards already reviewed today are counted once
+    const remaining = dueNow + incoming;
+    return {goal: Math.max(set.ankiGoal, Math.ceil((reviewed + remaining*(1+lapse))/left)), by, B:reviewed+dueNow, incoming, left, method, lapse, measured,
             tomorrow: snap && Array.isArray(snap.fut) ? (snap.fut[0]||0) : null,
             need: Math.ceil((reviewed+dueNow)/left)};
   }
@@ -751,7 +754,7 @@ function updateCampaign(){
       <div class="bar" style="margin-top:8px"><div style="width:${Math.min(100,rv/tg2*100)}%;background:${rv>=tg2?'var(--good)':'#e0705f'}"></div></div>
       ${(()=>{ const nt=ankiNet(G.ankiByDay[t], G.siegeInfo&&G.siegeInfo.lapse); return nt?`<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${netHtml(nt, G.siegeInfo?G.siegeInfo.need:null)}</div>`:''; })()}
       <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews${G.siegeInfo&&G.siegeInfo.tomorrow!=null?` · tomorrow's pile so far: <b>${((G.ankiDue||0)+G.siegeInfo.tomorrow).toLocaleString()}</b> (${(G.ankiDue||0).toLocaleString()} left today + ${G.siegeInfo.tomorrow.toLocaleString()} scheduled)`:''}. No question quota until the siege breaks; questions earn half ground and add cards.</div>
-      ${G.siegeInfo?`<div class="note" style="margin-top:4px;font-size:12px">Goal = (${rv.toLocaleString()} reviewed + ${(G.siegeInfo.B-rv).toLocaleString()} due today${G.siegeInfo.left>1?` + ${G.siegeInfo.incoming.toLocaleString()} ${G.siegeInfo.method==='forecast'?'already scheduled':'estimated new'} through ${fmtD(addDays(G.siegeBy,0))}`:''}) ÷ ${G.siegeInfo.left} day${G.siegeInfo.left>1?'s':''}, +${Math.round(G.siegeInfo.lapse*100)}% for cards you'll fail along the way. ${G.siegeInfo.method==='forecast'?'Updates as you fail or unlock cards.':'Open the app with Anki running for an exact forecast.'}</div>`:''}</div>`; }
+      ${G.siegeInfo?`<div class="note" style="margin-top:4px;font-size:12px">Goal = (${rv.toLocaleString()} reviewed + ${(G.siegeInfo.B-rv).toLocaleString()} due today${G.siegeInfo.left>1?` + ${G.siegeInfo.incoming.toLocaleString()} ${G.siegeInfo.method==='forecast'?'already scheduled':'estimated new'} through ${fmtD(addDays(G.siegeBy,0))}`:''}) ÷ ${G.siegeInfo.left} day${G.siegeInfo.left>1?'s':''}, with +${Math.round(G.siegeInfo.lapse*100)}% on the cards ahead for ones you'll fail${G.siegeInfo.measured!=null?` (your Again rate today: ${Math.round(G.siegeInfo.measured*100)}%)`:''}. ${G.siegeInfo.method==='forecast'?'Updates as you fail or unlock cards.':'Open the app with Anki running for an exact forecast.'}</div>`:''}</div>`; }
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
     bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${set.defenseQ} questions today defend it. Progress: ${dn}/${set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
   if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
