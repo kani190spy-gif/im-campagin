@@ -229,7 +229,7 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 
 <script>
 'use strict';
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 
 /* ================= Regions ================= */
 const REG = {
@@ -435,7 +435,8 @@ function simulate(st, extra){
     const ref = (snap && snap.again!=null && snap.reviewed>=30) ? snap : (G.lapseRef || null);
     if(ref) lapse = Math.max(0.03, Math.min(0.25, ref.again/ref.reviewed));
     return {goal: Math.max(set.ankiGoal, Math.ceil(W/left*(1+lapse))), by, B:reviewed+dueNow, incoming, left, method, lapse,
-            tomorrow: snap && Array.isArray(snap.fut) ? (snap.fut[0]||0) : null};
+            tomorrow: snap && Array.isArray(snap.fut) ? (snap.fut[0]||0) : null,
+            need: Math.ceil((reviewed+dueNow)/left)};
   }
   const dayList=[]; for(let d=start; d<=tday; d=addDays(d,1)) dayList.push(d);
   for(const d of dayList){
@@ -748,6 +749,7 @@ function updateCampaign(){
   if(G.backlog){ const tg2=td.ankiGoal||set.ankiGoal, rv=(G.ankiByDay[t]||{}).reviewed||0; const peak=Math.max(G.siegeB||0, G.ankiDue||0, 1);
     bn+=`<div class="banner siege" style="display:block"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><b class="c-bad">⚠ Siege — clear the AnKing backlog</b><span class="note">${(G.ankiDue||0).toLocaleString()} due · goal 0 by ${fmtDow(G.siegeBy||set.clearBy)}</span></div>
       <div class="bar" style="margin-top:8px"><div style="width:${Math.min(100,rv/tg2*100)}%;background:${rv>=tg2?'var(--good)':'#e0705f'}"></div></div>
+      ${(()=>{ const nt=ankiNet(G.ankiByDay[t], G.siegeInfo&&G.siegeInfo.lapse); return nt?`<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${netHtml(nt, G.siegeInfo?G.siegeInfo.need:null)}</div>`:''; })()}
       <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews${G.siegeInfo&&G.siegeInfo.tomorrow!=null?` · tomorrow's pile so far: <b>${((G.ankiDue||0)+G.siegeInfo.tomorrow).toLocaleString()}</b> (${(G.ankiDue||0).toLocaleString()} left today + ${G.siegeInfo.tomorrow.toLocaleString()} scheduled)`:''}. No question quota until the siege breaks; questions earn half ground and add cards.</div>
       ${G.siegeInfo?`<div class="note" style="margin-top:4px;font-size:12px">Goal = (${rv.toLocaleString()} reviewed + ${(G.siegeInfo.B-rv).toLocaleString()} due today${G.siegeInfo.left>1?` + ${G.siegeInfo.incoming.toLocaleString()} ${G.siegeInfo.method==='forecast'?'already scheduled':'estimated new'} through ${fmtD(addDays(G.siegeBy,0))}`:''}) ÷ ${G.siegeInfo.left} day${G.siegeInfo.left>1?'s':''}, +${Math.round(G.siegeInfo.lapse*100)}% for cards you'll fail along the way. ${G.siegeInfo.method==='forecast'?'Updates as you fail or unlock cards.':'Open the app with Anki running for an exact forecast.'}</div>`:''}</div>`; }
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
@@ -781,6 +783,7 @@ function updateCampaign(){
       </div>
       <div class="bar"><div style="width:${Math.min(100,rev/(td.ankiGoal||set.ankiGoal)*100)}%;background:${rev>=(td.ankiGoal||set.ankiGoal)?'var(--good)':'var(--brass)'}"></div></div>
       <div class="sub">${rev} / ${td.ankiGoal||set.ankiGoal} reviews today${G.backlog?` · 0 by ${fmtD(G.siegeBy||set.clearBy)}`:''}${G.anki?` · read ${agoText(G.anki.ts)}`:''}</div>
+      ${(()=>{ const nt=ankiNet(ankiSnap, G.siegeInfo&&G.siegeInfo.lapse); return nt?`<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${netHtml(nt, G.backlog&&G.siegeInfo?G.siegeInfo.need:null)}</div>`:''; })()}
       <div class="row" style="margin-top:9px;gap:8px">${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read Anki</button>`:''}<button class="btn sm" data-a="anki-manual">Enter manually</button></div>
     </div>
     <div class="card">
@@ -803,6 +806,18 @@ function updateCampaign(){
       <p class="note" style="margin:8px 0 0">Gym and diet tracking only for now — they'll join the campaign later.</p>
     </div>`;
   updateMap();
+}
+// Net = reviews done today − estimated cards due tomorrow (scheduled × failed-card buffer).
+function ankiNet(snap, lapse){
+  if(!snap || !Array.isArray(snap.fut) || snap.fut[0]==null) return null;
+  const est = Math.round(snap.fut[0]*(1+(lapse??0.08)));
+  return {did:snap.reviewed, est, net:snap.reviewed-est};
+}
+function netHtml(n, need){
+  if(!n) return '';
+  const cls = n.net>=0 ? 'c-good' : 'c-bad';
+  return `<span class="pill ${cls}" title="Reviews done today minus estimated cards due tomorrow">${n.net>=0?'Surplus +':'Deficit −'}${Math.abs(n.net).toLocaleString()}</span>
+    <span class="note">${n.did.toLocaleString()} done − ~${n.est.toLocaleString()} due tomorrow${need!=null?` · on pace needs <b class="${n.net>=need?'c-good':'c-warn'}">+${need.toLocaleString()}</b>/day`:''}</span>`;
 }
 function habitVal(d,k){ const e=liveEvents(S).filter(e=>e.type==='habit' && e.date===d && e.kind===k).pop(); return e?e.val:undefined; }
 function agoText(ts){ const m=Math.round((Date.now()-ts)/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago'; }
@@ -864,7 +879,7 @@ function viewStats(){
     const goal = R.leave?'<span class="c-muted">leave</span>' : R.d===t?'<span class="c-muted">today</span>' : R.goalMet?'<span class="c-good">✓</span>':'<span class="c-bad">✗</span>';
     const mode = R.leave?'<span class="tag leave">Leave</span>':R.siege?'<span class="tag siege">Siege</span>':'<span class="tag atk">Attack</span>';
     const tgt = R.siege ? (R.ankiGoal||set.ankiGoal) : set.ankiGoal;
-    return {R,caps,lost,acc,net,rev,due,html:`<tr class="${R.d===t?'today':''}"><td>${fmtDow(R.d)} ${mode}</td><td>${R.q}${R.siege?'':`<span class="c-muted">/${R.quota}</span>`}</td><td class="${acc==null?'':acc>=set.targetPct?'c-good':acc>=50?'c-warn':'c-bad'}">${acc==null?'–':acc+'%'}</td><td class="${net>0?'c-good':net<0?'c-bad':''}">${net>0?'+':''}${r1(net)}</td><td>${caps?`<span class="c-us">+${caps}</span>`:''}${lost?` <span class="c-bad">−${lost}</span>`:''}${!caps&&!lost?'–':''}</td><td>${rev==null?'–':rev}<span class="c-muted">/${tgt}</span></td><td>${due==null?'–':due.toLocaleString()}</td><td>${goal}</td><td>${hab(R.d,'gym')===true?'<span class="c-good">✓</span>':'–'}</td><td>${hab(R.d,'diet')===true?'<span class="c-good">✓</span>':'–'}</td></tr>`};
+    return {R,caps,lost,acc,net,rev,due,html:`<tr class="${R.d===t?'today':''}"><td>${fmtDow(R.d)} ${mode}</td><td>${R.q}${R.siege?'':`<span class="c-muted">/${R.quota}</span>`}</td><td class="${acc==null?'':acc>=set.targetPct?'c-good':acc>=50?'c-warn':'c-bad'}">${acc==null?'–':acc+'%'}</td><td class="${net>0?'c-good':net<0?'c-bad':''}">${net>0?'+':''}${r1(net)}</td><td>${caps?`<span class="c-us">+${caps}</span>`:''}${lost?` <span class="c-bad">−${lost}</span>`:''}${!caps&&!lost?'–':''}</td><td>${rev==null?'–':rev}<span class="c-muted">/${tgt}</span></td><td>${(()=>{ const nt=ankiNet(R.anki||(R.d===t?G.ankiByDay[t]:null), 0.08); return nt?`<span class="${nt.net>=0?'c-good':'c-bad'}">${nt.net>=0?'+':'−'}${Math.abs(nt.net)}</span>`:'–'; })()}</td><td>${due==null?'–':due.toLocaleString()}</td><td>${goal}</td><td>${hab(R.d,'gym')===true?'<span class="c-good">✓</span>':'–'}</td><td>${hab(R.d,'diet')===true?'<span class="c-good">✓</span>':'–'}</td></tr>`};
   };
   const weeks={}; for(const R of days){ (weeks[weekMonday(R.d)] ||= []).push(R); }
   const keys=Object.keys(weeks).sort().reverse();
@@ -889,7 +904,7 @@ function viewStats(){
     return `<div class="card" style="margin-bottom:10px">
       <div class="wkhead"><h3 style="margin:0">Week of ${fmtD(k)}</h3>${spark(dues)}</div>
       <div class="wkstats"><span>Questions <b>${q}</b></span><span>Accuracy <b>${acc==null?'–':acc+'%'}</b></span><span>Ground <b class="${net>=0?'c-good':'c-bad'}">${net>=0?'+':''}${r1(net)}</b></span><span>Towns <b>+${caps}${lost?' / −'+lost:''}</b></span><span>Reviews <b>${rev.toLocaleString()}</b></span><span>Due <b>${firstDue==null?'–':firstDue.toLocaleString()} → ${lastDue==null?'–':lastDue.toLocaleString()}</b></span><span>Goals <b>${wm}/${comp.length}</b></span><span>Gym <b>${gym}</b></span>${siegeD?`<span>Siege days <b>${siegeD}</b></span>`:''}</div>
-      <div class="tblwrap"><table class="st"><thead><tr><th>Day</th><th>Qs</th><th>Acc</th><th>Ground</th><th>Towns</th><th>Reviews</th><th>Due</th><th>Goal</th><th>Gym</th><th>Diet</th></tr></thead><tbody>${rows.map(r=>r.html).join('')}</tbody></table></div>
+      <div class="tblwrap"><table class="st"><thead><tr><th>Day</th><th>Qs</th><th>Acc</th><th>Ground</th><th>Towns</th><th>Reviews</th><th>Net</th><th>Due</th><th>Goal</th><th>Gym</th><th>Diet</th></tr></thead><tbody>${rows.map(r=>r.html).join('')}</tbody></table></div>
     </div>`;
   }).join('');
   return top + wk + `<p class="note">Reviews and due counts come from the last Anki reading each day — open the app on your Mac with Anki running before bed so the day is recorded.</p>`;
@@ -1062,7 +1077,7 @@ function openReport(){
     yHtml=`<h4>Yesterday · ${fmtDow(y)}</h4><ul>
       <li>${R.leave?'Leave day.':R.siege?`Siege day: ${R.anki?R.anki.reviewed:0} / ${R.ankiGoal} reviews — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}${R.q?` · ${R.q} questions${acc!=null?` at ${acc}%`:''}`:''}`:`${R.q} / ${R.quota} questions${acc!=null?` at ${acc}%`:''} — ${R.goalMet?'<span class="c-good">goal met</span>':'<span class="c-bad">goal missed</span>'}`}</li>
       <li>Ground: <span class="c-good">+${r1(R.gained)}</span>${R.lostGround?` · <span class="c-bad">−${r1(R.lostGround)}</span>`:''}</li>
-      <li>Anki: ${R.anki?`${R.anki.reviewed} reviewed, ${R.anki.due.toLocaleString()} due`:'no report'}${R.backlog?' · <span class="c-bad">backlog</span>':''}</li>
+      <li>Anki: ${R.anki?`${R.anki.reviewed} reviewed, ${R.anki.due.toLocaleString()} due${(()=>{const nt=ankiNet(R.anki,0.08);return nt?` · ${nt.net>=0?'<span class="c-good">surplus +':'<span class="c-bad">deficit −'}${Math.abs(nt.net)}</span>`:'';})()}`:'no report'}${R.backlog?' · <span class="c-bad">backlog</span>':''}</li>
       ${lines.join('')}</ul>`;
   } else yHtml=`<h4>Campaign day one</h4><ul><li>You hold ${esc(G.tname(HOME.id))} in the Capital District. Pick your first target and start an operation.</li></ul>`;
   const overnight = Td ? G.log.slice(Td.logFrom,Td.logTo).filter(x=>x.kind==='cons').map(x=>`<li>${x.html}</li>`) : [];
@@ -1351,7 +1366,8 @@ document.addEventListener('keydown', e=>{
 /* ================= Lifecycle ================= */
 function onShow(){ syncNow(); if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ onShow(); maybeReport(); } });
-setInterval(()=>{ if(document.visibilityState==='visible' && localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }, 5*60*1000);
+setInterval(()=>{ if(document.visibilityState==='visible' && localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }, 3*60*1000);
+setInterval(()=>{ if(document.visibilityState==='visible' && !syncing) syncNow(); }, 2*60*1000);
 window.addEventListener('resize', ()=>{ if(VB && $('#mapsvg')){ setVB({...VB}); updateMap(); } });
 let lastDay=today(); setInterval(()=>{ if(today()!==lastDay){ lastDay=today(); render(); maybeReport(); } }, 60*1000);
 function maybeReport(){ let seen=null; try{ seen=localStorage.getItem(LS_REP); }catch(e){} if(seen!==today() && !OP && $('#sheetbg').classList.contains('hidden')) openReport(); }
