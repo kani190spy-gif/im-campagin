@@ -229,7 +229,7 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 
 <script>
 'use strict';
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 
 /* ================= Regions ================= */
 const REG = {
@@ -950,7 +950,7 @@ function viewSettings(){
     <div class="card"><h3>Sync between devices</h3>
       <p class="note">Your campaign is stored in a private GitHub repo. Every device connected with the same repo and token stays on the same page.</p>
       <div class="field"><label>GitHub repo (owner/name)</label><input type="text" id="sg-repo" placeholder="kani190spy-gif/im-campagin-data" value="${esc(cfg.repo||'')}"></div>
-      <div class="field"><label>Access token</label><input type="password" id="sg-token" placeholder="github_pat_…" value="${esc(cfg.token||'')}" autocomplete="off"></div>
+      <div class="field"><label>Access token</label><div class="row"><input type="password" id="sg-token" placeholder="github_pat_…" value="${esc(cfg.token||'')}" autocomplete="off" style="flex:1"><button class="btn sm" data-a="tok-show">Show</button>${cfg.token?`<button class="btn sm" data-a="tok-copy">Copy</button>`:''}</div></div>
       <div class="actions" style="justify-content:flex-start"><button class="btn pri sm" data-a="sync-save">Save & sync</button>${cfg.repo?`<button class="btn sm" data-a="sync-now">Sync now</button><button class="btn sm danger" data-a="sync-off">Disconnect</button>`:''}</div>
       <p class="note" style="margin-top:10px">Status: ${esc(syncInfo.msg)}</p>
     </div>
@@ -1341,6 +1341,8 @@ document.addEventListener('click', e=>{
   else if(a==='offday'){ const d=b.dataset.d, o=S.settings.offDays; S.settings.offDays = o.includes(d)?o.filter(x=>x!==d):[...o,d]; touchSettings(); }
   else if(a==='sync-save'){ const repo=$('#sg-repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''), token=$('#sg-token').value.trim(); if(!/^[\w.-]+\/[\w.-]+$/.test(repo)||!token){toast('Enter owner/repo and a token.');return;} localStorage.setItem(LS_SYNC, JSON.stringify({repo,token})); syncInfo.msg='Connecting…'; syncNow(); }
   else if(a==='sync-now') syncNow();
+  else if(a==='tok-show'){ const i=$('#sg-token'); const show=i.type==='password'; i.type=show?'text':'password'; b.textContent=show?'Hide':'Show'; }
+  else if(a==='tok-copy'){ const c=getSyncCfg(); if(c&&c.token){ (navigator.clipboard?navigator.clipboard.writeText(c.token):Promise.reject()).then(()=>toast('Token copied.')).catch(()=>{ const i=$('#sg-token'); i.type='text'; i.select(); toast('Selected — press Cmd+C.'); }); } }
   else if(a==='sync-off'){ if(confirm('Disconnect sync on this device? Your data stays here.')){ localStorage.removeItem(LS_SYNC); syncInfo.state='off'; syncInfo.msg='Not connected — this device only.'; render(); } }
   else if(a==='export'){ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const u=URL.createObjectURL(blob); const l=document.createElement('a'); l.href=u; l.download=`im-campaign-${today()}.json`; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
   else if(a==='op-ok') opTap(true);
