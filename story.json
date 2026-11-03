@@ -191,6 +191,10 @@
      "broke",
      [
       [
+       "bg",
+       "art/muster_ash.webp"
+      ],
+      [
        "tint",
        "red"
       ],
