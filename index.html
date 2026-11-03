@@ -255,6 +255,20 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 .hallwall{background:radial-gradient(ellipse at 50% 0%,#1d1a16,#0e1115 70%);border:1px solid var(--line);border-radius:10px;padding:18px}
 .lockbox{max-width:360px;margin:40px auto;text-align:center}
 .prompt{white-space:pre-wrap;font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:10px;color:var(--muted)}
+
+/* battles */
+.bhud{position:absolute;top:18px;left:0;right:0;text-align:center;pointer-events:none;z-index:3}
+.bname{font-family:var(--display);font-size:clamp(20px,3.4vw,34px);letter-spacing:.06em;color:#f1e6cc;text-shadow:0 2px 12px #000}
+.bsub{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#cdb98d;margin-top:4px;text-shadow:0 1px 6px #000}
+.bcount{position:absolute;top:18px;left:18px;display:flex;gap:12px;font-size:15px;z-index:3;background:rgba(0,0,0,.45);padding:6px 10px;border-radius:8px}
+.bfront{position:absolute;left:8%;right:8%;bottom:7%;height:6px;border-radius:3px;background:linear-gradient(90deg,#4f8fd4 0%,#4f8fd4 50%,#c8463d 50%,#c8463d 100%);opacity:.85;z-index:3;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+.bmark{position:absolute;top:-6px;width:4px;height:18px;margin-left:-2px;background:#ffd98a;box-shadow:0 0 10px #ffb347;border-radius:2px}
+.bobj{position:absolute;left:85%;top:-9px;font-size:0;width:2px;height:24px;background:#fff}
+.bobj::after{content:'OBJECTIVE';position:absolute;top:-16px;left:-30px;font-size:10px;letter-spacing:.15em;color:#eee}
+.bline{position:absolute;left:0;right:0;bottom:12%;text-align:center;font-size:clamp(15px,2vw,20px);color:#eadfca;text-shadow:0 2px 8px #000;opacity:0;transition:opacity .6s;z-index:3;padding:0 16px}
+.bline.on{opacity:1}
+#bres{display:none} #bres.on{display:block}
+@media (max-width:700px){.cstage.bst{height:auto;aspect-ratio:16/9;overflow:visible}.bst .bhud{position:fixed;top:auto;bottom:calc(50% + 28.2vw + 14px)}.bst .bname{font-size:22px}.bst .bsub{font-size:11px}.bst .bcount{position:fixed;top:calc(50% + 28.2vw + 14px);left:50%;transform:translateX(-50%);font-size:14px}.bst .cskip{font-size:10px;top:8px;right:8px}.bst .bline{position:fixed;top:calc(50% + 28.2vw + 58px);bottom:auto;font-size:15px}.bst .bobj::after{font-size:8px;left:-22px}.bst #bres{position:fixed;top:auto;bottom:16px;transform:translateX(-50%);width:calc(100% - 32px);padding:16px}}
 </style>
 </head>
 <body>
@@ -288,7 +302,7 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 
 <script>
 'use strict';
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 
 /* ================= Regions ================= */
 const REG = {
@@ -360,14 +374,14 @@ S.settings = Object.assign(DEFAULT_SETTINGS(), S.settings||{});
 S.events = S.events || [];
 function saveLocal(){ try{ localStorage.setItem(LS_STATE, JSON.stringify(S)); }catch(e){} }
 function touchSettings(){ S.settings.updatedAt = Date.now(); commit(); }
-function addEvent(e){
+function addEvent(e, quiet){
   e.id = e.id || uid(); e.date = e.date || today();
   const i = S.events.findIndex(x=>x.id===e.id);
   const now = Math.max(Date.now(), lastTs+1); lastTs = now;
   e.ord = (i>=0 && S.events[i].ord) ? S.events[i].ord : (e.ord || now);
   e.ts = now;
   if(i>=0) S.events[i]=e; else S.events.push(e);
-  commit(); return e;
+  if(!quiet) commit(); return e;
 }
 let lastTs=0;
 function removeEvent(id){ addEvent({id:'del-'+id, type:'del', target:id}); }
@@ -564,6 +578,13 @@ function simulate(st, extra){
           }
         }
         G.blocks.push({e, d, n, c, acc, ground, lossInfo, def: n-nOff});
+      } else if(e.type==='battle'){
+        const len=(e.seq||'').length; if(!len) continue;
+        const sc=((e.g||0)+0.6*(e.h||0))/len, f = sc>=0.9?1 : sc>=0.8?0.75 : sc>=0.7?0.5 : sc>=0.6?0.25 : 0;
+        const bonus = len/20 * f * 2;
+        (R.battles ||= []).push({e, bonus});
+        if(bonus>0){ R.gained += addGround(bonus, d, false); }
+        if(!e.auto) add(d,'battle',`⚔ <b>${esc(e.name)}</b> — ${len} cards, ${Math.round(sc*100)}% effective${bonus>0?`, +${r1(bonus)} ground`:''}.`);
       } else if(e.type==='anki'){
         G.ankiByDay[d]=e; G.anki=e; if(e.again!=null && e.reviewed>=30) G.lapseRef=e;
         if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
@@ -847,7 +868,7 @@ function updateCampaign(){
       <div class="bar"><div style="width:${Math.min(100,rev/(td.ankiGoal||set.ankiGoal)*100)}%;background:${rev>=(td.ankiGoal||set.ankiGoal)?'var(--good)':'var(--brass)'}"></div></div>
       <div class="sub">${rev} / ${td.ankiGoal||set.ankiGoal} reviews today${G.backlog?` · 0 by ${fmtD(G.siegeBy||set.clearBy)}`:''}${G.anki?` · read ${agoText(G.anki.ts)}`:''}</div>
       ${(()=>{ const nt=ankiNet(ankiSnap, G.siegeInfo&&G.siegeInfo.lapse); return nt?`<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${netHtml(nt, G.backlog&&G.siegeInfo?G.siegeInfo.need:null)}</div>`:''; })()}
-      <div class="row" style="margin-top:9px;gap:8px">${ankiAuto?`<button class="btn sm" data-a="anki-pull">Read Anki</button>`:''}<button class="btn sm" data-a="anki-manual">Enter manually</button></div>
+      <div class="row" style="margin-top:9px;gap:8px;flex-wrap:wrap">${ankiAuto?`<button class="btn pri sm" data-a="bt-open">⚔ Start battle</button><button class="btn sm" data-a="anki-pull">Read Anki</button>`:''}<button class="btn sm" data-a="anki-manual">Enter manually</button></div>
     </div>
     <div class="card">
       <h3>Offensive</h3>
@@ -921,6 +942,7 @@ function viewBattles(){
   const done=Object.values(G.cmsDone); const avg=done.length?done.reduce((a,b)=>a+b.pct,0)/done.length:null;
   return `<div class="card final" style="margin-bottom:10px"><h3>The final battle</h3><div class="big" style="font-size:25px">IM Shelf · ${fmtDow(set.shelf)}</div>
     <div class="sub">${daysBetween(t,set.shelf)} days out. ${avg!=null?`CMS average: <b class="${avg>=set.targetPct?'c-good':'c-warn'}">${avg.toFixed(0)}%</b>.`:'CMS forms count as 50-question operations on the map.'}</div></div>
+    ${typeof btlSection==='function'?btlSection():''}
     <div class="grid battles">${cards}</div>`;
 }
 function weekMonday(d){ const dt=parseD(d); const dow=(dt.getDay()+6)%7; return addDays(d,-dow); }
@@ -1710,5 +1732,6 @@ mapReady = loadMap().catch(err=>{ $('#view').innerHTML=`<div class="card">Couldn
 $('#gatebtn').addEventListener('click', ()=>enterApp(true));
 $('#gatequiet').addEventListener('click', ()=>enterApp(false));
 </script>
+<script src="battle.js"></script>
 </body>
 </html>
