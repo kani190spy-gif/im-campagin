@@ -259,6 +259,18 @@
      "siege",
      [
       [
+       "bg",
+       "art/muster_siege.webp"
+      ],
+      [
+       "tint",
+       "cool"
+      ],
+      [
+       "fx",
+       "embers"
+      ],
+      [
        "nar",
        "The walls are still under siege. {due} cards at the gates."
       ],
