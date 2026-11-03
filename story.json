@@ -21,7 +21,7 @@
    "steps": [
     [
      "bg",
-     "map:whole"
+     "art/prologue_peace.webp"
     ],
     [
      "tint",
