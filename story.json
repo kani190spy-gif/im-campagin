@@ -296,6 +296,10 @@
      "attack",
      [
       [
+       "bg",
+       "art/muster_attack.webp"
+      ],
+      [
        "tint",
        "red"
       ],
