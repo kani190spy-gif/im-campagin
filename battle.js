@@ -91,6 +91,7 @@ function buyUnit(m){
 /* =====================================================================
    Maps (procedural until painted maps arrive; painted ones go in MAP_ART)
    ===================================================================== */
+const MAP_ART_ON=false;   // on hold: painted maps (art/map_*.webp) — flip to true to use them
 // Painted maps: lanes run bottom (our side) to top (objective), in 0..1 image coordinates.
 const MAP_ART=[
   {id:'map_farmland', name:'farmland', art:'art/map_farmland.webp', theme:'farm', obj:['the Earthworks','the Village','the Windmill'],
@@ -107,9 +108,9 @@ const THEMES={
 const OBJ_NAMES=['the Mill','the Church','Hill 112','the Bridge','the Crossroads','the Farmstead','the Depot','the Station','the Quarry','the Manor','the Radio Tower','the Ford','the Orchard','the Bunker','the Water Tower','the Granary'];
 function mapFor(id){
   // painted maps are picked three times as often as drawn ones
-  const tk=Object.keys(THEMES), slots=MAP_ART.length*3+tk.length, pick=Math.floor(hash('mapPick'+id)*slots);
-  if(pick<MAP_ART.length*3){ const m=MAP_ART[pick%MAP_ART.length]; return {...m, seed:id}; }
-  const r=rng('map'+id), theme=tk[pick-MAP_ART.length*3];
+  const ART=MAP_ART_ON?MAP_ART:[]; const tk=Object.keys(THEMES), slots=ART.length*3+tk.length, pick=Math.floor(hash('mapPick'+id)*slots);
+  if(pick<ART.length*3){ const m=ART[pick%ART.length]; return {...m, seed:id}; }
+  const r=rng('map'+id), theme=tk[pick-ART.length*3];
   const lanes=[0.2,0.5,0.8].map(x0=>{ const top=0.16+r()*0.12; const pts=[]; let x=x0+(r()-.5)*0.06; for(const y of [0.97,0.78,0.6,0.42,top]){ pts.push([Math.min(0.9,Math.max(0.1,x)),y]); x+=(r()-.5)*0.12; } return pts; });
   const pool=[...OBJ_NAMES]; const obj=[0,1,2].map(()=>pool.splice(Math.floor(r()*pool.length),1)[0]);
   const river = r()<0.55 ? {y:0.48+r()*0.12, amp:0.02+r()*0.03, ph:r()*6} : null;
@@ -403,7 +404,7 @@ const BTL_LINES={
   bad:['Enemy artillery pins the line down.','Their counterattack forces us back.','We are taking heavy losses. Hold the line.','The assault stalls in the mud.']
 };
 /* ---------- unit sprites (painted art; drawn shapes are the fallback) ---------- */
-const SPRITE_FILES={tank:'art/u_tank_light.webp'};   // by unit class for now; per-model files can be added: lynx:'art/u_tank_medium.webp'
+const SPRITE_FILES={};   // on hold: painted sprites, e.g. tank:'art/u_tank_light.webp'   // by unit class for now; per-model files can be added: lynx:'art/u_tank_medium.webp'
 const SPR={};
 function loadSprites(){ for(const [k,f] of Object.entries(SPRITE_FILES)){ const im=new Image(); im.onload=()=>{ SPR[k]={us:im, en:tintSprite(im,'en'), dead:tintSprite(im,'dead')}; }; im.src=f; } }
 function tintSprite(im,mode){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d');
@@ -412,7 +413,7 @@ function tintSprite(im,mode){ const c=document.createElement('canvas'); c.width=
     if(mode==='en'){ p[i]=g*0.78+6; p[i+1]=g*0.78+4; p[i+2]=g*0.78+4; } else { p[i]=g*0.45+14; p[i+1]=g*0.37+9; p[i+2]=g*0.31+6; } }
   x.putImageData(d,0,0); return c; }
 loadSprites();
-const COL={us:'#66704f', usD:'#3f4532', usL:'#8e9670', en:'#6d6862', enD:'#45413d', enL:'#97918a', usTeam:'rgba(70,140,235,', enTeam:'rgba(225,70,55,', gold:'#e8c36a'};
+const COL={us:'#5d82b3', usD:'#3b5678', usL:'#a9c4e6', en:'#a5483a', enD:'#6e2c23', enL:'#e2a091', usTeam:'rgba(70,140,235,', enTeam:'rgba(225,70,55,', gold:'#e8c36a'};
 function drawBackdrop(cv, map){
   const b=cv.getContext('2d'), w=cv.width, h=cv.height, R=rng('bd'+map.seed), th=THEMES[map.theme]||THEMES.farm;
   if(map.art){ b.fillStyle='#2a2c22'; b.fillRect(0,0,w,h); return; }
@@ -509,7 +510,7 @@ function playBattle(o){
     function drawATG(x,y,s,side,u,ang){ drawArty(x,y,s*0.75,side,u,ang); }
     function drawThing(kind,x,y,s,side,u,ang,t){
       const sp=SPR[kind==='atg'?'none':kind];
-      if(!u.dead){ const rad=(kind==='tank'?17:kind==='apc'?14:kind==='arty'?13:11)*s; ctx.fillStyle=(side>0?COL.usTeam:COL.enTeam)+'.28)'; ctx.strokeStyle=(side>0?COL.usTeam:COL.enTeam)+'.85)'; ctx.lineWidth=1.4*s; ctx.beginPath(); ctx.ellipse(x,y+2*s,rad,rad*0.62,0,0,6.283); ctx.fill(); ctx.stroke(); }
+      if(sp && !u.dead){ const rad=(kind==='tank'?17:kind==='apc'?14:kind==='arty'?13:11)*s; ctx.fillStyle=(side>0?COL.usTeam:COL.enTeam)+'.28)'; ctx.strokeStyle=(side>0?COL.usTeam:COL.enTeam)+'.85)'; ctx.lineWidth=1.4*s; ctx.beginPath(); ctx.ellipse(x,y+2*s,rad,rad*0.62,0,0,6.283); ctx.fill(); ctx.stroke(); }
       if(sp){ const img=u.dead?sp.dead:side>0?sp.us:sp.en, h=36*s, w=h*img.width/img.height;
         ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=5*s; ctx.shadowOffsetX=3*s; ctx.shadowOffsetY=3*s;
         ctx.drawImage(img,-w/2,-h/2+(u.rec||0)*2*s,w,h); ctx.restore(); return; }
