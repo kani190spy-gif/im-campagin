@@ -1,0 +1,365 @@
+{
+ "_help": [
+  "Edit freely. Each scene is a list of steps, played in order.",
+  "Steps: [\"bg\", where] where = \"map:whole\" | \"map:home\" | \"map:front\" | \"map:region:<id>\" | \"art/<file>.webp\"",
+  "       [\"fx\", \"embers\"|\"ash\"|\"snow\"|\"none\"]   [\"tint\", \"cool\"|\"warm\"|\"red\"|\"dark\"]",
+  "       [\"title\", text]   [\"nar\", text]   [\"say\", speaker, text]   [\"black\"]   [\"meter\"]   [\"hall\"]   [\"oath\"]",
+  "       [\"if\", flag, [steps]]  (flag may start with ! to mean NOT)   [\"pick\", [[steps], [steps], ...]] picks one per day",
+  "Flags: first, held, broke, pushed, siege, siegeBroken, attack, caps, lostTown, momentum, hall, leave",
+  "Words in {braces} are filled from your campaign: {weekday} {date} {ySummary} {yGround} {yLost} {caps} {lostTown}",
+  "  {due} {ankiGoal} {clearBy} {attackTown} {defenseQ} {target} {towns} {daysToShelf} {met7} {targetPct} {remainingUW} {hallTitle}"
+ ],
+ "speakers": {
+  "general": "The Old General",
+  "scout": "Scout",
+  "quartermaster": "Quartermaster",
+  "council": "The Council"
+ },
+ "scenes": {
+  "prologue": {
+   "title": "The Long Peace",
+   "steps": [
+    [
+     "bg",
+     "map:whole"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "nar",
+     "The Heartland won its last war three hundred years ago."
+    ],
+    [
+     "nar",
+     "The banners came down. The walls grew moss. Peace was earned, and then, slowly, it was spent."
+    ],
+    [
+     "nar",
+     "A soldier learned he could live a whole life and never once be tested. Most chose to."
+    ],
+    [
+     "black"
+    ],
+    [
+     "bg",
+     "map:region:id"
+    ],
+    [
+     "tint",
+     "cool"
+    ],
+    [
+     "fx",
+     "ash"
+    ],
+    [
+     "nar",
+     "They called it contentment. The old generals had another name for it."
+    ],
+    [
+     "title",
+     "The Hollowing"
+    ],
+    [
+     "nar",
+     "It does not burn cities. It empties them."
+    ],
+    [
+     "nar",
+     "A garrison that no longer drills. A scholar who stops at good enough. A knight who never draws his sword again, and calls it wisdom."
+    ],
+    [
+     "nar",
+     "Out past the marshes it grew bold. Province by province, the lamps went out."
+    ],
+    [
+     "say",
+     "council",
+     "We will wait. There is always more time."
+    ],
+    [
+     "nar",
+     "They always vote to wait."
+    ],
+    [
+     "black"
+    ],
+    [
+     "bg",
+     "map:home"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "nar",
+     "One officer did not. Not the strongest. Not the most gifted. Only the one who remembers what it felt like to be hungry."
+    ],
+    [
+     "say",
+     "general",
+     "They will tell you basic is enough. For some it is. Their basic already sits near the summit."
+    ],
+    [
+     "say",
+     "general",
+     "Yours does not. Not yet."
+    ],
+    [
+     "say",
+     "general",
+     "Every question is ground. Every card is a soldier who remembers. Every day you wait, the Hollowing takes a little more."
+    ],
+    [
+     "say",
+     "general",
+     "So take it back. Town by town. Province by province. Until the shelf."
+    ],
+    [
+     "title",
+     "The campaign begins"
+    ]
+   ]
+  },
+  "muster": {
+   "title": "The Muster",
+   "steps": [
+    [
+     "bg",
+     "map:front"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "title",
+     "{weekday} · {date}"
+    ],
+    [
+     "if",
+     "first",
+     [
+      [
+       "nar",
+       "The first dawn of the campaign. {towns} of 79 towns fly your banner."
+      ],
+      [
+       "say",
+       "general",
+       "Nothing is owed to us. Everything out there must be taken."
+      ]
+     ]
+    ],
+    [
+     "if",
+     "held",
+     [
+      [
+       "nar",
+       "The line held yesterday. {ySummary}. {yGround} ground taken."
+      ],
+      [
+       "if",
+       "caps",
+       [
+        [
+         "nar",
+         "By nightfall, {caps} flew your banner."
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "if",
+     "broke",
+     [
+      [
+       "tint",
+       "red"
+      ],
+      [
+       "fx",
+       "ash"
+      ],
+      [
+       "nar",
+       "The line broke yesterday. {ySummary}."
+      ],
+      [
+       "if",
+       "pushed",
+       [
+        [
+         "nar",
+         "The enemy pushed back {yLost} ground."
+        ]
+       ]
+      ],
+      [
+       "if",
+       "lostTown",
+       [
+        [
+         "nar",
+         "{lostTown} has fallen."
+        ]
+       ]
+      ],
+      [
+       "say",
+       "general",
+       "The Hollowing does not need to defeat you. It only needs you to wait."
+      ],
+      [
+       "if",
+       "hall",
+       [
+        [
+         "hall"
+        ]
+       ]
+      ]
+     ]
+    ],
+    [
+     "if",
+     "siege",
+     [
+      [
+       "nar",
+       "The walls are still under siege. {due} cards at the gates."
+      ],
+      [
+       "say",
+       "quartermaster",
+       "{ankiGoal} reviews today keeps us on course to break it by {clearBy}."
+      ]
+     ]
+    ],
+    [
+     "if",
+     "siegeBroken",
+     [
+      [
+       "nar",
+       "The siege is broken. The supply lines run again."
+      ]
+     ]
+    ],
+    [
+     "if",
+     "attack",
+     [
+      [
+       "tint",
+       "red"
+      ],
+      [
+       "say",
+       "scout",
+       "An enemy column marches on {attackTown}. Your first {defenseQ} questions decide it."
+      ]
+     ]
+    ],
+    [
+     "pick",
+     [
+      [
+       [
+        "say",
+        "general",
+        "Comfort is not the enemy. Staying comfortable is."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "Good enough is a place people go to stop."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "The honors line is {targetPct}%. It was always reachable. The question is whether you march."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "No one remembers the days you rested. They remember what you built."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "Basic is fine, if your basic is the summit. Yours is not, yet."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "{daysToShelf} days to the shelf. Each one is a choice."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "Existing is easy. Anyone can exist. You came here to become."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "Three points. Ten points. That is the width of a few hundred questions."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "The version of you that honors IM is built today, not on the eve of the exam."
+       ]
+      ],
+      [
+       [
+        "say",
+        "general",
+        "Hunger fades if you feed it nothing. Feed it ground."
+       ]
+      ]
+     ]
+    ],
+    [
+     "meter"
+    ],
+    [
+     "oath"
+    ]
+   ]
+  }
+ }
+}
