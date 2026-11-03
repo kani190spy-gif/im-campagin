@@ -149,7 +149,7 @@
    "steps": [
     [
      "bg",
-     "map:front"
+     "art/muster_dawn.webp"
     ],
     [
      "fx",
