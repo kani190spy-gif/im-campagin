@@ -1485,6 +1485,7 @@ function flattenSteps(steps,f,seed){ const out=[]; for(const st of steps||[]){
   else out.push(st); } return out; }
 function bgCss(where){
   if(!where) return null;
+  if(where.includes('|')){ const o=where.split('|').map(x=>x.trim()).filter(Boolean); where=o[Math.floor(hash('bg'+today()+where)*o.length)]; }
   if(where.startsWith('art/')) return {img:`url("${where}")`, size:'cover', pos:'center'};
   let x=MAP.w/2,y=MAP.h/2,z=1;
   if(where==='map:home'){ x=T[HOME.id].x; y=T[HOME.id].y; z=3; }

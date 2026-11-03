@@ -1,7 +1,7 @@
 {
  "_help": [
   "Edit freely. Each scene is a list of steps, played in order.",
-  "Steps: [\"bg\", where] where = \"map:whole\" | \"map:home\" | \"map:front\" | \"map:region:<id>\" | \"art/<file>.webp\"",
+  "Steps: [\"bg\", where] where = \"map:whole\" | \"map:home\" | \"map:front\" | \"map:region:<id>\" | \"art/<file>.webp\" (several images separated by | rotate daily)",
   "       [\"fx\", \"embers\"|\"ash\"|\"snow\"|\"none\"]   [\"tint\", \"cool\"|\"warm\"|\"red\"|\"dark\"]",
   "       [\"title\", text]   [\"nar\", text]   [\"say\", speaker, text]   [\"black\"]   [\"meter\"]   [\"hall\"]   [\"oath\"]",
   "       [\"if\", flag, [steps]]  (flag may start with ! to mean NOT)   [\"pick\", [[steps], [steps], ...]] picks one per day",
