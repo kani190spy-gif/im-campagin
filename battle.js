@@ -91,7 +91,11 @@ function buyUnit(m){
 /* =====================================================================
    Maps (procedural until painted maps arrive; painted ones go in MAP_ART)
    ===================================================================== */
-const MAP_ART=[ /* {id:'map_farmland', art:'art/map_farmland.webp', theme:'farm', lanes:[[[x,y],...],...], obj:['Mill','Village','Bridge'], river:null} */ ];
+// Painted maps: lanes run bottom (our side) to top (objective), in 0..1 image coordinates.
+const MAP_ART=[
+  {id:'map_farmland', name:'farmland', art:'art/map_farmland.webp', theme:'farm', obj:['the Earthworks','the Village','the Windmill'],
+   lanes:[[[0.11,0.99],[0.14,0.74],[0.15,0.52],[0.19,0.36],[0.27,0.30]], [[0.45,0.99],[0.455,0.74],[0.47,0.49],[0.50,0.35],[0.51,0.22]], [[0.83,0.99],[0.85,0.74],[0.83,0.49],[0.81,0.34],[0.825,0.15]]]},
+];
 const THEMES={
   farm:  {name:'farmland', ground:'#6f7d45', patch:['#7f8b4d','#8a8452','#647441','#9a8a58'], road:'#8b7552', tree:'#3d4a2a', bld:'#8a7a66', roof:'#7a3f32', water:'#5b7d8a'},
   snow:  {name:'snowfields', ground:'#d9dde0', patch:['#e6e9eb','#cfd4d7','#c4c9c9','#dfe1dc'], road:'#a49c90', tree:'#3a4a40', bld:'#8f8a84', roof:'#5a4e48', water:'#8aa5b4'},
@@ -102,8 +106,10 @@ const THEMES={
 };
 const OBJ_NAMES=['the Mill','the Church','Hill 112','the Bridge','the Crossroads','the Farmstead','the Depot','the Station','the Quarry','the Manor','the Radio Tower','the Ford','the Orchard','the Bunker','the Water Tower','the Granary'];
 function mapFor(id){
-  if(MAP_ART.length){ const m=MAP_ART[Math.floor(hash('map'+id)*MAP_ART.length)]; return {...m, seed:id}; }
-  const r=rng('map'+id), tk=Object.keys(THEMES), theme=tk[Math.floor(r()*tk.length)];
+  // painted maps are picked three times as often as drawn ones
+  const tk=Object.keys(THEMES), slots=MAP_ART.length*3+tk.length, pick=Math.floor(hash('mapPick'+id)*slots);
+  if(pick<MAP_ART.length*3){ const m=MAP_ART[pick%MAP_ART.length]; return {...m, seed:id}; }
+  const r=rng('map'+id), theme=tk[pick-MAP_ART.length*3];
   const lanes=[0.2,0.5,0.8].map(x0=>{ const top=0.16+r()*0.12; const pts=[]; let x=x0+(r()-.5)*0.06; for(const y of [0.97,0.78,0.6,0.42,top]){ pts.push([Math.min(0.9,Math.max(0.1,x)),y]); x+=(r()-.5)*0.12; } return pts; });
   const pool=[...OBJ_NAMES]; const obj=[0,1,2].map(()=>pool.splice(Math.floor(r()*pool.length),1)[0]);
   const river = r()<0.55 ? {y:0.48+r()*0.12, amp:0.02+r()*0.03, ph:r()*6} : null;
@@ -396,9 +402,10 @@ const BTL_LINES={
   mixed:['The infantry advance under heavy fire.','Ground is taken, yard by bloody yard.','Both sides trade fire across the open field.','The push holds, but it costs us.'],
   bad:['Enemy artillery pins the line down.','Their counterattack forces us back.','We are taking heavy losses. Hold the line.','The assault stalls in the mud.']
 };
-const COL={us:'#5d82b3', usD:'#3b5678', usL:'#a9c4e6', en:'#a5483a', enD:'#6e2c23', enL:'#e2a091', gold:'#e8c36a'};
+const COL={us:'#66704f', usD:'#3f4532', usL:'#8e9670', en:'#6d6862', enD:'#45413d', enL:'#97918a', usTeam:'rgba(70,140,235,', enTeam:'rgba(225,70,55,', gold:'#e8c36a'};
 function drawBackdrop(cv, map){
   const b=cv.getContext('2d'), w=cv.width, h=cv.height, R=rng('bd'+map.seed), th=THEMES[map.theme]||THEMES.farm;
+  if(map.art){ b.fillStyle='#2a2c22'; b.fillRect(0,0,w,h); return; }
   const X=x=>x/16*w, Y=y=>y/9*h, geo=laneGeom(map);
   b.fillStyle=th.ground; b.fillRect(0,0,w,h);
   // field patches
@@ -448,7 +455,10 @@ function playBattle(o){
     fit();
     const W=()=>cv.width, H=()=>cv.height, X=x=>x/16*W(), Y=y=>y/9*H(), K=()=>H()/900;
     drawBackdrop(bgc,map);
-    if(map.art){ const im=new Image(); im.onload=()=>{ const b=bgc.getContext('2d'); b.drawImage(im,0,0,bgc.width,bgc.height); }; im.src=map.art; }
+    if(map.art){ const im=new Image(); im.onload=()=>{ const b=bgc.getContext('2d'), w=bgc.width, h=bgc.height; b.drawImage(im,0,0,w,h);
+      const vg=b.createRadialGradient(w/2,h*0.55,h*0.35,w/2,h/2,w*0.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.35)'); b.fillStyle=vg; b.fillRect(0,0,w,h);
+      const tp=b.createLinearGradient(0,0,0,h*0.18); tp.addColorStop(0,'rgba(0,0,0,.45)'); tp.addColorStop(1,'rgba(0,0,0,0)'); b.fillStyle=tp; b.fillRect(0,0,w,h*0.18); };
+      im.onerror=()=>{ drawBackdrop(bgc,{...map, art:null, theme:map.theme||'farm'}); }; im.src=map.art; }
     const geo=laneGeom(map);
     // display state
     let D=JSON.parse(JSON.stringify(o.startState)); let order=null;
@@ -487,7 +497,9 @@ function playBattle(o){
       ctx.strokeStyle=u.dead?'#2b2a28':d; ctx.lineWidth=2.2*s; ctx.beginPath(); ctx.moveTo(-8*s,9*s); ctx.lineTo(0,0); ctx.lineTo(8*s,9*s); ctx.stroke();
       ctx.fillStyle=u.dead?'#3a3835':c; ctx.fillRect(-4*s,-3*s,8*s,6*s); ctx.fillStyle=u.dead?'#2b2a28':d; ctx.fillRect(-1.3*s,-(17-(u.rec||0)*3)*s,2.6*s,15*s); ctx.restore(); }
     function drawATG(x,y,s,side,u,ang){ drawArty(x,y,s*0.75,side,u,ang); }
-    function drawThing(kind,x,y,s,side,u,ang,t){ ({tank:drawTank,apc:drawAPC,inf:drawInf,mg:drawMG,arty:drawArty,atg:drawATG}[kind]||drawInf)(x,y,s,side,u,kind==='inf'?t:ang); }
+    function drawThing(kind,x,y,s,side,u,ang,t){
+      if(!u.dead){ const rad=(kind==='tank'?17:kind==='apc'?14:kind==='arty'?13:11)*s; ctx.fillStyle=(side>0?COL.usTeam:COL.enTeam)+'.28)'; ctx.strokeStyle=(side>0?COL.usTeam:COL.enTeam)+'.85)'; ctx.lineWidth=1.4*s; ctx.beginPath(); ctx.ellipse(x,y+2*s,rad,rad*0.62,0,0,6.283); ctx.fill(); ctx.stroke(); }
+      ({tank:drawTank,apc:drawAPC,inf:drawInf,mg:drawMG,arty:drawArty,atg:drawATG}[kind]||drawInf)(x,y,s,side,u,kind==='inf'?t:ang); }
     function smooth(id,p,dt){ const q=pos[id]; if(!q){ pos[id]=[p[0],p[1]]; return pos[id]; } const k=Math.min(1,dt*1.8); q[0]+=(p[0]-q[0])*k; q[1]+=(p[1]-q[1])*k; return q; }
     // ---------- effects ----------
     function boom(x,y,size){ shake=Math.max(shake,6*size*dpr); flash=Math.max(flash,0.1*size);
@@ -496,6 +508,7 @@ function playBattle(o){
       marks.push({x,y,r:(6+Math.random()*6)*size*dpr*K()}); if(marks.length>140) marks.shift(); }
     function shoot(fromP,toP,kind,onHit,dur){ projs.push({kind,x0:fromP[0],y0:fromP[1],tx:toP[0],ty:toP[1],t:0,dur:dur||(kind==='shell'?0.8:kind==='round'?0.3:0.2),onHit}); }
     const scr=p=>[X(p[0]),Y(p[1])];
+    const dep=yPx=> map.art ? 0.55+0.5*(yPx/H()) : 1;
     // ---------- per-card animation ----------
     function applySnap(ev){ const rec={}; D.units.forEach(u=>rec[u.uid]=u.rec||0); D.units=JSON.parse(JSON.stringify(ev.snap.units)); D.units.forEach(u=>u.rec=rec[u.uid]||0); D.enemy=JSON.parse(JSON.stringify(ev.snap.enemy)); D.p=ev.p.slice(); D.cap=ev.capd.slice(); }
     function animEvent(ev){
@@ -550,14 +563,14 @@ function playBattle(o){
       });
       // enemy units
       for(const e of D.enemy){ const tp=scr(enemyPos(D,e,geo)); if(!e.alive && !pos[e.eid]) continue; const p=smooth(e.eid,tp,dt);
-        if(!e.alive){ if(e.type==='tank') drawThing('tank',p[0],p[1],k*0.9,-1,{dead:true},Math.PI,t); continue; }
-        drawThing(e.type,p[0],p[1],k*(e.type==='tank'?0.9:1),-1,e,Math.PI,t); }
+        if(!e.alive){ if(e.type==='tank') drawThing('tank',p[0],p[1],k*0.9*dep(p[1]),-1,{dead:true},Math.PI,t); continue; }
+        drawThing(e.type,p[0],p[1],k*(e.type==='tank'?0.9:1)*dep(p[1]),-1,e,Math.PI,t); }
       // our units
       for(const u of D.units){ const U=UNITS[u.model]; const tp=scr(unitPos(D,u,geo)); const p=smooth(u.uid,tp,dt); u.rec=Math.max(0,(u.rec||0)-dt*3);
-        const s=k*(U.size||1)*(u.elite?1.12:1);
+        const s=k*(U.size||1)*(u.elite?1.12:1)*dep(p[1]);
         if(!u.alive){ if(U.cls==='tank'||U.cls==='apc'){ drawThing(U.cls,p[0],p[1],s,1,{dead:true},0,t); if(Math.random()<0.15) parts.push({k:'smoke',x:p[0],y:p[1],vx:0.3*dpr,vy:-0.3*dpr,r:6*k,life:2,t:0}); } continue; }
         const ang = U.cls==='arty' ? 0 : Math.atan2(1, 0)-Math.PI/2; // facing up
-        if(u.elite){ ctx.strokeStyle=COL.gold; ctx.lineWidth=1.6*k; ctx.beginPath(); ctx.arc(p[0],p[1],(U.cls==='tank'?20:14)*s/k*k,0,6.283); ctx.stroke(); }
+        if(u.elite){ ctx.strokeStyle=COL.gold; ctx.lineWidth=1.6*k; ctx.beginPath(); ctx.ellipse(p[0],p[1]+2*s,(U.cls==='tank'?21:15)*s,(U.cls==='tank'?21:15)*s*0.62,0,0,6.283); ctx.stroke(); }
         drawThing(U.cls,p[0],p[1],s,1,u,ang,t);
         if(u.elite){ ctx.font=`600 ${Math.round(10*k)}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillText(u.name,p[0]+1,p[1]+(U.cls==='tank'?30:22)*k+1); ctx.fillStyle=COL.gold; ctx.fillText(u.name,p[0],p[1]+(U.cls==='tank'?30:22)*k);
           const hpU=U.hp; for(let i=0;i<hpU;i++){ ctx.fillStyle=i<u.hp?'#7fd38a':'rgba(255,255,255,.2)'; ctx.fillRect(p[0]-hpU*3*k+i*6*k,p[1]-(U.cls==='tank'?26:19)*k,5*k,2.5*k); } }
