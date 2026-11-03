@@ -79,6 +79,18 @@
      "Out past the marshes it grew bold. Province by province, the lamps went out."
     ],
     [
+     "bg",
+     "art/prologue_council.webp"
+    ],
+    [
+     "tint",
+     "cool"
+    ],
+    [
+     "fx",
+     "none"
+    ],
+    [
      "say",
      "council",
      "We will wait. There is always more time."
