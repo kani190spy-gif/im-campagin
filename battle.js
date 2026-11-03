@@ -402,6 +402,16 @@ const BTL_LINES={
   mixed:['The infantry advance under heavy fire.','Ground is taken, yard by bloody yard.','Both sides trade fire across the open field.','The push holds, but it costs us.'],
   bad:['Enemy artillery pins the line down.','Their counterattack forces us back.','We are taking heavy losses. Hold the line.','The assault stalls in the mud.']
 };
+/* ---------- unit sprites (painted art; drawn shapes are the fallback) ---------- */
+const SPRITE_FILES={tank:'art/u_tank_light.webp'};   // by unit class for now; per-model files can be added: lynx:'art/u_tank_medium.webp'
+const SPR={};
+function loadSprites(){ for(const [k,f] of Object.entries(SPRITE_FILES)){ const im=new Image(); im.onload=()=>{ SPR[k]={us:im, en:tintSprite(im,'en'), dead:tintSprite(im,'dead')}; }; im.src=f; } }
+function tintSprite(im,mode){ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const x=c.getContext('2d');
+  x.drawImage(im,0,0); const d=x.getImageData(0,0,c.width,c.height), p=d.data;
+  for(let i=0;i<p.length;i+=4){ const g=(p[i]*0.3+p[i+1]*0.59+p[i+2]*0.11);
+    if(mode==='en'){ p[i]=g*0.78+6; p[i+1]=g*0.78+4; p[i+2]=g*0.78+4; } else { p[i]=g*0.45+14; p[i+1]=g*0.37+9; p[i+2]=g*0.31+6; } }
+  x.putImageData(d,0,0); return c; }
+loadSprites();
 const COL={us:'#66704f', usD:'#3f4532', usL:'#8e9670', en:'#6d6862', enD:'#45413d', enL:'#97918a', usTeam:'rgba(70,140,235,', enTeam:'rgba(225,70,55,', gold:'#e8c36a'};
 function drawBackdrop(cv, map){
   const b=cv.getContext('2d'), w=cv.width, h=cv.height, R=rng('bd'+map.seed), th=THEMES[map.theme]||THEMES.farm;
@@ -498,8 +508,13 @@ function playBattle(o){
       ctx.fillStyle=u.dead?'#3a3835':c; ctx.fillRect(-4*s,-3*s,8*s,6*s); ctx.fillStyle=u.dead?'#2b2a28':d; ctx.fillRect(-1.3*s,-(17-(u.rec||0)*3)*s,2.6*s,15*s); ctx.restore(); }
     function drawATG(x,y,s,side,u,ang){ drawArty(x,y,s*0.75,side,u,ang); }
     function drawThing(kind,x,y,s,side,u,ang,t){
+      const sp=SPR[kind==='atg'?'none':kind];
       if(!u.dead){ const rad=(kind==='tank'?17:kind==='apc'?14:kind==='arty'?13:11)*s; ctx.fillStyle=(side>0?COL.usTeam:COL.enTeam)+'.28)'; ctx.strokeStyle=(side>0?COL.usTeam:COL.enTeam)+'.85)'; ctx.lineWidth=1.4*s; ctx.beginPath(); ctx.ellipse(x,y+2*s,rad,rad*0.62,0,0,6.283); ctx.fill(); ctx.stroke(); }
+      if(sp){ const img=u.dead?sp.dead:side>0?sp.us:sp.en, h=36*s, w=h*img.width/img.height;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=5*s; ctx.shadowOffsetX=3*s; ctx.shadowOffsetY=3*s;
+        ctx.drawImage(img,-w/2,-h/2+(u.rec||0)*2*s,w,h); ctx.restore(); return; }
       ({tank:drawTank,apc:drawAPC,inf:drawInf,mg:drawMG,arty:drawArty,atg:drawATG}[kind]||drawInf)(x,y,s,side,u,kind==='inf'?t:ang); }
+    function heading(lane,t,flip){ if(lane<0||!geo[lane]) return flip?Math.PI:0; const a=lanePt(geo[lane],Math.max(0,t-0.04)), b=lanePt(geo[lane],Math.min(1,t+0.04)); return Math.atan2(X(b[0])-X(a[0]), -(Y(b[1])-Y(a[1])))+(flip?Math.PI:0); }
     function smooth(id,p,dt){ const q=pos[id]; if(!q){ pos[id]=[p[0],p[1]]; return pos[id]; } const k=Math.min(1,dt*1.8); q[0]+=(p[0]-q[0])*k; q[1]+=(p[1]-q[1])*k; return q; }
     // ---------- effects ----------
     function boom(x,y,size){ shake=Math.max(shake,6*size*dpr); flash=Math.max(flash,0.1*size);
@@ -563,13 +578,14 @@ function playBattle(o){
       });
       // enemy units
       for(const e of D.enemy){ const tp=scr(enemyPos(D,e,geo)); if(!e.alive && !pos[e.eid]) continue; const p=smooth(e.eid,tp,dt);
-        if(!e.alive){ if(e.type==='tank') drawThing('tank',p[0],p[1],k*0.9*dep(p[1]),-1,{dead:true},Math.PI,t); continue; }
-        drawThing(e.type,p[0],p[1],k*(e.type==='tank'?0.9:1)*dep(p[1]),-1,e,Math.PI,t); }
+        const ea=heading(e.lane, Math.max(e.t, frontT(D.p[e.lane])+0.07), true);
+        if(!e.alive){ if(e.type==='tank') drawThing('tank',p[0],p[1],k*0.9*dep(p[1]),-1,{dead:true},ea,t); continue; }
+        drawThing(e.type,p[0],p[1],k*(e.type==='tank'?0.9:1)*dep(p[1]),-1,e,ea,t); }
       // our units
       for(const u of D.units){ const U=UNITS[u.model]; const tp=scr(unitPos(D,u,geo)); const p=smooth(u.uid,tp,dt); u.rec=Math.max(0,(u.rec||0)-dt*3);
         const s=k*(U.size||1)*(u.elite?1.12:1)*dep(p[1]);
-        if(!u.alive){ if(U.cls==='tank'||U.cls==='apc'){ drawThing(U.cls,p[0],p[1],s,1,{dead:true},0,t); if(Math.random()<0.15) parts.push({k:'smoke',x:p[0],y:p[1],vx:0.3*dpr,vy:-0.3*dpr,r:6*k,life:2,t:0}); } continue; }
-        const ang = U.cls==='arty' ? 0 : Math.atan2(1, 0)-Math.PI/2; // facing up
+        if(!u.alive){ if(U.cls==='tank'||U.cls==='apc'){ drawThing(U.cls,p[0],p[1],s,1,{dead:true},heading(u.lane,frontT(D.p[u.lane]||0)-0.03,false),t); if(Math.random()<0.15) parts.push({k:'smoke',x:p[0],y:p[1],vx:0.3*dpr,vy:-0.3*dpr,r:6*k,life:2,t:0}); } continue; }
+        const ang = U.cls==='arty' ? 0 : heading(u.lane, frontT(D.p[u.lane]||0)-0.03, false);
         if(u.elite){ ctx.strokeStyle=COL.gold; ctx.lineWidth=1.6*k; ctx.beginPath(); ctx.ellipse(p[0],p[1]+2*s,(U.cls==='tank'?21:15)*s,(U.cls==='tank'?21:15)*s*0.62,0,0,6.283); ctx.stroke(); }
         drawThing(U.cls,p[0],p[1],s,1,u,ang,t);
         if(u.elite){ ctx.font=`600 ${Math.round(10*k)}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillText(u.name,p[0]+1,p[1]+(U.cls==='tank'?30:22)*k+1); ctx.fillStyle=COL.gold; ctx.fillText(u.name,p[0],p[1]+(U.cls==='tank'?30:22)*k);
