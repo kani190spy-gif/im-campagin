@@ -1650,9 +1650,9 @@ async function deleteHallImg(path){
 async function uploadPendingHall(){ for(const e of hallEntries()){ if(!e.img || e.imgUp) continue; const b=await IDB.get(e.img).catch(()=>null); if(b && await uploadHallImg(e.img,b)) addEvent({...e, imgUp:true}); } }
 function artPrompt(e){
   return `Create one painting as a visual metaphor, not a literal scene.
-Style: dark oil painting, candlelit, muted war-campaign palette (umber, ash grey, deep crimson, tarnished brass), painterly brushwork, cinematic light. Square, about 1600×1600. No text, no faces, no real people or real places.
+Style: cinematic dark-fantasy concept art, realistic matte-painting look, realistic lighting, volumetric light through storm clouds, smoke, embers and haze, muted palette (charcoal, ash grey, steel blue, firelight orange, tarnished gold), high detail. Not pixel art, not anime or cartoon, not painterly. Square, about 1600×1600. No text, no faces, no real people or real places; any figures armored, helmeted or seen from behind.
 It represents: ${e.title||'(title)'}${e.moment?`\nWhat happened: ${e.moment}`:''}${e.cost?`\nWhat it cost: ${e.cost}`:''}${e.decided?`\nWhat was decided: ${e.decided}`:''}
-Carry the feeling with symbolic objects and landscape, for example a lance left in the snow, a lantern burning low, a bridge three planks short of the far bank, a banner lowered at dusk.`;
+Carry the feeling with symbolic objects and landscape, for example a lance left in the snow, a lantern burning low, a bridge three planks short of the far bank, a tattered banner at dusk.`;
 }
 function openHallEditor(id){
   const e = id ? hallEntries().find(x=>x.id===id) : null;
