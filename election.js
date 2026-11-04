@@ -411,7 +411,8 @@ function notifyStatus(){
 }
 async function testNotify(){
   try{ if('Notification' in window && Notification.permission==='default') await Notification.requestPermission(); }catch(e){}
-  notify('IM Campaign', 'Notifications are working. You\'ll get one at each report.', 'tick');
+  notify('IM Campaign', 'Notifications are working. You\'ll get one at each report.', 'test');
+  const st=$('#ntf-st'); if(st && 'Notification' in window && Notification.permission==='granted') setTimeout(()=>{ st.textContent='Sent. If no banner appeared, macOS is blocking your browser: System Settings → Notifications → Google Chrome → Allow Notifications, style Banners or Alerts; and turn Focus off.'; },400);
   const el=$('#ntf-st'); if(el) el.textContent=notifyStatus();
 }
 let titleFlash=null;
@@ -420,7 +421,12 @@ function notify(title, body, kind){
   if(document.visibilityState!=='visible') flashTitle('🗳 '+title);
   if(document.visibilityState==='visible'){ toast(title+(body?' — '+body:'')); }
   chime(kind);
-  try{ if('Notification' in window && Notification.permission==='granted'){ const n=new Notification(title,{body, tag:'imc-'+(kind||'x'), silent:true}); n.onclick=()=>{ window.focus(); n.close(); }; } }catch(e){}
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const opts={body, tag:'imc-'+Date.now(), requireInteraction:kind!=='test', icon:'icons/icon-192.png', badge:'icons/icon-192.png'};
+  // Prefer the service worker (works for installed apps and keeps working when the tab is in the background)
+  const viaPage=()=>{ try{ const n=new Notification(title,opts); n.onclick=()=>{ window.focus(); n.close(); }; }catch(e){} };
+  try{ if(navigator.serviceWorker && navigator.serviceWorker.ready){ Promise.race([navigator.serviceWorker.ready, new Promise((_,j)=>setTimeout(j,1500))]).then(reg=>reg.showNotification(title,opts)).catch(viaPage); return; } }catch(e){}
+  viaPage();
 }
 
 /* ---------- pace calibration ---------- */
