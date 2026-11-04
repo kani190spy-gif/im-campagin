@@ -32,6 +32,7 @@ function computeHold(races){
 
 /* ---------- data ---------- */
 let US=null; const CNTY={};
+function elStateName(st){ return US&&US.states[st]?US.states[st].n:'race'; }
 async function elLoad(){ if(!US){ US=await (await fetch('elec/us.json')).json(); } return US; }
 async function elCounties(st){ if(!CNTY[st]) CNTY[st]=await (await fetch(`elec/c/${st}.json`)).json(); return CNTY[st]; }
 const logit=p=>Math.log(p/(1-p)), logistic=x=>1/(1+Math.exp(-x));
@@ -135,7 +136,7 @@ async function finishSession(s, revs){
   const planned=Math.round(s.nTicks*s.intMs/60000), actualMs=s.clock==='step'?ws.reduce((t,w)=>t+((w.to&&w.from)?w.to-w.from:0),0):endTs-s.startTs;
   for(const st of [s.live,...s.sims]){
     const t=s.tally[st]; let y=0,o=0; const cv={}; for(const [f,v] of Object.entries(t)){ y+=v[0]; o+=v[1]; cv[f]=[v[0],v[1]]; }
-    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:planned, startTs:s.startTs, endTs:s.startTs+actualMs, clockMs:actualMs, completed:!s.stopAt, pace:s.pace}:{})}, true);
+    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:planned, startTs:s.startTs, endTs:s.startTs+actualMs, clockMs:actualMs, completed:!s.stopAt, pace:s.pace, wins:s.windows.map(w=>[w.n,w.g,w.h,w.a,w.sw]), ...(()=>{ const sm=stateSummary(night,st,CNTY[st],Object.assign({__final:true},cv)); return {shift:+sm.obsSwingPts.toFixed(1), base:+sm.baseM.toFixed(1)}; })()}:{})}, true);
   }
   commit(); esSet(null);
   const won = (()=>{ const t=s.tally[s.live]; let y=0,o=0; for(const v of Object.values(t)){ y+=v[0]; o+=v[1]; } return y>o; })();
@@ -304,11 +305,45 @@ async function elDraw(){
       <div class="elside">${s?raceCard(s.live,true)+s.sims.map(st=>raceCard(st,false)).join(''):''}
         ${elSel&&!s?raceCard(elSel,false):''}
         <h4>Called races</h4>${Object.keys(res).length?Object.values(res).sort((a,b)=>US.states[a.st].n.localeCompare(US.states[b.st].n)).map(r=>{ const P=r.y>r.o?Y:O; const m=(r.y-r.o)/(r.y+r.o)*100; return `<div class="callrow" data-st="${r.st}"><i style="background:${P.solid}"></i>${esc(US.states[r.st].n)}<span>${esc(P.short)} +${Math.abs(m).toFixed(1)}${r.live?' · fought':' · simulated'}</span></div>`; }).join(''):'<div class="sub">None yet.</div>'}
-        ${(()=>{ const ls=liveEvents(S).filter(e=>e.type==='erace' && e.live && e.startTs).sort((a,b)=>b.startTs-a.startTs).slice(0,8); return ls.length?`<h4>Your sessions</h4>${ls.map(r=>`<div class="callrow" data-st="${r.st}"><span style="margin:0;color:${r.completed===false?'#b36b00':'#1a7f37'}">${r.completed===false?'■':'✓'}</span> ${fmtD(ymd(new Date(r.startTs)))} · ${esc(US.states[r.st].n)}<span>${fmtMS(r.endTs-r.startTs)} · ${r.cards} cards</span></div>`).join('')}`:''; })()}
         <h4>Still to vote (${pendingUp.length})</h4><div class="sub">${pendingUp.map(st=>US.states[st].a).join(' · ')||'—'}</div>
-      </div></div>`;
+      </div></div>
+    ${s?ankiPanel(s,Y,O):''}${sessionLog(Y,O)}`;
   bindElMap();
   if(elToastRes){ const t=elToastRes; elToastRes=null; toast(`${US.states[t.st].n}: ${t.won?'you win the seat.':'seat lost.'}`); }
+}
+/* ---------- your Anki, next to the votes ---------- */
+function pctS(x,n){ return n?Math.round(x/n*100)+'%':'–'; }
+function ankiPanel(s,Y,O){
+  const ws=s.windows; const tgt=s.pace*s.intMs/60000; const tot=ws.reduce((a,w)=>a+w.n,0), g=ws.reduce((a,w)=>a+w.g,0), h=ws.reduce((a,w)=>a+w.h,0), a=ws.reduce((t,w)=>t+w.a,0);
+  const W=Math.max(300, s.nTicks*34), H=110, bw=Math.min(26,(W-30)/s.nTicks-6), mx=Math.max(tgt*1.6, ...ws.map(w=>w.n), 1);
+  const bars=Array.from({length:s.nTicks},(_,k)=>{ const w=ws[k]; const x=24+k*((W-30)/s.nTicks); if(!w){ return `<rect x="${x}" y="${H-22}" width="${bw}" height="2" fill="#ddd"/><text x="${x+bw/2}" y="${H-6}" font-size="10" text-anchor="middle" fill="#aaa">${k+1}</text>`; }
+    const hh=(w.n/mx)*(H-36), y=H-20-hh, col=w.sw>=0?Y.solid:O.solid; const hg=w.n?hh*w.g/w.n:0, hhh=w.n?hh*w.h/w.n:0;
+    return `<g><title>Window ${k+1}: ${w.n} cards (${Math.round(w.n/tgt*100)}% of target) · ${w.g} good / ${w.h} hard / ${w.a} again · swing ${w.sw>=0?'+':''}${w.sw}</title>
+      <rect x="${x}" y="${y}" width="${bw}" height="${hh}" fill="#d64545"/><rect x="${x}" y="${y+(hh-hg-hhh)}" width="${bw}" height="${hhh}" fill="#e0a43a"/><rect x="${x}" y="${y+(hh-hg)}" width="${bw}" height="${hg}" fill="#3aa366"/>
+      <text x="${x+bw/2}" y="${y-4}" font-size="10" text-anchor="middle" fill="#333">${w.n}</text>
+      <rect x="${x-1}" y="${H-18}" width="${bw+2}" height="4" fill="${col}"/><text x="${x+bw/2}" y="${H-4}" font-size="10" text-anchor="middle" fill="${col}" font-weight="700">${w.sw>=0?'+':''}${Math.round(w.sw)}</text></g>`; }).join('');
+  const ty=H-20-(tgt/mx)*(H-36);
+  const last=ws[ws.length-1], prev=ws[ws.length-2];
+  const delta=(last&&prev)?last.n-prev.n:null;
+  return `<div class="ankipanel"><h4>Your Anki this session</h4>
+    <div class="akgrid"><div><span>Cards</span><b>${tot}</b></div><div><span>Pace</span><b>${ws.length?(tot/(ws.length*s.intMs/60000)).toFixed(1):'–'}<small>/min · target ${s.pace}</small></b></div>
+      <div><span>Last window</span><b>${last?last.n:'–'}${delta!=null?` <small class="${delta>=0?'up':'dn'}">${delta>=0?'▲':'▼'} ${Math.abs(delta)}</small>`:''}</b></div>
+      <div><span>Good</span><b class="c-good">${pctS(g,tot)}</b></div><div><span>Hard</span><b class="c-warn">${pctS(h,tot)}</b></div><div><span>Again</span><b class="c-bad">${pctS(a,tot)}</b></div></div>
+    <div class="akchart"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMinYMid meet">
+      <line x1="20" x2="${W-4}" y1="${ty}" y2="${ty}" stroke="#111" stroke-dasharray="4 3" stroke-width="1"/><text x="2" y="${ty+3}" font-size="9" fill="#111">${Math.round(tgt)}</text>${bars}</svg>
+      <div class="note">Bars: cards per window (green Good · amber Hard · red Again); dashed line = target. Number under each bar = the swing that window gave your counties, in margin points.</div></div></div>`;
+}
+function sessionLog(Y,O){
+  const ls=liveEvents(S).filter(e=>e.type==='erace' && e.live && e.startTs).sort((a,b)=>b.startTs-a.startTs).slice(0,20); if(!ls.length) return '';
+  const P=v=>v>=0?Y:O;
+  return `<div class="ankipanel"><h4>Session log — your Anki vs the result</h4><div class="tblwrap"><table class="eltbl"><thead><tr><th>Date</th><th>State</th><th>2024 lean</th><th>Time</th><th>Cards</th><th>Pace</th><th>Good</th><th>Again</th><th>Your shift vs 2024</th><th>Result</th></tr></thead><tbody>
+    ${ls.map(r=>{ const mins=Math.max(0.5,(r.clockMs||(r.endTs-r.startTs))/60000); const pc=r.cards/mins; const m=(r.y-r.o)/Math.max(1,r.y+r.o)*100; const W=r.y>r.o;
+      return `<tr data-st="${r.st}"><td>${fmtD(ymd(new Date(r.startTs)))}${r.completed===false?' <span title="stopped early">■</span>':''}</td><td>${esc(US.states[r.st].n)}</td>
+        <td style="color:${r.base!=null?P(r.base).solid:'#999'}">${r.base!=null?`${P(r.base).short} +${Math.abs(r.base).toFixed(1)}`:'–'}</td><td>${fmtMS(mins*60000)}</td><td>${r.cards}</td>
+        <td class="${r.pace&&pc>=r.pace?'up':'dn'}">${pc.toFixed(1)}${r.pace?` <small>/${r.pace}</small>`:''}</td><td>${pctS(r.g,r.cards)}</td><td>${pctS(r.a,r.cards)}</td>
+        <td style="color:${r.shift!=null?P(r.shift).solid:'#999'}">${r.shift!=null?`${P(r.shift).short} ${r.shift>=0?'+':'−'}${Math.abs(r.shift).toFixed(1)}`:'–'}</td>
+        <td><b style="color:${(W?Y:O).solid}">${W?'Won':'Lost'}</b> ${(W?Y:O).short} +${Math.abs(m).toFixed(1)}</td></tr>`; }).join('')}
+    </tbody></table></div><div class="note">The shift is what your cards did; the 2024 lean is the hill you started on. A big shift can still lose a deep-red or deep-blue state.</div></div>`;
 }
 function fmtClock(ts){ return new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
 function fmtMS(ms){ const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
@@ -478,7 +513,7 @@ document.addEventListener('click', async e=>{
   const cl=e.target.closest('[data-cl]'); if(cl){ document.querySelectorAll('#cal-len button').forEach(x=>x.classList.toggle('on',x===cl)); return; }
   const ei=e.target.closest('[data-ei]'); if(ei){ document.querySelectorAll('#es-int button').forEach(x=>x.classList.toggle('on',x===ei)); return; }
   const el=e.target.closest('[data-el]'); if(el){ document.querySelectorAll('#es-len button').forEach(x=>x.classList.toggle('on',x===el)); return; }
-  const cr=e.target.closest('.callrow,.race'); if(cr && !e.target.closest('button') && cr.dataset.st && $('#elroot')){ elSel=cr.dataset.st; elDraw(); return; }
+  const cr=e.target.closest('.callrow,.race,.eltbl tr[data-st]'); if(cr && !e.target.closest('button') && cr.dataset.st && $('#elroot')){ elSel=cr.dataset.st; elDraw(); return; }
   const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a;
   if(a==='el-create'){ const mode=document.querySelector('#el-mode .on').dataset.em, you=document.querySelector('#el-you .on').dataset.ey;
     const races=pickedRaces(); if(!races.length){ toast('Pick at least one state.'); return; }

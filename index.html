@@ -337,6 +337,12 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 .chk{color:#fff;border-radius:50%;width:16px;height:16px;display:inline-grid;place-items:center;font-size:10px;margin-left:4px}
 .race-f{font-size:11.5px;color:#666;margin-top:4px} .proj{font-weight:800;margin-right:6px}
 .race-n{text-align:center}
+.ankipanel{border-top:1px solid #e6e6e6;margin-top:16px;padding-top:4px}
+.akgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:8px}@media (max-width:700px){.akgrid{grid-template-columns:repeat(3,1fr)}}
+.akgrid span{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#777}.akgrid b{font-size:20px}.akgrid small{font-size:11px;color:#777;font-weight:500}
+.nbc .up{color:#1a7f37}.nbc .dn{color:#c0392b}.nbc .c-good{color:#1a7f37}.nbc .c-warn{color:#b7791f}.nbc .c-bad{color:#c0392b}
+.akchart{overflow-x:auto}.tblwrap{overflow-x:auto}
+.eltbl{width:100%;border-collapse:collapse;font-size:13px}.eltbl th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#777;border-bottom:2px solid #111;padding:5px 6px;white-space:nowrap}.eltbl td{border-bottom:1px solid #eee;padding:6px;white-space:nowrap}.eltbl tr{cursor:pointer}.eltbl tr:hover td{background:#fafafa}
 .race-x{display:grid;gap:3px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:12.5px}.race-x div{display:flex;gap:6px;align-items:baseline}.race-x span:first-child{color:#666;min-width:150px}
 .nwait{width:150px;height:70px;display:grid;place-items:center;color:#999;font-size:12px;border:1px dashed #ddd;border-radius:70px 70px 0 0} .nlab{font-size:12px;color:#333;margin-top:-2px}
 .needle .ndl{transform-origin:50% 100%;transform-box:fill-box;transition:transform .9s ease}
@@ -668,6 +674,12 @@ function simulate(st, extra){
         (R.battles ||= []).push({e, bonus});
         if(bonus>0){ R.gained += addGround(bonus, d, false); }
         if(!e.auto) add(d,'battle',`⚔ <b>${esc(e.name)}</b> — ${len} cards, ${Math.round(sc*100)}% effective${bonus>0?`, +${r1(bonus)} ground`:''}.`);
+      } else if(e.type==='erace' && e.live && e.cards){
+        // Election sessions feed the campaign exactly like battles: cards and quality, not the seat result
+        const len=e.cards, sc=((e.g||0)+0.6*(e.h||0))/len, f = sc>=0.9?1 : sc>=0.8?0.75 : sc>=0.7?0.5 : sc>=0.6?0.25 : 0;
+        const bonus = len/20 * f * 2;
+        if(bonus>0){ R.gained += addGround(bonus, d, false); }
+        add(d,'battle',`🗳 Election session (${esc(window.elStateName?window.elStateName(e.st):'race')}) — ${len} cards, ${Math.round(sc*100)}% effective${bonus>0?`, +${r1(bonus)} ground`:''}.`);
       } else if(e.type==='anki'){
         G.ankiByDay[d]=e; G.anki=e; if(e.again!=null && e.reviewed>=30) G.lapseRef=e;
         if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
