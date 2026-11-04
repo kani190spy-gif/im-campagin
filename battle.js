@@ -258,6 +258,7 @@ function btlCfg(b){ return {id:b.id, size:b.size, deploy:b.deploy||[], map:mapFo
 function openBattleStart(){
   if(localStorage.getItem(LS_ANKI)!=='1'){ toast('Battles read Anki on your Mac. Turn on "This device runs Anki" in Settings.'); return; }
   const cur=btlGet(); if(cur){ openBattleStatus(); return; }
+  if(typeof esGet==='function' && esGet()){ toast('An election session is running. One mode at a time.'); return; }
   const sizeSel = +(localStorage.getItem('imc.btlSize')||100);
   const A=armyState(); let prev=[]; try{ prev=JSON.parse(localStorage.getItem(LS_DEPLOY)||'[]'); }catch(e){}
   const seed='m'+uid(); const mp=mapFor(seed);
@@ -350,7 +351,7 @@ function btlSection(){
   return `<div class="card" style="margin-bottom:10px"><h3>The Anki front</h3>
     <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div>
     ${b?`<div class="big" style="font-size:22px">${esc(b.name)}</div><div class="sub">${b.seq.length} / ${b.size} cards · action every ${BTL_ACTION}</div>`
-     :`<div class="sub">${list.length?`${list.length} battle${list.length>1?'s':''} · ${won} won · ${cards.toLocaleString()} cards fought`:'Start a battle, then review in Anki. Every 20 cards you give orders and watch it play out. Reviews done without a battle become skirmishes.'}</div>`}
+     :`<div class="sub">${list.length?`${list.length} battle${list.length>1?'s':''} · ${won} won · ${cards.toLocaleString()} cards fought`:'Start a battle (Skirmish 20 up to Offensive 150), then review in Anki. Every 20 cards you give orders and watch it play out. Only cards done after you press start count.'}</div>`}
     <div class="sub">${A.prestige.toLocaleString()} ★ prestige · ${A.owned.length} elite unit${A.owned.length===1?'':'s'}${A.fallen.length?` · ${A.fallen.length} fallen`:''}</div></div>
     <div class="row" style="gap:8px">${b?`<button class="btn sm" data-a="bt-status">Status</button>`:mac?`<button class="btn pri sm" data-a="bt-open">⚔ Start battle</button>`:''}<button class="btn sm" data-a="bt-depot">Depot</button></div></div>
     ${b?`<div class="bar"><div style="width:${Math.min(100,b.seq.length/b.size*100)}%;background:#e0705f"></div></div>`:''}
@@ -361,6 +362,7 @@ function btlSection(){
 
 /* ---------- auto skirmishes (reviews outside a recorded battle) ---------- */
 async function autoSkirmishes(){
+  return; // retired: only cards done after pressing start count toward a mode
   if(btlGet() || localStorage.getItem(LS_ANKI)!=='1') return;
   let cur=+(localStorage.getItem(LS_CUR)||0);
   if(!cur){ try{ localStorage.setItem(LS_CUR, String(Date.now())); }catch(e){} return; }
@@ -380,7 +382,7 @@ function markWatched(id){ const s=watchedSet(); s.add(id); try{ localStorage.set
 function openBattleList(){
   const list=liveEvents(S).filter(e=>e.type==='battle').sort((a,b)=>(b.ord||b.ts)-(a.ord||a.ts)).slice(0,40);
   const w=watchedSet();
-  openSheet(`<h2>Battles</h2><div class="note">Every ${BTL_ACTION} Anki cards outside a recorded battle becomes a skirmish. Tap one to watch it.</div>
+  openSheet(`<h2>Battles</h2><div class="note">Tap a battle to watch it again.</div>
     <ul class="log" style="margin-top:10px">${list.map(e=>{ const t=btlTier(e.seq||''); return `<li><span class="d">${fmtD(e.date)}</span><span><b>${esc(e.name)}</b> — <span class="${t.f>=0.5?'c-good':t.f>0?'c-warn':'c-bad'}">${t.label}</span> <span class="c-muted">· ${e.g} good · ${e.h} hard · ${e.a} again</span>${w.has(e.id)?'':' <span class="pill c-warn" style="font-size:9px">new</span>'}</span><button class="btn sm" style="margin-left:auto" data-a="bt-watch" data-id="${e.id}">Watch</button></li>`; }).join('')||'<li class="c-muted">No battles yet.</li>'}</ul>
     <div class="actions"><button class="btn pri" data-a="close">Close</button></div>`);
 }

@@ -286,6 +286,67 @@ table.st tr.sum td{font-weight:700;border-top:1px solid var(--line2);border-bott
 .seg button:disabled{opacity:.4}
 label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px;cursor:pointer}
 @media (max-width:700px){.bev .bhud{position:absolute;top:6px;left:8px;bottom:auto}.bev .bname{font-size:13px}.bev .bsub{font-size:9px}.bev .bcount{position:fixed;top:calc(50% + 28.2vw + 10px);left:12px;right:auto;transform:none;font-size:12px;padding:3px 8px}.bev .bline{position:fixed;top:calc(50% + 28.2vw + 44px);left:16px;right:16px;text-align:center}.bforce{position:fixed;top:calc(50% - 28.2vw - 34px);bottom:auto;left:50%;transform:translateX(-50%);white-space:nowrap}.bcmd{position:fixed;bottom:16px;width:calc(100% - 24px)}}
+
+/* election HQ — light, NBC-style */
+.nbc{background:#fff;color:#1a1a1a;border-radius:10px;padding:16px;font-family:system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif}
+.nbc .sub,.nbc .note{color:#666}
+.nbc h2{font-family:inherit;font-weight:800;letter-spacing:-.01em;font-size:24px;margin:0;color:#111;text-transform:none}
+.nbc h3{color:#111;font-family:inherit;letter-spacing:0;text-transform:none;font-size:17px}
+.nbc h4{margin:16px 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#555}
+.nbc .btn{background:#f1f1f1;color:#111;border:1px solid #d6d6d6}
+.nbc .btn.pri{background:#111;color:#fff;border-color:#111}
+.nbc .seg{background:#f1f1f1;border-color:#ddd} .nbc .seg button{color:#333} .nbc .seg button.on{background:#111;color:#fff}
+.nbc input[type=text],.nbc select{background:#fff;color:#111;border:1px solid #ccc}
+.nbc .field label{color:#555}
+.nbc-load{padding:40px;text-align:center;color:#888}
+.bop{margin-bottom:14px}
+.bop-h{display:flex;justify-content:space-between;align-items:flex-end}
+.bop-h b{font-size:34px;font-weight:800;display:block;line-height:1}
+.bop-h span{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.bop-mid{font-size:12px;color:#444;font-weight:600}
+.bop-bar{position:relative;display:flex;height:22px;margin:6px 0 4px;background:#d9d9d9}
+.bop-bar i{display:block;height:100%}
+.bop-bar em{position:absolute;top:-6px;bottom:-6px;width:2px;background:#111;margin-left:-1px}
+.bop-f{display:flex;justify-content:space-between;font-size:11.5px;color:#666}
+.elhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-top:1px solid #e6e6e6;padding-top:12px;margin-bottom:10px}
+.elgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:16px}
+@media (max-width:900px){.elgrid{grid-template-columns:1fr}}
+.elmapwrap{position:relative}
+.elmap{width:100%;height:auto;display:block}
+.elmap path.up{cursor:pointer} .elmap path.up:hover{filter:brightness(.93)}
+.elmap path.live{stroke:#111;stroke-width:2.5}
+.elmap.cty{max-height:560px}
+.elmap.cty path{cursor:pointer} .elmap.cty path:hover{stroke:#111;stroke-width:1.5}
+.stl{font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.ellegend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:#555;margin-top:6px}
+.ellegend i,.eltip i,.callrow i,.cand>i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.eltip{position:absolute;display:none;background:#fff;border:1px solid #ccc;box-shadow:0 3px 12px rgba(0,0,0,.15);padding:8px 10px;font-size:12.5px;pointer-events:none;z-index:5;min-width:170px}
+.elback{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.tg{font-size:12px;color:#555;display:flex;align-items:center;gap:4px;margin-left:auto}
+.race{border:1px solid #e1e1e1;border-radius:6px;margin-bottom:10px;cursor:pointer}
+.race.livecard{border:2px solid #111}
+.race-h{display:flex;justify-content:space-between;align-items:baseline;padding:8px 10px;border-bottom:1px solid #eee}
+.race-h b{font-size:16px} .race-h span{font-size:12px;color:#666}
+.race-b{display:flex;gap:8px;padding:8px 10px;align-items:center;flex-wrap:wrap}
+.race-c{flex:1;min-width:190px}
+.cand{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:4px 0;font-size:14px}
+.cand .nm em{font-style:normal;font-size:10px;background:#111;color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px}
+.cand.win .nm{font-weight:800}
+.cand .pc{font-weight:700} .cand .vt{color:#666;font-size:12px;min-width:70px;text-align:right}
+.chk{color:#fff;border-radius:50%;width:16px;height:16px;display:inline-grid;place-items:center;font-size:10px;margin-left:4px}
+.race-f{font-size:11.5px;color:#666;margin-top:4px} .proj{font-weight:800;margin-right:6px}
+.race-n{text-align:center} .nlab{font-size:12px;color:#333;margin-top:-2px}
+.needle .ndl{transform-origin:50% 100%;transform-box:fill-box;transition:transform .9s ease}
+.elclock{display:flex;gap:18px;flex-wrap:wrap;align-items:center;background:#111;color:#fff;border-radius:6px;padding:10px 14px;margin-bottom:12px}
+.elclock .lbl{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#aaa}
+.elclock b{font-size:18px;font-variant-numeric:tabular-nums}
+.elclock-a{margin-left:auto;display:flex;gap:6px} .elclock .btn{background:#333;color:#fff;border-color:#444}
+.elmsg{font-size:12px;color:#b00;margin:-6px 0 8px}
+.callrow{display:flex;align-items:center;gap:4px;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:13.5px;cursor:pointer}
+.callrow span{margin-left:auto;color:#666;font-size:12px}
+.elfinal{background:#f6f6f6;border-radius:6px;padding:12px 14px;margin-bottom:12px}
+.elnew{max-width:560px}
+.simgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:2px}
 </style>
 </head>
 <body>
@@ -300,6 +361,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
   <nav class="tabs" id="tabs">
     <button data-t="campaign" class="on">Campaign</button>
     <button data-t="battles">Battles</button>
+    <button data-t="election">Election</button>
     <button data-t="stats">Stats</button>
     <button data-t="hall">Hall 🔒</button>
     <button data-t="log">War log</button>
@@ -319,7 +381,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 
 <script>
 'use strict';
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 
 /* ================= Regions ================= */
 const REG = {
@@ -679,12 +741,13 @@ function render(){
   const v = $('#view');
   if(tab==='campaign'){ if(!v.querySelector('#mapsvg')) v.innerHTML = viewCampaignShell(); updateCampaign(); }
   else if(tab==='battles') v.innerHTML = viewBattles();
+  else if(tab==='election'){ if(!v.querySelector('#elroot')){ v.innerHTML = viewElection(); afterElectionRender(); } else elDraw(); }
   else if(tab==='log') v.innerHTML = viewLog();
   else if(tab==='stats') v.innerHTML = viewStats();
   else if(tab==='hall'){ v.innerHTML = viewHall(); afterHallRender(); }
   else v.innerHTML = viewSettings();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
-  $('#fabs').style.display = tab==='settings' ? 'none' : '';
+  $('#fabs').style.display = (tab==='settings'||tab==='election') ? 'none' : '';
 }
 
 function viewCampaignShell(){
@@ -1750,5 +1813,6 @@ $('#gatebtn').addEventListener('click', ()=>enterApp(true));
 $('#gatequiet').addEventListener('click', ()=>enterApp(false));
 </script>
 <script src="battle.js"></script>
+<script src="election.js"></script>
 </body>
 </html>
