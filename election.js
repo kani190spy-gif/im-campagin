@@ -282,7 +282,7 @@ async function elDraw(){
   const pendingUp=upList(night).filter(st=>!res[st]).sort((a,b)=>US.states[a].n.localeCompare(US.states[b].n));
   root.innerHTML=`${bar}
     <div class="elhead"><div><h2>${night.mode==='custom'?'Election Night':'Senate Election Night'}</h2><div class="sub">${night.mode==='custom'?'Custom parties':'Realistic mode'} · ${(()=>{ const r=upList(night); const std=r.length===35&&r.every(st=>SEN26[st]); return std?'2026 Senate map':night.per===2?'whole Senate (100 seats)':r.length===50?'all 50 states, one seat each':`${r.length} chosen states`; })()} · county leans from 2024 · you run as <b style="color:${Y.solid}">${esc(Y.party)}</b></div></div>
-      <div class="row" style="gap:8px">${s?'':(!allDone?`<button class="btn pri" data-a="el-setup">▶ Start a session</button>`:'')}<button class="btn sm" data-a="el-cal">⏱ Calibrate pace${S.settings.elPace?` (${S.settings.elPace.v}/min)`:''}</button><button class="btn sm" data-a="el-newask">New night</button></div></div>
+      <div class="row" style="gap:8px">${s?'':(!allDone?`<button class="btn pri" data-a="el-setup">▶ Start a session</button>`:'')}<button class="btn sm" data-a="el-cal">⏱ Calibrate pace${S.settings.elPace?` (${S.settings.elPace.v}/min)`:''}</button><button class="btn sm" data-a="ntf-test" title="Send a test notification">🔔 Test</button><button class="btn sm" data-a="el-newask">New night</button></div></div>
     ${final}${calGet()?(()=>{ const c=calGet(); return `<div class="elclock"><div><span class="lbl">Calibrating</span><b id="elcal">${fmtMS(Math.max(0,c.startTs+c.min*60000-Date.now()))}</b></div><div><span class="lbl">Length</span><b>${c.min}:00</b></div><div><span class="lbl">Cards so far</span><b id="elcaln">${c.n||0}</b></div><div class="elclock-a"><button class="btn sm" data-a="cal-cancel">Cancel</button></div></div>`; })():''}${liveBox}
     <div class="elgrid"><div class="elmapwrap"><div class="elback">${elSel?`<button class="btn sm" data-a="el-back">◀ US map</button> <b>${esc(US.states[elSel].n)}</b>`:'<b>Senate map</b>'} <label class="tg"><input type="checkbox" data-a="el-arrows" ${elArrows?'checked':''}> Shift arrows vs 2024</label></div>${mapSvg}
       <div class="ellegend"><span><i style="background:${Y.solid}"></i>${esc(Y.short)} won</span><span><i style="background:${Y.light}"></i>${esc(Y.short)} leading</span><span><i style="background:${O.light}"></i>${esc(O.short)} leading</span><span><i style="background:${O.solid}"></i>${esc(O.short)} won</span><span><i style="background:${EL_PEND};border:1px solid #ccc"></i>No results</span><span><i style="background:${EL_NOTUP}"></i>Not up</span></div>
@@ -352,7 +352,7 @@ async function openSetup(){
     <div class="field"><label>Report every</label><div class="seg" id="es-int">${[1,2,3,5].map(m=>`<button data-ei="${m}" class="${m===2?'on':''}">${m} min</button>`).join('')}</div></div>
     <div class="field"><label>Session length</label><div class="seg" id="es-len">${[20,30,40,60].map(m=>`<button data-el="${m}" class="${m===30?'on':''}">${m} min</button>`).join('')}</div></div>
     <div class="field"><label>Target pace (cards / minute)</label><div class="row"><input type="number" id="es-pace" min="1" max="15" step="0.5" value="${pace.v}" style="width:90px"><span class="note">${esc(pace.why)}</span><button class="btn sm" data-a="el-cal">Calibrate</button></div></div>
-    <div class="field"><label>Notify me</label><div class="seg" id="es-ntf"><button data-en="each">Every report</button><button data-en="end" class="on">When it's called</button><button data-en="off">Off</button></div><div class="note">One start runs the whole session — every report comes in on its own. Notifications and a chime let you stay in Anki.</div></div>
+    <div class="field"><label>Notify me</label><div class="seg" id="es-ntf"><button data-en="each" class="on">Every report</button><button data-en="end">Only when it's called</button><button data-en="off">Off</button></div><div class="note">One start runs the whole session — every report comes in on its own; you never restart it.</div><div class="row" style="gap:8px;margin-top:6px"><span class="note" id="ntf-st">${notifyStatus()}</span><button class="btn sm" data-a="ntf-test">Test notification</button></div></div>
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="es-start">▶ Start the clock</button></div>`);
   showRaceInfo();
 }
@@ -387,7 +387,23 @@ function holdNote(){ const el=$('#el-holdnote'); if(!el) return; const r=pickedR
 function askNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
 function chime(kind){ try{ const C=window.AudioContext||window.webkitAudioContext; if(!C) return; const ac=chime.ac||(chime.ac=new C()); const t=ac.currentTime;
   const notes=kind==='end'?[660,880,1320]:[880]; notes.forEach((f,i)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.frequency.value=f; o.type='sine'; g.gain.setValueAtTime(0.0001,t+i*0.16); g.gain.exponentialRampToValueAtTime(0.18,t+i*0.16+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.16+0.35); o.connect(g).connect(ac.destination); o.start(t+i*0.16); o.stop(t+i*0.16+0.4); }); }catch(e){} }
+function notifyStatus(){
+  if(!('Notification' in window)) return 'This browser can\'t show desktop notifications. Use Chrome on the Mac.';
+  const p=Notification.permission;
+  if(p==='granted') return '✓ Notifications allowed. If none appear, check Mac System Settings → Notifications → your browser → Allow, and that Focus/Do Not Disturb is off.';
+  if(p==='denied') return '✗ Notifications are blocked for this site. Click the icon left of the address bar → Notifications → Allow, then reload.';
+  return 'Notifications not allowed yet — press Test notification and choose Allow.';
+}
+async function testNotify(){
+  try{ if('Notification' in window && Notification.permission==='default') await Notification.requestPermission(); }catch(e){}
+  notify('IM Campaign', 'Notifications are working. You\'ll get one at each report.', 'tick');
+  const el=$('#ntf-st'); if(el) el.textContent=notifyStatus();
+}
+let titleFlash=null;
+function flashTitle(msg){ clearInterval(titleFlash); let on=true, n=0; titleFlash=setInterval(()=>{ document.title=on?msg:'IM Campaign'; on=!on; if(++n>40 || document.visibilityState==='visible'){ clearInterval(titleFlash); document.title='IM Campaign'; } },1000); }
 function notify(title, body, kind){
+  if(document.visibilityState!=='visible') flashTitle('🗳 '+title);
+  if(document.visibilityState==='visible'){ toast(title+(body?' — '+body:'')); }
   chime(kind);
   try{ if('Notification' in window && Notification.permission==='granted'){ const n=new Notification(title,{body, tag:'imc-'+(kind||'x'), silent:true}); n.onclick=()=>{ window.focus(); n.close(); }; } }catch(e){}
 }
@@ -456,6 +472,7 @@ document.addEventListener('click', async e=>{
     elSel=live; tab='election'; render(); toast(`The clock is running. First counties report in ${intMin} min — go review.`);
   }
   else if(a==='el-cal') openCalibrate();
+  else if(a==='ntf-test') testNotify();
   else if(a==='cal-start'){ if(modeBusy()){ toast('Another mode is running.'); return; } const min=+document.querySelector('#cal-len .on').dataset.cl; calSet({startTs:Date.now(), min, n:0}); askNotify(); chime('tick'); closeSheet(); renderCalChip(); toast(`Calibration started: ${min} minutes. Go review at your normal pace.`); }
   else if(a==='cal-cancel'){ if(confirm('Cancel calibration?')){ calSet(null); renderCalChip(); } }
   else if(a==='el-stop') endSessionNow();
