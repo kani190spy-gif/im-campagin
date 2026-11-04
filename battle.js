@@ -258,7 +258,7 @@ function btlCfg(b){ return {id:b.id, size:b.size, deploy:b.deploy||[], map:mapFo
 function openBattleStart(){
   if(localStorage.getItem(LS_ANKI)!=='1'){ toast('Battles read Anki on your Mac. Turn on "This device runs Anki" in Settings.'); return; }
   const cur=btlGet(); if(cur){ openBattleStatus(); return; }
-  if(typeof esGet==='function' && esGet()){ toast('An election session is running. One mode at a time.'); return; }
+  if(typeof modeBusy==='function' && modeBusy()){ toast(`Your ${modeBusy()} is still running. One mode at a time.`); return; }
   const sizeSel = +(localStorage.getItem('imc.btlSize')||100);
   const A=armyState(); let prev=[]; try{ prev=JSON.parse(localStorage.getItem(LS_DEPLOY)||'[]'); }catch(e){}
   const seed='m'+uid(); const mp=mapFor(seed);
@@ -287,6 +287,7 @@ async function battleStart(){
   try{ localStorage.setItem('imc.btlSize',String(size)); localStorage.setItem(LS_DEPLOY, JSON.stringify(picks)); }catch(e){}
   const b={id:'btl-'+uid(), name, size, startTs:Date.now(), seq:'', shown:0, orders:[], deploy, mapSeed:$('#bt-map').dataset.seed};
   btlSet(b); try{ localStorage.setItem(LS_CUR, String(b.startTs)); }catch(e){}
+  if(typeof askNotify==='function') askNotify();
   closeSheet(); btlRefresh(); toast(`${name} has begun. Go review — come back every ${BTL_ACTION} cards.`);
 }
 let btlBusy=false, btlPlaying=false;
@@ -300,7 +301,7 @@ async function battleTick(force){
     if(seq!==b.seq){ b.seq=seq; b.lastId=(rev[Math.min(rev.length,b.size)-1]||{}).id||b.lastId; btlSet(b); btlRefresh(); }
     const ready = (b.seq.length-b.shown>=BTL_ACTION) || (b.seq.length>=b.size && b.shown<b.size);
     if(ready && document.visibilityState==='visible' && !CUT && $('#gate').classList.contains('hidden') && (force || $('#sheetbg').classList.contains('hidden'))){ btlBusy=false; await battlePlayNext(); }
-    else if(ready){ document.title='⚔ Action ready · IM Campaign'; }
+    else if(ready){ document.title='⚔ Action ready · IM Campaign'; if(b.notified!==b.shown){ b.notified=b.shown; btlSet(b); if(typeof notify==='function') notify(`${b.name}: action ready`, `${b.seq.length}/${b.size} cards. Switch back to give orders.`, 'tick'); } }
   }catch(e){ /* Anki closed */ }
   finally{ btlBusy=false; }
 }
