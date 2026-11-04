@@ -146,7 +146,7 @@ async function finishSession(s, revs){
     <div class="note">${esc(US.states[s.live].n)} · ${fmtClock(s.startTs)}–${fmtClock(endTs)} · <b>${fmtMS(actualMs)}</b> of ${planned}:00 on the clock${s.clock==='step'?` · ${ws.filter(w=>w.from).length}/${s.nTicks} windows run`:''}</div>
     <div class="kv" style="max-width:320px;margin:14px auto 0"><span>Cards</span><b>${seq.length}</b><span>Pace</span><b>${cpm.toFixed(1)}/min <span class="c-muted">(target ${s.pace})</span></b><span>Good / Hard / Again</span><b><span class="c-good">${c.G}</span> / <span class="c-warn">${c.H}</span> / <span class="c-bad">${c.A}</span></b>
       <span>Result</span><b style="color:${(won?Y:O).solid}">${won?'Seat won':'Seat lost'} · ${(won?Y:O).short} +${Math.abs(m).toFixed(1)}</b>${s.sims.length?`<span>Simulated</span><b>${s.sims.map(st=>US.states[st].a).join(', ')}</b>`:''}</div>
-    <div class="actions" style="justify-content:center"><button class="btn pri" data-a="close">Done</button></div></div>`);
+    <div class="actions" style="justify-content:center"><button class="btn" data-a="close">Done</button>${upList(night).some(x=>!racesState(night)[x])?`<button class="btn pri" data-a="el-setup">▶ Next state</button>`:''}</div></div>`);
   if(s.notify!=='off') notify(`${US.states[s.live].n} is called`, won?'You win the seat. Session over — stop reviewing or start another.':'Seat lost. Session over.', 'end');
 }
 let elToastRes=null;
@@ -273,8 +273,11 @@ async function elDraw(){
     return `<div class="race ${live?'livecard':''}" data-st="${st}">
       <div class="race-h"><b>${esc(nm)}</b><span>${r?'Final':`${Math.round(sm.pctIn*100)}% expected vote in`}</span></div>
       <div class="race-b"><div class="race-c">${row(Y,sm.y,true)}${row(O,sm.o,false)}
-        <div class="race-f">${called?`<span class="proj" style="color:${lead.solid}">${r?'Winner':'Projected winner'}: ${esc(lead.party)}</span>`:''} ${sm.nRep}/${sm.nAll} counties fully in · 2024: ${sm.baseM>=0?'You':'Opp'} +${Math.abs(sm.baseM).toFixed(1)}</div></div>
-        ${r?'':`<div class="race-n">${needleSVG(sm.pWin, sm.sd, night, live)}</div>`}</div></div>`;
+        <div class="race-f">${called?`<span class="proj" style="color:${lead.solid}">${r?'Winner':'Projected winner'}: ${esc(lead.party)}</span>`:''} ${sm.nRep}/${sm.nAll} counties fully in · 2024: ${sm.baseM>=0?Y.short:O.short} +${Math.abs(sm.baseM).toFixed(1)}</div>
+        ${!r && tv>1 ? (()=>{ const sw=sm.obsSwingPts, P=sm.projM>=0?Y:O, Sp=sw>=0?Y:O; return `<div class="race-x">
+          <div><span>Counties in so far vs 2024</span><b style="color:${Sp.solid}">${Sp.short} ${sw>=0?'+':'−'}${Math.abs(sw).toFixed(1)} shift</b></div>
+          <div><span>Projected final</span><b style="color:${P.solid}">${P.short} +${Math.abs(sm.projM).toFixed(1)}</b> <span class="c-muted">± ${sm.sd.toFixed(1)}</span></div></div>`; })() : ''}</div>
+        ${r?'':tv>1?`<div class="race-n">${needleSVG(sm.pWin, sm.sd, night, live)}</div>`:`<div class="race-n"><div class="nwait">Awaiting<br>results</div></div>`}</div></div>`;
   };
   const liveBox = s ? (()=>{ const lastW=s.windows[s.windows.length-1];
     if(s.clock==='step'){ const run=!!s.curA; const rem=run?Math.max(0,s.curA+s.intMs-Date.now()):s.intMs;
@@ -364,7 +367,7 @@ async function openSetup(){
     <div id="es-info" class="note"></div>
     <div class="field"><label>Simulate alongside (optional)</label><div class="simgrid">${open.map(st=>`<label class="dep"><input type="checkbox" data-sim="${st}"> ${US.states[st].a}</label>`).join('')}</div><div class="row" style="gap:6px;margin-top:4px"><button class="btn sm" data-a="es-simall">All others</button><button class="btn sm" data-a="es-simnone">None</button></div></div>
     <div class="field"><label>Report every</label><div class="seg" id="es-int">${[1,2,3,5].map(m=>`<button data-ei="${m}" class="${m===2?'on':''}">${m} min</button>`).join('')}</div></div>
-    <div class="field"><label>Session length (time on the clock)</label><div class="seg" id="es-len">${[20,30,40,60].map(m=>`<button data-el="${m}" class="${m===30?'on':''}">${m} min</button>`).join('')}</div></div>
+    <div class="field"><label>Minutes for this state (time on the clock)</label><div class="seg" id="es-len">${[5,10,15,20,30,45,60].map(m=>`<button data-el="${m}" class="${m===10?'on':''}">${m}</button>`).join('')}</div></div>
     <div class="field"><label>Target pace (cards / minute)</label><div class="row"><input type="number" id="es-pace" min="1" max="15" step="0.5" value="${pace.v}" style="width:90px"><span class="note">${esc(pace.why)}</span><button class="btn sm" data-a="el-cal">Calibrate</button></div></div>
     <div class="field"><label>Clock</label><div class="seg" id="es-clk"><button data-ec="step" class="on">I start each window</button><button data-ec="cont">Run continuously</button></div><div class="note" id="es-clknote">Each window runs once, then pauses. You get notified, look at the report, and press start for the next one. Cards done while paused don't count.</div></div>
     <div class="field"><label>Notify me</label><div class="seg" id="es-ntf"><button data-en="each" class="on">Every report</button><button data-en="end">Only when it's called</button><button data-en="off">Off</button></div><div class="note">You're notified at every report in step mode; in continuous mode this sets how often.</div><div class="row" style="gap:8px;margin-top:6px"><span class="note" id="ntf-st">${notifyStatus()}</span><button class="btn sm" data-a="ntf-test">Test notification</button></div></div>
