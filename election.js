@@ -87,23 +87,25 @@ async function startSession(cfg){
   const plan={}, stNoise={};
   const r=rng('es'+night.id+cfg.live+Date.now());
   for(const st of states){ const cs=await elCounties(st); plan[st]=countyPlan(st, cs, nTicks, night.id+':'+Date.now()); stNoise[st]=randn(r)*2.2; }
-  const s={id:'es-'+uid(), night:night.id, live:cfg.live, sims:cfg.sims, intMs:cfg.intMs, nTicks, pace:cfg.pace, notify:cfg.notify||'end', startTs:Date.now(), done:0, plan, stNoise, tally:{}, windows:[], sw:{}};
+  const s={id:'es-'+uid(), night:night.id, live:cfg.live, sims:cfg.sims, intMs:cfg.intMs, nTicks, pace:cfg.pace, notify:cfg.notify||'end', clock:cfg.clock||'step', curA:Date.now(), startTs:Date.now(), done:0, plan, stNoise, tally:{}, windows:[], sw:{}};
   for(const st of states) s.tally[st]={};
   esSet(s); return s;
 }
 let esBusy=false;
 async function esTick(){
   const s=esGet(); if(!s || esBusy) return; const now=Date.now();
-  const due=s.stopAt ? s.nTicks : Math.min(s.nTicks, Math.floor((now-s.startTs)/s.intMs));
+  const step=s.clock==='step';
+  const due = s.stopAt ? s.nTicks : step ? (s.curA && now>=s.curA+s.intMs ? s.done+1 : s.done) : Math.min(s.nTicks, Math.floor((now-s.startTs)/s.intMs));
   if(due<=s.done){ elLiveUpdate(); return; }
   esBusy=true;
   try{
     let revs=[]; try{ revs=await ankiAnswersSince(s.startTs); }catch(e){ if(localStorage.getItem(LS_ANKI)==='1'){ esBusy=false; elLiveUpdate('Anki not reachable — waiting to count'); return; } }
     const night=elNight(); if(!night){ esSet(null); return; }
     for(let k=s.done;k<due;k++){
-      const a=s.startTs+k*s.intMs, b=a+s.intMs; const cut=s.stopAt?Math.min(b,s.stopAt):b; const w=revs.filter(x=>x.id>a && x.id<=cut).map(x=>x.e);
+      let a, b; if(step){ if(k===s.done && s.curA){ a=s.curA; b=a+s.intMs; } else { a=b=0; } } else { a=s.startTs+k*s.intMs; b=a+s.intMs; }
+      const cut=s.stopAt?Math.min(b,s.stopAt):b; const w=(b>a)?revs.filter(x=>x.id>a && x.id<=cut).map(x=>x.e):[];
       const c=btlCounts(w.join('')); const expected=s.pace*s.intMs/60000; const sw=windowSwing(w.length,c.G,c.H,c.A,expected);
-      s.windows.push({k, n:w.length, g:c.G, h:c.H, a:c.A, sw:+sw.toFixed(2)});
+      s.windows.push({k, n:w.length, g:c.G, h:c.H, a:c.A, sw:+sw.toFixed(2), from:a||null, to:(b>a?Math.min(b,cut):null)});
       for(const st of [s.live,...s.sims]){
         const cs=await elCounties(st), pl=s.plan[st]; const live=st===s.live;
         for(const [f,p] of Object.entries(pl)){
@@ -118,21 +120,22 @@ async function esTick(){
       }
       s.done=k+1;
     }
+    if(step) s.curA=null;
     esSet(s);
     if(s.done>=s.nTicks){ await finishSession(s, revs); }
-    else if(s.notify==='each'){ const cs=CNTY[s.live], sm=stateSummary(night,s.live,cs,s.tally[s.live]); const lw=s.windows[s.windows.length-1];
-      notify(`Report ${s.done}/${s.nTicks} · ${US.states[s.live].n}`, `${lw.n} cards this window (${lw.sw>=0?'+':''}${lw.sw.toFixed(1)}). You ${(sm.y/Math.max(1,sm.y+sm.o)*100).toFixed(1)}% with ${Math.round(sm.pctIn*100)}% in · ${Math.round(sm.pWin*100)}% to win.`, 'tick'); }
+    else if(s.notify==='each' || step){ const cs=CNTY[s.live], sm=stateSummary(night,s.live,cs,s.tally[s.live]); const lw=s.windows[s.windows.length-1];
+      notify(`Report ${s.done}/${s.nTicks} is in · ${US.states[s.live].n}`, `${lw.n} cards (${lw.sw>=0?'+':''}${lw.sw.toFixed(1)}). You ${(sm.y/Math.max(1,sm.y+sm.o)*100).toFixed(1)}% with ${Math.round(sm.pctIn*100)}% in · ${Math.round(sm.pWin*100)}% to win.${step?' Open the app to start the next window.':''}`, 'tick'); }
     elRefresh();
   } finally { esBusy=false; }
 }
 async function finishSession(s, revs){
   const night=elNight(); if(!night) return;
-  const endTs=s.stopAt||s.startTs+s.nTicks*s.intMs;
-  const seq=revs.filter(x=>x.id>s.startTs && x.id<=endTs).map(x=>x.e).join(''); const c=btlCounts(seq);
-  const planned=Math.round(s.nTicks*s.intMs/60000), actualMs=endTs-s.startTs;
+  const ws=s.windows; const c={G:ws.reduce((t,w)=>t+w.g,0), H:ws.reduce((t,w)=>t+w.h,0), A:ws.reduce((t,w)=>t+w.a,0)}; const seq={length:ws.reduce((t,w)=>t+w.n,0)};
+  const lastTo=Math.max(...ws.map(w=>w.to||0), s.startTs); const endTs=s.clock==='step'?lastTo:(s.stopAt||s.startTs+s.nTicks*s.intMs);
+  const planned=Math.round(s.nTicks*s.intMs/60000), actualMs=s.clock==='step'?ws.reduce((t,w)=>t+((w.to&&w.from)?w.to-w.from:0),0):endTs-s.startTs;
   for(const st of [s.live,...s.sims]){
     const t=s.tally[st]; let y=0,o=0; const cv={}; for(const [f,v] of Object.entries(t)){ y+=v[0]; o+=v[1]; cv[f]=[v[0],v[1]]; }
-    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:planned, startTs:s.startTs, endTs, completed:!s.stopAt, pace:s.pace}:{})}, true);
+    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:planned, startTs:s.startTs, endTs:s.startTs+actualMs, clockMs:actualMs, completed:!s.stopAt, pace:s.pace}:{})}, true);
   }
   commit(); esSet(null);
   const won = (()=>{ const t=s.tally[s.live]; let y=0,o=0; for(const v of Object.values(t)){ y+=v[0]; o+=v[1]; } return y>o; })();
@@ -140,7 +143,7 @@ async function finishSession(s, revs){
   const Y=elParty(night,'you'), O=elParty(night,'opp'); const tl=s.tally[s.live]; let yv=0,ov=0; for(const v of Object.values(tl)){ yv+=v[0]; ov+=v[1]; } const m=(yv-ov)/Math.max(1,yv+ov)*100;
   const cpm=seq.length/Math.max(0.5,actualMs/60000);
   openSheet(`<div class="donebox"><div class="donechk">${s.stopAt?'■':'✓'}</div><h2>${s.stopAt?'Session stopped early':'Session complete'}</h2>
-    <div class="note">${esc(US.states[s.live].n)} · ${fmtClock(s.startTs)}–${fmtClock(endTs)} · <b>${fmtMS(actualMs)}</b> of ${planned}:00</div>
+    <div class="note">${esc(US.states[s.live].n)} · ${fmtClock(s.startTs)}–${fmtClock(endTs)} · <b>${fmtMS(actualMs)}</b> of ${planned}:00 on the clock${s.clock==='step'?` · ${ws.filter(w=>w.from).length}/${s.nTicks} windows run`:''}</div>
     <div class="kv" style="max-width:320px;margin:14px auto 0"><span>Cards</span><b>${seq.length}</b><span>Pace</span><b>${cpm.toFixed(1)}/min <span class="c-muted">(target ${s.pace})</span></b><span>Good / Hard / Again</span><b><span class="c-good">${c.G}</span> / <span class="c-warn">${c.H}</span> / <span class="c-bad">${c.A}</span></b>
       <span>Result</span><b style="color:${(won?Y:O).solid}">${won?'Seat won':'Seat lost'} · ${(won?Y:O).short} +${Math.abs(m).toFixed(1)}</b>${s.sims.length?`<span>Simulated</span><b>${s.sims.map(st=>US.states[st].a).join(', ')}</b>`:''}</div>
     <div class="actions" style="justify-content:center"><button class="btn pri" data-a="close">Done</button></div></div>`);
@@ -148,6 +151,7 @@ async function finishSession(s, revs){
 }
 let elToastRes=null;
 function endSessionNow(){ const s=esGet(); if(!s) return; if(!confirm('Stop the count now? Remaining counties report with no cards — the opponent sweeps them.')) return; s.stopAt=Date.now(); esSet(s); esTick(); }
+function nextWindow(){ const s=esGet(); if(!s || s.clock!=='step' || s.curA || s.done>=s.nTicks) return; s.curA=Date.now(); esSet(s); chime('tick'); elRefresh(); toast(`Window ${s.done+1}/${s.nTicks} started — ${fmtMS(s.intMs)} on the clock. Go review.`); }
 function cancelSession(){ if(!confirm('Cancel this election session? Nothing will be recorded.')) return; esSet(null); elRefresh(); }
 
 /* ---------- state summaries & the needle ---------- */
@@ -272,7 +276,14 @@ async function elDraw(){
         <div class="race-f">${called?`<span class="proj" style="color:${lead.solid}">${r?'Winner':'Projected winner'}: ${esc(lead.party)}</span>`:''} ${sm.nRep}/${sm.nAll} counties fully in · 2024: ${sm.baseM>=0?'You':'Opp'} +${Math.abs(sm.baseM).toFixed(1)}</div></div>
         ${r?'':`<div class="race-n">${needleSVG(sm.pWin, sm.sd, night, live)}</div>`}</div></div>`;
   };
-  const liveBox = s ? (()=>{ const left=Math.max(0, s.startTs+s.nTicks*s.intMs-Date.now()); const nextIn=Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now()); const lastW=s.windows[s.windows.length-1];
+  const liveBox = s ? (()=>{ const lastW=s.windows[s.windows.length-1];
+    if(s.clock==='step'){ const run=!!s.curA; const rem=run?Math.max(0,s.curA+s.intMs-Date.now()):s.intMs;
+      return `<div class="elclock ${run?'':'paused'}"><div><span class="lbl">${run?`Window ${s.done+1} of ${s.nTicks}`:'Paused'}</span><b id="elnext">${fmtMS(rem)}</b></div>
+        <div><span class="lbl">Reports in</span><b>${s.done}/${s.nTicks}</b></div><div><span class="lbl">Target pace</span><b>${s.pace}/min</b></div>
+        <div><span class="lbl">Last window</span><b>${lastW?`${lastW.n} cards · <span style="color:${lastW.sw>=0?Y.solid:O.solid}">${lastW.sw>=0?'+':''}${lastW.sw.toFixed(1)}</span>`:'—'}</b></div>
+        <div class="elclock-a">${run?'':`<button class="btn pri" data-a="el-next">▶ Start next ${fmtMS(s.intMs)}</button>`}<button class="btn sm" data-a="el-stop">Stop count</button><button class="btn sm" data-a="el-cancel">Cancel</button></div></div>
+        <div class="elmsg" id="elmsg">${run?'':'Look over the report, then start the next window. Cards done while paused don\'t count.'}</div>`; }
+    const left=Math.max(0, s.startTs+s.nTicks*s.intMs-Date.now()); const nextIn=Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now());
     return `<div class="elclock"><div><span class="lbl">Next report</span><b id="elnext">${fmtMS(nextIn)}</b></div><div><span class="lbl">Report</span><b>${s.done}/${s.nTicks}</b></div><div><span class="lbl">Time left</span><b id="elleft">${fmtMS(left)}</b></div><div><span class="lbl">Target pace</span><b>${s.pace}/min</b></div>
       <div><span class="lbl">Last window</span><b>${lastW?`${lastW.n} cards · <span style="color:${lastW.sw>=0?Y.solid:O.solid}">${lastW.sw>=0?'+':''}${lastW.sw.toFixed(1)}</span>`:'—'}</b></div>
       <div class="elclock-a"><button class="btn sm" data-a="el-stop">Stop count</button><button class="btn sm" data-a="el-cancel">Cancel</button></div></div>
@@ -312,18 +323,21 @@ function bindElMap(){
 }
 function elLiveUpdate(msg){
   const s=esGet(); if(!s) return;
-  const a=$('#elnext'), b=$('#elleft'); if(a) a.textContent=fmtMS(Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now())); if(b) b.textContent=fmtMS(Math.max(0, s.startTs+s.nTicks*s.intMs-Date.now()));
+  const nx = s.clock==='step' ? (s.curA?Math.max(0,s.curA+s.intMs-Date.now()):s.intMs) : Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now());
+  const a=$('#elnext'), b=$('#elleft'); if(a) a.textContent=fmtMS(nx); if(b) b.textContent=fmtMS(Math.max(0, s.startTs+s.nTicks*s.intMs-Date.now()));
   const m=$('#elmsg'); if(m && msg) m.textContent=msg;
   // jitter needles a little
   document.querySelectorAll('.needle .ndl').forEach(l=>{ l.style.transform=`rotate(${((Math.random()-.5)*1.6).toFixed(2)}deg)`; });
-  if(typeof tab!=='undefined' && tab!=='election'){ const c=$('#elchip'); if(c) c.querySelector('em').textContent=fmtMS(Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now())); }
+
 }
 function elRefresh(){ renderElChip(); if(typeof tab!=='undefined' && tab==='election' && $('#elroot')) elDraw(); }
 function renderElChip(){
   let el=$('#elchip'); const s=esGet();
   if(!s){ if(el) el.remove(); return; }
   if(!el){ el=document.createElement('button'); el.id='elchip'; el.className='chip'; el.setAttribute('data-a','el-go'); const sd=$('#syncdot'); sd.parentNode.insertBefore(el, sd); }
-  el.innerHTML=`<i style="background:#1f63e0"></i>🗳 ${US&&US.states[s.live]?US.states[s.live].a:''} ${s.done}/${s.nTicks} · <em>${fmtMS(Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now()))}</em>`;
+  const paused = s.clock==='step' && !s.curA;
+  const nx = s.clock==='step' ? (s.curA?Math.max(0,s.curA+s.intMs-Date.now()):0) : Math.max(0, s.startTs+(s.done+1)*s.intMs-Date.now());
+  el.innerHTML=`<i style="background:${paused?'#ffb347':'#1f63e0'}"></i>🗳 ${US&&US.states[s.live]?US.states[s.live].a:''} ${s.done}/${s.nTicks} · <em>${paused?'report in — start next':fmtMS(nx)}</em>`;
 }
 
 /* ---------- setup sheets ---------- */
@@ -350,9 +364,10 @@ async function openSetup(){
     <div id="es-info" class="note"></div>
     <div class="field"><label>Simulate alongside (optional)</label><div class="simgrid">${open.map(st=>`<label class="dep"><input type="checkbox" data-sim="${st}"> ${US.states[st].a}</label>`).join('')}</div><div class="row" style="gap:6px;margin-top:4px"><button class="btn sm" data-a="es-simall">All others</button><button class="btn sm" data-a="es-simnone">None</button></div></div>
     <div class="field"><label>Report every</label><div class="seg" id="es-int">${[1,2,3,5].map(m=>`<button data-ei="${m}" class="${m===2?'on':''}">${m} min</button>`).join('')}</div></div>
-    <div class="field"><label>Session length</label><div class="seg" id="es-len">${[20,30,40,60].map(m=>`<button data-el="${m}" class="${m===30?'on':''}">${m} min</button>`).join('')}</div></div>
+    <div class="field"><label>Session length (time on the clock)</label><div class="seg" id="es-len">${[20,30,40,60].map(m=>`<button data-el="${m}" class="${m===30?'on':''}">${m} min</button>`).join('')}</div></div>
     <div class="field"><label>Target pace (cards / minute)</label><div class="row"><input type="number" id="es-pace" min="1" max="15" step="0.5" value="${pace.v}" style="width:90px"><span class="note">${esc(pace.why)}</span><button class="btn sm" data-a="el-cal">Calibrate</button></div></div>
-    <div class="field"><label>Notify me</label><div class="seg" id="es-ntf"><button data-en="each" class="on">Every report</button><button data-en="end">Only when it's called</button><button data-en="off">Off</button></div><div class="note">One start runs the whole session — every report comes in on its own; you never restart it.</div><div class="row" style="gap:8px;margin-top:6px"><span class="note" id="ntf-st">${notifyStatus()}</span><button class="btn sm" data-a="ntf-test">Test notification</button></div></div>
+    <div class="field"><label>Clock</label><div class="seg" id="es-clk"><button data-ec="step" class="on">I start each window</button><button data-ec="cont">Run continuously</button></div><div class="note" id="es-clknote">Each window runs once, then pauses. You get notified, look at the report, and press start for the next one. Cards done while paused don't count.</div></div>
+    <div class="field"><label>Notify me</label><div class="seg" id="es-ntf"><button data-en="each" class="on">Every report</button><button data-en="end">Only when it's called</button><button data-en="off">Off</button></div><div class="note">You're notified at every report in step mode; in continuous mode this sets how often.</div><div class="row" style="gap:8px;margin-top:6px"><span class="note" id="ntf-st">${notifyStatus()}</span><button class="btn sm" data-a="ntf-test">Test notification</button></div></div>
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="es-start">▶ Start the clock</button></div>`);
   showRaceInfo();
 }
@@ -449,6 +464,7 @@ document.addEventListener('click', async e=>{
   const es=e.target.closest('[data-es]'); if(es){ document.querySelectorAll('#el-set button').forEach(x=>x.classList.toggle('on',x===es)); $('#el-pick').style.display=es.dataset.es==='pick'?'':'none'; holdNote(); return; }
   if(e.target.closest('[data-pk]')){ holdNote(); return; }
   const ey=e.target.closest('[data-ey]'); if(ey){ document.querySelectorAll('#el-you button').forEach(x=>x.classList.toggle('on',x===ey)); return; }
+  const ec=e.target.closest('[data-ec]'); if(ec){ document.querySelectorAll('#es-clk button').forEach(x=>x.classList.toggle('on',x===ec)); $('#es-clknote').textContent = ec.dataset.ec==='step' ? 'Each window runs once, then pauses. You get notified, look at the report, and press start for the next one. Cards done while paused don\'t count.' : 'One start runs the whole session; reports keep coming on their own until the end.'; return; }
   const en=e.target.closest('[data-en]'); if(en){ document.querySelectorAll('#es-ntf button').forEach(x=>x.classList.toggle('on',x===en)); return; }
   const cl=e.target.closest('[data-cl]'); if(cl){ document.querySelectorAll('#cal-len button').forEach(x=>x.classList.toggle('on',x===cl)); return; }
   const ei=e.target.closest('[data-ei]'); if(ei){ document.querySelectorAll('#es-int button').forEach(x=>x.classList.toggle('on',x===ei)); return; }
@@ -468,13 +484,15 @@ document.addEventListener('click', async e=>{
     const live=$('#es-live').value; const sims=[...document.querySelectorAll('[data-sim]:checked')].map(x=>x.dataset.sim).filter(x=>x!==live);
     const intMin=+document.querySelector('#es-int .on').dataset.ei, minutes=+document.querySelector('#es-len .on').dataset.el, pace=Math.max(1,+$('#es-pace').value||4);
     const notifyMode=(document.querySelector('#es-ntf .on')||{dataset:{en:'end'}}).dataset.en; if(notifyMode!=='off') askNotify(); chime('tick');
-    closeSheet(); await startSession({notify:notifyMode, live, sims, intMs:(window.EL_TEST_MS||intMin*60000), minutes:(window.EL_TEST_MS?minutes*window.EL_TEST_MS/ (intMin*60000)*1:minutes), pace});
+    const clock=(document.querySelector('#es-clk .on')||{dataset:{ec:'step'}}).dataset.ec==='cont'?'cont':'step';
+    closeSheet(); await startSession({clock, notify:notifyMode, live, sims, intMs:(window.EL_TEST_MS||intMin*60000), minutes:(window.EL_TEST_MS?minutes*window.EL_TEST_MS/ (intMin*60000)*1:minutes), pace});
     elSel=live; tab='election'; render(); toast(`The clock is running. First counties report in ${intMin} min — go review.`);
   }
   else if(a==='el-cal') openCalibrate();
   else if(a==='ntf-test') testNotify();
   else if(a==='cal-start'){ if(modeBusy()){ toast('Another mode is running.'); return; } const min=+document.querySelector('#cal-len .on').dataset.cl; calSet({startTs:Date.now(), min, n:0}); askNotify(); chime('tick'); closeSheet(); renderCalChip(); toast(`Calibration started: ${min} minutes. Go review at your normal pace.`); }
   else if(a==='cal-cancel'){ if(confirm('Cancel calibration?')){ calSet(null); renderCalChip(); } }
+  else if(a==='el-next') nextWindow();
   else if(a==='el-stop') endSessionNow();
   else if(a==='el-cancel') cancelSession();
   else if(a==='el-back'){ elSel=null; elDraw(); }
