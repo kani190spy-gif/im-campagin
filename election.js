@@ -83,12 +83,18 @@ function windowSwing(n,g,h,a,expected){
   return s;
 }
 function countyPlan(st, cs, nTicks, seed){
+  // Each state gets a counting style for the night, so leads can go either way:
+  //  mixed (half the time) — counties report in no particular order; big ones in several batches
+  //  big-first — early/mail votes from the big counties land first, small counties catch up later
+  //  small-first — the classic early lead from small rural counties, big counties late
   const r=rng(seed+st); const ids=Object.keys(cs); const tot=ids.map(f=>cs[f].v[2]);
   const order=ids.map((f,i)=>({f,t:tot[i]})).sort((a,b)=>a.t-b.t); const N=order.length;
-  const plan={};
+  const x=r(), style = x<0.5?'mixed' : x<0.75?'big-first' : 'small-first';
+  const plan={__style:style};
   order.forEach((o,i)=>{ const rank=i/Math.max(1,N-1); const chunks = rank>0.9?3: rank>0.7?2:1;
-    let first=Math.min(0.95, Math.max(0.02, 0.08+0.55*rank + (r()-0.5)*0.5));
-    const ticks=[]; for(let c=0;c<chunks;c++){ const t=Math.min(nTicks-1, Math.floor((first+(1-first)*c/Math.max(1,chunks))*nTicks + (c?r()*2:0))); ticks.push(t); }
+    let first = style==='mixed' ? 0.02+r()*0.68 : style==='big-first' ? 0.06+0.55*(1-rank)+(r()-0.5)*0.4 : 0.08+0.55*rank+(r()-0.5)*0.5;
+    first=Math.min(0.95, Math.max(0.01, first));
+    const ticks=[]; for(let c=0;c<chunks;c++){ const at = c===0 ? first : first+(1-first)*(c/chunks)+(r()-0.5)*0.15; ticks.push(Math.min(nTicks-1, Math.max(0, Math.floor(Math.min(0.999,at)*nTicks)))); }
     const fr=chunks===1?[1]:chunks===2?[0.55,0.45]:[0.45,0.35,0.2];
     plan[o.f]={ticks, fr, noise:randn(r)*1.6};
   });
@@ -128,7 +134,7 @@ async function esTick(){
       s.windows.push({k, n:w.length, g:c.G, h:c.H, a:c.A, sw:+sw.toFixed(2), from:a||null, to:(b>a?Math.min(b,cut):null)});
       for(const st of [s.live,...s.sims]){
         const cs=await elCounties(st), pl=s.plan[st]; const live=st===s.live;
-        for(const [f,p] of Object.entries(pl)){
+        for(const [f,p] of Object.entries(pl)){ if(f==='__style') continue;
           p.ticks.forEach((t,i)=>{ if(t!==k) return;
             const v=cs[f].v, votes=Math.round(v[2]*MIDTERM_TURNOUT*p.fr[i]);
             const swing=(live?sw:0) + night.wave + s.stNoise[st] + p.noise;
