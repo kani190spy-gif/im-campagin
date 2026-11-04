@@ -50,7 +50,8 @@ function mix(a,b,t){ const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16
 function newNight(opts){
   const r=rng('night'+Date.now()); const big=r()<0.15; const wave=(big?8:3.2)*randn(r);
   const races=opts.races&&opts.races.length?opts.races:Object.keys(SEN26);
-  return addEvent({type:'enight', id:'en-'+uid(), mode:opts.mode, you:opts.you, custom:opts.custom||null, wave:+wave.toFixed(2), races, hold:computeHold(races)});
+  const per=opts.whole?2:1; const hold=opts.whole?{D:0,R:0}:computeHold(races);
+  return addEvent({type:'enight', id:'en-'+uid(), mode:opts.mode, you:opts.you, custom:opts.custom||null, wave:+wave.toFixed(2), races, hold, per});
 }
 
 /* ---------- the Anki-to-votes model ---------- */
@@ -93,14 +94,14 @@ async function startSession(cfg){
 let esBusy=false;
 async function esTick(){
   const s=esGet(); if(!s || esBusy) return; const now=Date.now();
-  const due=Math.min(s.nTicks, Math.floor((now-s.startTs)/s.intMs));
+  const due=s.stopAt ? s.nTicks : Math.min(s.nTicks, Math.floor((now-s.startTs)/s.intMs));
   if(due<=s.done){ elLiveUpdate(); return; }
   esBusy=true;
   try{
     let revs=[]; try{ revs=await ankiAnswersSince(s.startTs); }catch(e){ if(localStorage.getItem(LS_ANKI)==='1'){ esBusy=false; elLiveUpdate('Anki not reachable — waiting to count'); return; } }
     const night=elNight(); if(!night){ esSet(null); return; }
     for(let k=s.done;k<due;k++){
-      const a=s.startTs+k*s.intMs, b=a+s.intMs; const w=revs.filter(x=>x.id>a && x.id<=b).map(x=>x.e);
+      const a=s.startTs+k*s.intMs, b=a+s.intMs; const cut=s.stopAt?Math.min(b,s.stopAt):b; const w=revs.filter(x=>x.id>a && x.id<=cut).map(x=>x.e);
       const c=btlCounts(w.join('')); const expected=s.pace*s.intMs/60000; const sw=windowSwing(w.length,c.G,c.H,c.A,expected);
       s.windows.push({k, n:w.length, g:c.G, h:c.H, a:c.A, sw:+sw.toFixed(2)});
       for(const st of [s.live,...s.sims]){
@@ -126,18 +127,27 @@ async function esTick(){
 }
 async function finishSession(s, revs){
   const night=elNight(); if(!night) return;
-  const seq=revs.filter(x=>x.id>s.startTs && x.id<=s.startTs+s.nTicks*s.intMs).map(x=>x.e).join(''); const c=btlCounts(seq);
+  const endTs=s.stopAt||s.startTs+s.nTicks*s.intMs;
+  const seq=revs.filter(x=>x.id>s.startTs && x.id<=endTs).map(x=>x.e).join(''); const c=btlCounts(seq);
+  const planned=Math.round(s.nTicks*s.intMs/60000), actualMs=endTs-s.startTs;
   for(const st of [s.live,...s.sims]){
     const t=s.tally[st]; let y=0,o=0; const cv={}; for(const [f,v] of Object.entries(t)){ y+=v[0]; o+=v[1]; cv[f]=[v[0],v[1]]; }
-    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:Math.round(s.nTicks*s.intMs/60000)}:{})}, true);
+    addEvent({id:'er-'+night.id+'-'+st, type:'erace', night:night.id, st, live:st===s.live, cv, y, o, ...(st===s.live?{cards:seq.length, g:c.G, h:c.H, a:c.A, minutes:planned, startTs:s.startTs, endTs, completed:!s.stopAt, pace:s.pace}:{})}, true);
   }
   commit(); esSet(null);
   const won = (()=>{ const t=s.tally[s.live]; let y=0,o=0; for(const v of Object.values(t)){ y+=v[0]; o+=v[1]; } return y>o; })();
   elToastRes = {st:s.live, won};
+  const Y=elParty(night,'you'), O=elParty(night,'opp'); const tl=s.tally[s.live]; let yv=0,ov=0; for(const v of Object.values(tl)){ yv+=v[0]; ov+=v[1]; } const m=(yv-ov)/Math.max(1,yv+ov)*100;
+  const cpm=seq.length/Math.max(0.5,actualMs/60000);
+  openSheet(`<div class="donebox"><div class="donechk">${s.stopAt?'■':'✓'}</div><h2>${s.stopAt?'Session stopped early':'Session complete'}</h2>
+    <div class="note">${esc(US.states[s.live].n)} · ${fmtClock(s.startTs)}–${fmtClock(endTs)} · <b>${fmtMS(actualMs)}</b> of ${planned}:00</div>
+    <div class="kv" style="max-width:320px;margin:14px auto 0"><span>Cards</span><b>${seq.length}</b><span>Pace</span><b>${cpm.toFixed(1)}/min <span class="c-muted">(target ${s.pace})</span></b><span>Good / Hard / Again</span><b><span class="c-good">${c.G}</span> / <span class="c-warn">${c.H}</span> / <span class="c-bad">${c.A}</span></b>
+      <span>Result</span><b style="color:${(won?Y:O).solid}">${won?'Seat won':'Seat lost'} · ${(won?Y:O).short} +${Math.abs(m).toFixed(1)}</b>${s.sims.length?`<span>Simulated</span><b>${s.sims.map(st=>US.states[st].a).join(', ')}</b>`:''}</div>
+    <div class="actions" style="justify-content:center"><button class="btn pri" data-a="close">Done</button></div></div>`);
   if(s.notify!=='off') notify(`${US.states[s.live].n} is called`, won?'You win the seat. Session over — stop reviewing or start another.':'Seat lost. Session over.', 'end');
 }
 let elToastRes=null;
-function endSessionNow(){ const s=esGet(); if(!s) return; if(!confirm('Stop the count now? Remaining counties report with no cards — the opponent sweeps them.')) return; s.startTs = Date.now()-s.nTicks*s.intMs-1000; esSet(s); esTick(); }
+function endSessionNow(){ const s=esGet(); if(!s) return; if(!confirm('Stop the count now? Remaining counties report with no cards — the opponent sweeps them.')) return; s.stopAt=Date.now(); esSet(s); esTick(); }
 function cancelSession(){ if(!confirm('Cancel this election session? Nothing will be recorded.')) return; esSet(null); elRefresh(); }
 
 /* ---------- state summaries & the needle ---------- */
@@ -192,7 +202,7 @@ function racesState(night){
 }
 function seatCount(night){
   const res=racesState(night); let y=0,o=0;
-  for(const r of Object.values(res)){ if(r.y>r.o) y++; else o++; }
+  const per=night.per||1; for(const r of Object.values(res)){ if(r.y>r.o) y+=per; else o+=per; }
   const H=night.hold||SEN_HOLD; const youHold=H[night.you], oppHold=H[night.you==='D'?'R':'D'];
   return {y,o,youHold,oppHold, open:upList(night).length-Object.keys(res).length};
 }
@@ -271,20 +281,22 @@ async function elDraw(){
   const final = allDone ? (()=>{ const yT=sc.youHold+sc.y, oT=sc.oppHold+sc.o; const ctl=yT>=51?Y:oT>=51?O:null; return `<div class="elfinal"><h3>${ctl?`${esc(ctl.party)} win the Senate`:'50–50 Senate'}</h3><div>${yT}–${oT}. ${ctl===Y?'You took the chamber.':ctl===O?'The chamber is lost.':'Deadlocked.'}</div><button class="btn pri sm" data-a="el-new">New election night</button></div>`; })() : '';
   const pendingUp=upList(night).filter(st=>!res[st]).sort((a,b)=>US.states[a].n.localeCompare(US.states[b].n));
   root.innerHTML=`${bar}
-    <div class="elhead"><div><h2>${night.mode==='custom'?'Election Night':'Senate Election Night'}</h2><div class="sub">${night.mode==='custom'?'Custom parties':'Realistic mode'} · ${(()=>{ const r=upList(night); const std=r.length===35&&r.every(st=>SEN26[st]); return std?'2026 Senate map':r.length===50?'all 50 states':`${r.length} chosen states`; })()} · county leans from 2024 · you run as <b style="color:${Y.solid}">${esc(Y.party)}</b></div></div>
+    <div class="elhead"><div><h2>${night.mode==='custom'?'Election Night':'Senate Election Night'}</h2><div class="sub">${night.mode==='custom'?'Custom parties':'Realistic mode'} · ${(()=>{ const r=upList(night); const std=r.length===35&&r.every(st=>SEN26[st]); return std?'2026 Senate map':night.per===2?'whole Senate (100 seats)':r.length===50?'all 50 states, one seat each':`${r.length} chosen states`; })()} · county leans from 2024 · you run as <b style="color:${Y.solid}">${esc(Y.party)}</b></div></div>
       <div class="row" style="gap:8px">${s?'':(!allDone?`<button class="btn pri" data-a="el-setup">▶ Start a session</button>`:'')}<button class="btn sm" data-a="el-cal">⏱ Calibrate pace${S.settings.elPace?` (${S.settings.elPace.v}/min)`:''}</button><button class="btn sm" data-a="el-newask">New night</button></div></div>
-    ${final}${liveBox}
+    ${final}${calGet()?(()=>{ const c=calGet(); return `<div class="elclock"><div><span class="lbl">Calibrating</span><b id="elcal">${fmtMS(Math.max(0,c.startTs+c.min*60000-Date.now()))}</b></div><div><span class="lbl">Length</span><b>${c.min}:00</b></div><div><span class="lbl">Cards so far</span><b id="elcaln">${c.n||0}</b></div><div class="elclock-a"><button class="btn sm" data-a="cal-cancel">Cancel</button></div></div>`; })():''}${liveBox}
     <div class="elgrid"><div class="elmapwrap"><div class="elback">${elSel?`<button class="btn sm" data-a="el-back">◀ US map</button> <b>${esc(US.states[elSel].n)}</b>`:'<b>Senate map</b>'} <label class="tg"><input type="checkbox" data-a="el-arrows" ${elArrows?'checked':''}> Shift arrows vs 2024</label></div>${mapSvg}
       <div class="ellegend"><span><i style="background:${Y.solid}"></i>${esc(Y.short)} won</span><span><i style="background:${Y.light}"></i>${esc(Y.short)} leading</span><span><i style="background:${O.light}"></i>${esc(O.short)} leading</span><span><i style="background:${O.solid}"></i>${esc(O.short)} won</span><span><i style="background:${EL_PEND};border:1px solid #ccc"></i>No results</span><span><i style="background:${EL_NOTUP}"></i>Not up</span></div>
       <div class="eltip" id="eltip"></div></div>
       <div class="elside">${s?raceCard(s.live,true)+s.sims.map(st=>raceCard(st,false)).join(''):''}
         ${elSel&&!s?raceCard(elSel,false):''}
         <h4>Called races</h4>${Object.keys(res).length?Object.values(res).sort((a,b)=>US.states[a.st].n.localeCompare(US.states[b.st].n)).map(r=>{ const P=r.y>r.o?Y:O; const m=(r.y-r.o)/(r.y+r.o)*100; return `<div class="callrow" data-st="${r.st}"><i style="background:${P.solid}"></i>${esc(US.states[r.st].n)}<span>${esc(P.short)} +${Math.abs(m).toFixed(1)}${r.live?' · fought':' · simulated'}</span></div>`; }).join(''):'<div class="sub">None yet.</div>'}
+        ${(()=>{ const ls=liveEvents(S).filter(e=>e.type==='erace' && e.live && e.startTs).sort((a,b)=>b.startTs-a.startTs).slice(0,8); return ls.length?`<h4>Your sessions</h4>${ls.map(r=>`<div class="callrow" data-st="${r.st}"><span style="margin:0;color:${r.completed===false?'#b36b00':'#1a7f37'}">${r.completed===false?'■':'✓'}</span> ${fmtD(ymd(new Date(r.startTs)))} · ${esc(US.states[r.st].n)}<span>${fmtMS(r.endTs-r.startTs)} · ${r.cards} cards</span></div>`).join('')}`:''; })()}
         <h4>Still to vote (${pendingUp.length})</h4><div class="sub">${pendingUp.map(st=>US.states[st].a).join(' · ')||'—'}</div>
       </div></div>`;
   bindElMap();
   if(elToastRes){ const t=elToastRes; elToastRes=null; toast(`${US.states[t.st].n}: ${t.won?'you win the seat.':'seat lost.'}`); }
 }
+function fmtClock(ts){ return new Date(ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
 function fmtMS(ms){ const s=Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 function bindElMap(){
   const tip=$('#eltip');
@@ -321,7 +333,7 @@ function newNightHtml(){
       <div class="field"><label>Mode</label><div class="seg" id="el-mode"><button data-em="real" class="on">Realistic (D vs R)</button><button data-em="custom">Custom parties</button></div></div>
       <div class="field"><label>You run as</label><div class="seg" id="el-you"><button data-ey="D" class="on">Democrat</button><button data-ey="R">Republican</button></div><div class="note">In custom mode your party takes this side's seats and county leans.</div></div>
       <div class="field" id="el-custom" style="display:none"><label>Custom parties</label><div class="row" style="gap:8px;flex-wrap:wrap"><input type="text" id="el-yn" value="The Honors Party" style="flex:1;min-width:140px"><input type="color" id="el-yc" value="#d8a33a"><input type="text" id="el-on" value="The Hollowing" style="flex:1;min-width:140px"><input type="color" id="el-oc" value="#6b6f86"></div></div>
-      <div class="field"><label>Races</label><div class="seg" id="el-set"><button data-es="2026" class="on">2026 Senate map (35)</button><button data-es="all">All 50 states</button><button data-es="pick">Pick states</button></div>
+      <div class="field"><label>Races</label><div class="seg" id="el-set"><button data-es="2026" class="on">2026 Senate map (35)</button><button data-es="all">All 50 states (one seat each)</button><button data-es="whole">Whole Senate (100)</button><button data-es="pick">Pick states</button></div>
         <div id="el-pick" class="simgrid" style="display:none;margin-top:8px">${Object.entries(US.states).filter(([st])=>st!=='11').sort((a,b)=>a[1].a.localeCompare(b[1].a)).map(([st,x])=>`<label class="dep"><input type="checkbox" data-pk="${st}" ${SEN26[st]?'checked':''}> ${x.a}</label>`).join('')}</div>
         <div class="note" id="el-holdnote"></div></div>
       <div class="note">One seat is contested in each state you include; the rest of the 100 seats hold over. A hidden national environment is drawn for the night — usually small, occasionally a wave.</div>
@@ -364,10 +376,12 @@ async function measurePace(){
 }
 
 function pickedRaces(){ const m=(document.querySelector('#el-set .on')||{}).dataset; const mode=m?m.es:'2026';
-  if(mode==='all') return Object.keys(US.states).filter(st=>st!=='11');
+  if(mode==='all'||mode==='whole') return Object.keys(US.states).filter(st=>st!=='11');
   if(mode==='pick') return [...document.querySelectorAll('[data-pk]:checked')].map(x=>x.dataset.pk);
   return Object.keys(SEN26); }
-function holdNote(){ const el=$('#el-holdnote'); if(!el) return; const r=pickedRaces(), h=computeHold(r); el.textContent=`${r.length} race${r.length===1?'':'s'} · holding over: D ${h.D}, R ${h.R}${(h.D+h.R+r.length)!==100?'':''}. ${r.some(st=>!SEN26[st])?'States outside the 2026 map use their 2024 winner to decide whose held seat goes up (approximate).':''}`; }
+function holdNote(){ const el=$('#el-holdnote'); if(!el) return; const r=pickedRaces();
+  if(((document.querySelector('#el-set .on')||{}).dataset||{}).es==='whole'){ el.textContent='50 races, each deciding both of that state\'s seats. Nothing holds over: all 100 seats are in play.'; return; }
+  const h=computeHold(r); el.textContent=`${r.length} race${r.length===1?'':'s'} · holding over: D ${h.D}, R ${h.R}${(h.D+h.R+r.length)!==100?'':''}. ${r.some(st=>!SEN26[st])?'States outside the 2026 map use their 2024 winner to decide whose held seat goes up (approximate).':''}`; }
 
 /* ---------- notifications (so you can stay in Anki) ---------- */
 function askNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
@@ -396,7 +410,9 @@ async function calTick(){
   if(now>=end && n!=null){
     const v=Math.max(1, Math.round(n/c.min*2)/2);
     S.settings.elPace={v, date:today(), min:c.min, n}; touchSettings(); calSet(null);
-    toast(`Calibrated: ${n} cards in ${c.min} min → target pace ${v}/min.`); notify('Calibration done', `${n} cards in ${c.min} min → ${v} cards/min.`, 'end'); renderCalChip(); elRefresh(); return;
+    openSheet(`<div class="donebox"><div class="donechk">✓</div><h2>Calibration complete</h2><div class="note">${fmtClock(c.startTs)}–${fmtClock(end)} · <b>${c.min}:00</b></div>
+      <div class="kv" style="max-width:280px;margin:14px auto 0"><span>Cards</span><b>${n}</b><span>Your pace</span><b>${(n/c.min).toFixed(1)}/min</b><span>New target pace</span><b>${v}/min</b></div>
+      <div class="actions" style="justify-content:center"><button class="btn pri" data-a="close">Done</button></div></div>`); notify('Calibration done', `${n} cards in ${c.min} min → ${v} cards/min.`, 'end'); renderCalChip(); elRefresh(); return;
   }
   renderCalChip();
 }
@@ -405,6 +421,7 @@ function renderCalChip(){
   if(!c){ if(el) el.remove(); return; }
   if(!el){ el=document.createElement('button'); el.id='calchip'; el.className='chip'; el.setAttribute('data-a','cal-cancel'); el.title='Tap to cancel calibration'; const sd=$('#syncdot'); sd.parentNode.insertBefore(el, sd); }
   el.innerHTML=`<i style="background:#ffb347"></i>⏱ Calibrating · ${c.n||0} cards · ${fmtMS(Math.max(0,c.startTs+c.min*60000-Date.now()))}`;
+  const a=$('#elcal'), b=$('#elcaln'); if(a) a.textContent=fmtMS(Math.max(0,c.startTs+c.min*60000-Date.now())); if(b) b.textContent=c.n||0;
 }
 setInterval(()=>{ if(calGet()) renderCalChip(); }, 1000);
 setInterval(()=>{ if(calGet()) calTick(); }, 5000);
@@ -424,7 +441,8 @@ document.addEventListener('click', async e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a;
   if(a==='el-create'){ const mode=document.querySelector('#el-mode .on').dataset.em, you=document.querySelector('#el-you .on').dataset.ey;
     const races=pickedRaces(); if(!races.length){ toast('Pick at least one state.'); return; }
-    newNight({mode, you, races, custom: mode==='custom'?{youName:$('#el-yn').value.trim()||'Your party', youCol:$('#el-yc').value, oppName:$('#el-on').value.trim()||'The Hollowing', oppCol:$('#el-oc').value}:null}); elSel=null; elDraw(); }
+    const whole=((document.querySelector('#el-set .on')||{}).dataset||{}).es==='whole';
+    newNight({mode, you, races, whole, custom: mode==='custom'?{youName:$('#el-yn').value.trim()||'Your party', youCol:$('#el-yc').value, oppName:$('#el-on').value.trim()||'The Hollowing', oppCol:$('#el-oc').value}:null}); elSel=null; elDraw(); }
   else if(a==='el-newask' || a==='el-new'){ if(esGet()){ toast('Finish or cancel the running session first.'); return; } if(a==='el-new' || confirm('Start a new election night? The current one stays in your history but the map resets.')){ const root=$('#elroot'); if(root){ root.innerHTML=newNightHtml(); holdNote(); } } }
   else if(a==='el-setup') openSetup();
   else if(a==='es-simall'){ const live=$('#es-live').value; document.querySelectorAll('[data-sim]').forEach(x=>x.checked=x.dataset.sim!==live); }
