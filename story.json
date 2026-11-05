@@ -7,7 +7,8 @@
   "       [\"if\", flag, [steps]]  (flag may start with ! to mean NOT)   [\"pick\", [[steps], [steps], ...]] picks one per day",
   "Flags: first, held, broke, pushed, siege, siegeBroken, attack, caps, lostTown, momentum, hall, leave",
   "Words in {braces} are filled from your campaign: {weekday} {date} {ySummary} {yGround} {yLost} {caps} {lostTown}",
-  "  {due} {ankiGoal} {clearBy} {attackTown} {defenseQ} {target} {towns} {daysToShelf} {met7} {targetPct} {remainingUW} {hallTitle}"
+  "  {due} {ankiGoal} {clearBy} {attackTown} {defenseQ} {target} {towns} {daysToShelf} {met7} {targetPct} {remainingUW} {hallTitle}",
+  "Chapters (ch1…) unlock from milestones in command.js (CHAPTERS). Each plays once when unlocked and can be replayed from the Command tab."
  ],
  "speakers": {
   "general": "The Old General",
@@ -390,6 +391,300 @@
     ],
     [
      "oath"
+    ]
+   ]
+  },
+  "ch1": {
+   "title": "Chapter I · First Ground",
+   "steps": [
+    [
+     "bg",
+     "map:front"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "title",
+     "Chapter I · First Ground"
+    ],
+    [
+     "nar",
+     "The first towns changed hands quietly. No bells. No banners. Just ground."
+    ],
+    [
+     "say",
+     "general",
+     "You noticed it, didn't you? They didn't fight for those towns."
+    ],
+    [
+     "nar",
+     "The Hollowing rarely defends what it takes. It doesn't need to. It only waits for you to stop."
+    ],
+    [
+     "say",
+     "general",
+     "So we don't stop."
+    ],
+    [
+     "nar",
+     "That night a rider came in from the marshes with a sealed letter. It was addressed to you, by name."
+    ],
+    [
+     "say",
+     "scout",
+     "No one in the camp knows the seal. Only that it came from behind their lines."
+    ],
+    [
+     "title",
+     "Break a general to open it"
+    ]
+   ]
+  },
+  "ch2": {
+   "title": "Chapter II · The Letter",
+   "steps": [
+    [
+     "bg",
+     "art/muster_dawn.webp"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "title",
+     "Chapter II · The Letter"
+    ],
+    [
+     "nar",
+     "The seal broke the same morning their general did."
+    ],
+    [
+     "nar",
+     "“You fight like someone who has lost before,” it read. “So did I. I held this line once. I waited for the right moment. It never came, and one morning I found I preferred the waiting.”"
+    ],
+    [
+     "say",
+     "general",
+     "Every one of them was one of us."
+    ],
+    [
+     "nar",
+     "The Hollowing doesn't recruit. It just lets people stop, and keeps whoever stays stopped."
+    ],
+    [
+     "say",
+     "general",
+     "Remember that the next time stopping feels like rest."
+    ],
+    [
+     "title",
+     "The ledger waits further down the road"
+    ]
+   ]
+  },
+  "ch3": {
+   "title": "Chapter III · The Ledger",
+   "steps": [
+    [
+     "bg",
+     "art/muster_siege.webp"
+    ],
+    [
+     "tint",
+     "cool"
+    ],
+    [
+     "fx",
+     "none"
+    ],
+    [
+     "title",
+     "Chapter III · The Ledger"
+    ],
+    [
+     "say",
+     "quartermaster",
+     "For the first time since we marched, nothing is piled up behind us."
+    ],
+    [
+     "nar",
+     "Supply wagons rolled in from the capital. In one of them, under the grain, was a ledger bound in old leather."
+    ],
+    [
+     "nar",
+     "It listed every soldier who had ever held this line. Beside most names was a date, and a single word: Waited."
+    ],
+    [
+     "say",
+     "general",
+     "Turn to the back."
+    ],
+    [
+     "nar",
+     "The last page held his name. The date beside it was in December."
+    ],
+    [
+     "say",
+     "general",
+     "Close it. Not today."
+    ],
+    [
+     "title",
+     "The Council will want a word"
+    ]
+   ]
+  },
+  "ch4": {
+   "title": "Chapter IV · The Council Divided",
+   "steps": [
+    [
+     "bg",
+     "art/prologue_council.webp"
+    ],
+    [
+     "tint",
+     "cool"
+    ],
+    [
+     "fx",
+     "none"
+    ],
+    [
+     "title",
+     "Chapter IV · The Council Divided"
+    ],
+    [
+     "say",
+     "council",
+     "The campaign has gone far enough for now. The shelf is weeks away. Rest. Finish strong later."
+    ],
+    [
+     "nar",
+     "Half the chairs nodded. It sounded reasonable. It always does."
+    ],
+    [
+     "say",
+     "general",
+     "They told me the same thing, my year. Same table. Same candle."
+    ],
+    [
+     "say",
+     "general",
+     "I listened."
+    ],
+    [
+     "nar",
+     "He didn't say what it cost him. He didn't have to. You had seen the ledger."
+    ],
+    [
+     "say",
+     "general",
+     "Vote however you like. The march starts at dawn either way."
+    ],
+    [
+     "title",
+     "Somewhere in the ledger, a name you know"
+    ]
+   ]
+  },
+  "ch5": {
+   "title": "Chapter V · The Officer's Debt",
+   "steps": [
+    [
+     "bg",
+     "art/prologue_officer.webp"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "title",
+     "Chapter V · The Officer's Debt"
+    ],
+    [
+     "nar",
+     "Tonight you found your own name in the ledger. An older entry, from a different campaign: one lost by three points, and one lost by ten."
+    ],
+    [
+     "nar",
+     "Beside it, in someone else's handwriting: Waited."
+    ],
+    [
+     "say",
+     "general",
+     "That isn't a sentence. It's a record. Records can be answered."
+    ],
+    [
+     "nar",
+     "Under your name, in fresh ink, you wrote a second date: the eighteenth of December."
+    ],
+    [
+     "say",
+     "general",
+     "Good. Now earn it."
+    ],
+    [
+     "title",
+     "The last fortress is in sight"
+    ]
+   ]
+  },
+  "ch6": {
+   "title": "Chapter VI · The Eve",
+   "steps": [
+    [
+     "bg",
+     "map:whole"
+    ],
+    [
+     "tint",
+     "warm"
+    ],
+    [
+     "fx",
+     "embers"
+    ],
+    [
+     "title",
+     "Chapter VI · The Eve"
+    ],
+    [
+     "nar",
+     "Most of the map answers to you now. Ahead stands the Shelf: the last fortress, where the Hollowing keeps everything it ever took."
+    ],
+    [
+     "say",
+     "general",
+     "I never reached it. You will. Not because you're stronger than I was."
+    ],
+    [
+     "say",
+     "general",
+     "Because you didn't wait."
+    ],
+    [
+     "nar",
+     "The camp sleeps. You don't, not yet. One more block."
+    ],
+    [
+     "title",
+     "The final chapter is written on the eighteenth"
     ]
    ]
   }

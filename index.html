@@ -358,6 +358,22 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 .elfinal{background:#f6f6f6;border-radius:6px;padding:12px 14px;margin-bottom:12px}
 .elnew{max-width:560px}
 .simgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:2px}
+
+/* command tab */
+.cmdgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin-bottom:10px}@media (max-width:900px){.cmdgrid{grid-template-columns:1fr}}
+.card.cmd h4{margin:14px 0 6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#9aa)}
+.gencard{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.gbody{flex:1;min-width:220px}.gname{font-family:var(--display);font-size:22px;letter-spacing:.04em}
+.gstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 6px}.gstats span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.65}.gstats b{font-size:18px}
+@media (max-width:600px){.gstats{grid-template-columns:repeat(2,1fr)}}
+.pt{position:relative;flex:none;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#3a3f4a,#15171c);border:1px solid rgba(214,196,150,.25)}
+.pt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.pt span{font-family:var(--display);color:rgba(239,228,200,.35);font-size:28px}
+.pt.big{width:132px;height:168px}.pt.big span{font-size:56px}.pt.sm{width:48px;height:58px}
+.pt.foe{border-color:rgba(224,112,95,.45)}.pt.ally{border-color:rgba(232,195,106,.5)}
+.gmini,.offc{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.gmini.down{opacity:.6}.gmini.down .pt{filter:grayscale(1)}
+.offgrid{display:grid;gap:2px}.offc.locked{opacity:.7}
+.dispatch{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 12px;margin:0}
 </style>
 </head>
 <body>
@@ -373,6 +389,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
     <button data-t="campaign" class="on">Campaign</button>
     <button data-t="battles">Battles</button>
     <button data-t="election">Election</button>
+    <button data-t="command">Command</button>
     <button data-t="stats">Stats</button>
     <button data-t="hall">Hall 🔒</button>
     <button data-t="log">War log</button>
@@ -392,7 +409,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 
 <script>
 'use strict';
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 
 /* ================= Regions ================= */
 const REG = {
@@ -502,6 +519,32 @@ async function loadMap(){
 function effOf(acc){ return acc<0.37?0 : acc<0.5?0.8 : acc<0.65?1.0 : acc<0.75?1.15 : 1.3; }
 function effLabel(acc){ return acc<0.37?'Counterattack':acc<0.5?'×0.8':acc<0.65?'×1.0':acc<0.75?'×1.15':'×1.3'; }
 
+/* ================= Generals & officers (story layer) ================= */
+// Each enemy general holds one system. You break a general with 30 tagged questions in that
+// system, scoring at least genPct over your last 30 of them.
+const GENERALS = {
+  cardio:{name:'Lord Aortic', title:'the Iron Valve'},       pulm:{name:'The Ashen Bellows', title:'Keeper of the Bronchial Forest'},
+  renal:{name:'The Pale Regent', title:'of the Renal Basin'},  neuro:{name:'The Sleeper', title:'in the Neural Peaks'},
+  endo:{name:'The Saltless Queen', title:'of the Endocrine Mesas'}, heme:{name:'The Marrow Baron', title:'of the Crimson Marrowlands'},
+  id:{name:'The Marsh Warden', title:'of the Fever Marshes'},  gi:{name:'The Delta Glutton', title:'of the GI Delta'},
+  rheum:{name:'The Bone Tyrant', title:'of the Joint Badlands'}, gen:{name:'The Grey Auditor', title:'of the Capital ledgers'},
+  derm:{name:'The Scaled Corsair', title:'of the Outer Coast'}, psych:{name:'The Mist Weaver', title:'of the Mist Coast'},
+  eye:{name:'The Blind Keeper', title:'of the Sensory Isles'},  tox:{name:'The Fen Alchemist', title:'of the Toxic Fens'},
+  allergy:{name:'The Pale Sentinel', title:'of the Immune Isles'},
+};
+const GEN_CORE=['cardio','pulm','gi','renal','endo','heme','id','neuro','rheum'];
+const OFFICERS = {
+  quartermaster:{name:'Quartermaster Hale', perk:'+5 ground on any day you end with AnKing at 0 due.'},
+  scout:{name:'Scout Ivers', perk:'Enemy offensives are defended with 5 fewer questions.'},
+  surgeon:{name:'Surgeon Maren', perk:'Once a week, cancels the losses from one counterattack (a block under 37%).'},
+  engineer:{name:'Engineer Doyle', perk:'New towns consolidate a day sooner.'},
+  chaplain:{name:'Chaplain Ruth', perk:'Missed-goal pushes cost 25% less ground.'},
+  drummer:{name:'Drummer Tam', perk:'Momentum needs 4 of 7 good days instead of 5.'},
+  signalman:{name:'Signalman Okoro', perk:'Battles and election sessions earn 25% more ground.'},
+  cartographer:{name:'Cartographer Sel', perk:'+10% ground when attacking a region whose general has fallen.'},
+};
+const OFFICER_EVERY = 150;   // one recruit per 150 questions, plus one for every general broken
+
 function liveEvents(st){
   const dead = new Set(st.events.filter(e=>e.type==='del').map(e=>e.target));
   return st.events.filter(e=>e.type!=='del' && !dead.has(e.id)).sort((a,b)=>(a.ord||a.ts)-(b.ord||b.ts));
@@ -520,15 +563,30 @@ function simulate(st, extra){
   const town = T.map(t=>({id:t.id, owner:'enemy', status:'enemy', prog:0, capDay:null, consAt:null, lostDay:null}));
   town[HOME.id].owner='us'; town[HOME.id].status='held'; town[HOME.id].capDay=start;
   const G = {town, target:null, reserve:0, uwDone:0, ambDone:0, log:[], days:{}, regAcc:{}, lastBeach:null,
-             anki:null, ankiByDay:{}, missStreak:0, siege:false, siegeStart:null, inflow:0, inflows:[], blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null};
+             anki:null, ankiByDay:{}, missStreak:0, siege:false, siegeStart:null, inflow:0, inflows:[], blocks:[], cmsDone:{}, attacks:{}, names, sourceOf:null,
+             gen:null, genHist:{}, gensDown:[], officers:[], perk:{}, nextRecruitQ:OFFICER_EVERY, surgeonWeek:null, siegeEverBroken:false};
   const isUs = id => town[id].owner==='us';
   const attackable = id => town[id].owner==='enemy' && T[id].n.some(isUs);
   const add = (d,kind,html,extra) => G.log.push({d,kind,html,...(extra||{})});
   const tname = id => G.names[id] || T[id].name;
+  const offOrder = Object.keys(OFFICERS).map(k=>({k,h:hash('off'+start+k)})).sort((a,b)=>a.h-b.h).map(x=>x.k);
+  function recruit(d, why){ const k=offOrder.find(x=>!G.officers.some(o=>o.k===x)); if(!k) return; G.officers.push({k,d,why}); G.perk[k]=true; add(d,'officer',`<b class="c-us">${OFFICERS[k].name}</b> joins your staff (${why}). ${OFFICERS[k].perk}`); }
+  function pickGeneral(d){
+    const down=new Set(G.gensDown.map(g=>g.r)); const pool=Object.keys(GENERALS).filter(r=>!down.has(r));
+    const seen=pool.filter(r=>G.regAcc[r] && G.regAcc[r].n>=10).sort((a,b)=>G.regAcc[a].c/G.regAcc[a].n - G.regAcc[b].c/G.regAcc[b].n);
+    const r = seen[0];   // no general until intel (10+ tagged questions in a system) shows where you're weakest
+    if(!r) return; G.gen={r, since:d}; G.genHist[r]=[]; add(d,'general',`<b class="c-bad">${GENERALS[r].name}</b>, ${GENERALS[r].title}, takes the field. Break them: ${set.genN||30} ${REG[r].name} questions at ${set.genPct||65}%+.`);
+  }
+  function genCheck(d){
+    if(!G.gen) return; const r=G.gen.r, h=G.genHist[r]||[], N=set.genN||30; if(h.length<N) return;
+    const last=h.slice(-N), acc=last.reduce((a,b)=>a+b,0)/N;
+    if(acc >= (set.genPct||65)/100){ G.gensDown.push({r, d, acc}); add(d,'general',`<b class="c-good">${GENERALS[r].name} is broken.</b> ${REG[r].land} answers to you (last ${N} at ${Math.round(acc*100)}%). +15 ground.`); G.gen=null; R_gain(15,d); recruit(d,`${GENERALS[r].name} broken`); pickGeneral(d); }
+  }
+  let R_gain=()=>0;
   if(preAnki){ G.anki=preAnki; if(preAnki.due > set.backlogAt){ G.siege=true; G.siegeStart=start; add(start,'siege',`Backlog carried in: <b class="c-bad">${preAnki.due.toLocaleString()}</b> AnKing cards due (last read ${fmtD(preAnki.date)}). Siege — clear to 0.`); } }
 
   function capture(id, d, lowAcc){
-    const x=town[id]; x.owner='us'; x.status='occupied'; x.prog=0; x.capDay=d; x.consAt=addDays(d, lowAcc?10:7); x.lostDay=null;
+    const x=town[id]; x.owner='us'; x.status='occupied'; x.prog=0; x.capDay=d; x.consAt=addDays(d, (lowAcc?10:7)-(G.perk.engineer?1:0)); x.lostDay=null;
     add(d,'cap',`<b class="c-us">${esc(tname(id))}</b> taken${T[id].cap?' — regional capital':''} (${REG[T[id].r].land}).`,{town:id});
     if(G.target===id) G.target=null;
   }
@@ -608,6 +666,13 @@ function simulate(st, extra){
   for(const d of dayList){
     const R = G.days[d] = {d, quota:0, q:0, c:0, uw:0, amb:0, gained:0, lostGround:0, caps:[], losses:[], cons:[], attack:null, def:null, anki:null, goalMet:null, leave:set.offDays.includes(d), momentum:false, backlog:false};
     const logStart = G.log.length;
+    R_gain = (g,dd)=>{ R.gained += addGround(g, dd, false); };
+    if(G.gen && (G.genHist[G.gen.r]||[]).length<5){ // intel can reveal a weaker system before the fight really starts
+      const cur=G.regAcc[G.gen.r], down=new Set(G.gensDown.map(g=>g.r));
+      const weaker=Object.keys(GENERALS).filter(r=>!down.has(r) && r!==G.gen.r && G.regAcc[r] && G.regAcc[r].n>=15).sort((a,b)=>G.regAcc[a].c/G.regAcc[a].n-G.regAcc[b].c/G.regAcc[b].n)[0];
+      if(weaker && (!cur || cur.n<10 || G.regAcc[weaker].c/G.regAcc[weaker].n < cur.c/cur.n - 0.05)){ add(d,'general',`Intel: your weakest front is ${REG[weaker].name}. ${GENERALS[G.gen.r].name} withdraws.`); G.gen=null; }
+    }
+    if(!G.gen && G.gensDown.length<Object.keys(GENERALS).length) pickGeneral(d);
     // start of day: consolidation
     for(const x of town){ if(x.status==='occupied' && x.consAt && d>=x.consAt){ x.status='held'; R.cons.push(x.id); add(d,'cons',`${esc(tname(x.id))} consolidated — now solid.`,{town:x.id}); } }
     // quota
@@ -619,14 +684,15 @@ function simulate(st, extra){
     R.quota = (R.leave || d>=set.shelf || R.siege) ? 0 : Math.ceil(remUW/Math.max(1,sd));
     // momentum: goal met on >=5 of last 7 completed days (proportional early on)
     let met=0, cnt=0; for(let i=1;i<=7;i++){ const pd=addDays(d,-i); const pr=G.days[pd]; if(!pr) continue; cnt++; if(pr.goalMet) met++; }
-    R.momentum = cnt>=3 && met/cnt >= 5/7;
+    R.momentum = cnt>=3 && met/cnt >= (G.perk.drummer?4:5)/7;
     // enemy offensive
     const ours = town.filter(x=>x.owner==='us').length;
     if(!R.leave && ours>=3 && daysBetween(start,d)>=3 && attackDaysOfWeek(mondayOf(d)).includes(d)){
       const tid = pickAttackTarget(d);
-      if(tid!=null){ R.attack=tid; G.attacks[d]=tid; add(d,'atk',`Enemy offensive against <b class="c-bad">${esc(tname(tid))}</b>. Defend with your first ${set.defenseQ} questions.`,{town:tid}); }
+      if(tid!=null){ R.attack=tid; G.attacks[d]=tid; add(d,'atk',`Enemy offensive against <b class="c-bad">${esc(tname(tid))}</b>. Defend with your first ${Math.max(5, set.defenseQ - (G.perk.scout?5:0))} questions.`,{town:tid}); }
     }
-    let defLeft = R.attack!=null ? set.defenseQ : 0, defN=0, defC=0;
+    const DQ = Math.max(5, set.defenseQ - (G.perk.scout?5:0)); R.defQ=DQ;
+    let defLeft = R.attack!=null ? DQ : 0, defN=0, defC=0;
     // events
     for(const e of (byDay[d]||[])){
       if(e.type==='front'){
@@ -649,16 +715,18 @@ function simulate(st, extra){
         if(e.type==='block' && e.src==='uw'){ G.uwDone+=n; R.uw+=n; } else { G.ambDone+=n; R.amb+=n; }
         if(e.type==='cms') G.cmsDone[e.form]=e;
         // intel from tagged questions
-        if(e.tags && e.q){ e.tags.forEach((tg,i)=>{ const rg=tg.r; if(!rg || e.q[i]==null || i>=n) return; const ra=G.regAcc[rg] ||= {n:0,c:0,cats:{}}; ra.n++; ra.c+=e.q[i]?1:0; const ck=tg.cat||'?'; const cc=ra.cats[ck] ||= {n:0,c:0}; cc.n++; cc.c+=e.q[i]?1:0; }); }
+        if(e.tags && e.q){ e.tags.forEach((tg,i)=>{ const rg=tg.r; if(!rg || e.q[i]==null || i>=n) return; if(G.gen && G.gen.r===rg) G.genHist[rg].push(e.q[i]?1:0); const ra=G.regAcc[rg] ||= {n:0,c:0,cats:{}}; ra.n++; ra.c+=e.q[i]?1:0; const ck=tg.cat||'?'; const cc=ra.cats[ck] ||= {n:0,c:0}; cc.n++; cc.c+=e.q[i]?1:0; }); }
         let nOff=n;
         if(defLeft>0){ const dq=Math.min(n,defLeft); defLeft-=dq; defN+=dq; defC+=c*dq/n; nOff=n-dq; }
         let ground=0, lossInfo=null;
         if(nOff>0){
           if(acc<0.37){
-            lossInfo = applyLoss(0.3*nOff, d, 'enemy counterattack after a rough block', false);
-            R.lostGround += lossInfo.lost;
+            const wk=mondayOf(d);
+            if(G.perk.surgeon && G.surgeonWeek!==wk){ G.surgeonWeek=wk; lossInfo={lost:0,towns:0,saved:true}; add(d,'officer',`Surgeon Maren steadies the line — counterattack after a rough block cancelled.`); }
+            else { lossInfo = applyLoss(0.3*nOff, d, 'enemy counterattack after a rough block', false);
+            R.lostGround += lossInfo.lost; }
           } else {
-            let mult = effOf(acc) * (R.momentum?1.15:1) * (G.siege?0.5:1);
+            let mult = effOf(acc) * (R.momentum?1.15:1) * (G.siege?0.5:1) * (G.perk.cartographer && G.target!=null && G.gensDown.some(g=>g.r===T[G.target].r) ? 1.1 : 1);
             let bt = 0;
             if(e.tags && G.target!=null){ const tr=T[G.target].r; const hits=e.tags.filter(tg=>tg.r===tr).length; bt = hits/e.tags.length; }
             ground = nOff * mult * (1 + 0.5*bt);
@@ -668,23 +736,25 @@ function simulate(st, extra){
           }
         }
         G.blocks.push({e, d, n, c, acc, ground, lossInfo, def: n-nOff});
+        genCheck(d); if(!G.gen && G.gensDown.length<Object.keys(GENERALS).length) pickGeneral(d);
+        while(G.uwDone+G.ambDone >= G.nextRecruitQ){ recruit(d, `${G.nextRecruitQ} questions`); G.nextRecruitQ += OFFICER_EVERY; }
       } else if(e.type==='battle'){
         const len=(e.seq||'').length; if(!len) continue;
         const sc=((e.g||0)+0.6*(e.h||0))/len, f = sc>=0.9?1 : sc>=0.8?0.75 : sc>=0.7?0.5 : sc>=0.6?0.25 : 0;
-        const bonus = len/20 * f * 2;
+        const bonus = len/20 * f * 2 * (G.perk.signalman?1.25:1);
         (R.battles ||= []).push({e, bonus});
         if(bonus>0){ R.gained += addGround(bonus, d, false); }
         if(!e.auto) add(d,'battle',`⚔ <b>${esc(e.name)}</b> — ${len} cards, ${Math.round(sc*100)}% effective${bonus>0?`, +${r1(bonus)} ground`:''}.`);
       } else if(e.type==='erace' && e.live && e.cards){
         // Election sessions feed the campaign exactly like battles: cards and quality, not the seat result
         const len=e.cards, sc=((e.g||0)+0.6*(e.h||0))/len, f = sc>=0.9?1 : sc>=0.8?0.75 : sc>=0.7?0.5 : sc>=0.6?0.25 : 0;
-        const bonus = len/20 * f * 2;
+        const bonus = len/20 * f * 2 * (G.perk.signalman?1.25:1);
         if(bonus>0){ R.gained += addGround(bonus, d, false); }
         add(d,'battle',`🗳 Election session (${esc(window.elStateName?window.elStateName(e.st):'race')}) — ${len} cards, ${Math.round(sc*100)}% effective${bonus>0?`, +${r1(bonus)} ground`:''}.`);
       } else if(e.type==='anki'){
         G.ankiByDay[d]=e; G.anki=e; if(e.again!=null && e.reviewed>=30) G.lapseRef=e;
         if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
-        else if(G.siege && e.due===0){ G.siege=false; R.siegeBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
+        else if(G.siege && e.due===0){ G.siege=false; R.siegeBroken=true; G.siegeEverBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
       }
     }
     if(defN>0) R.def={n:defN, c:defC};
@@ -701,12 +771,12 @@ function simulate(st, extra){
       if(R.attack!=null){
         const tid=R.attack;
         if(town[tid].owner==='us'){
-          if(defN >= set.defenseQ){
+          if(defN >= DQ){
             const da = defC/defN;
             if(da < 0.5 && town[tid].status==='held'){ town[tid].status='occupied'; town[tid].consAt=addDays(d,7); add(d,'def',`${esc(tname(tid))} held, but shaken (defense at ${Math.round(da*100)}%). Back to striped.`,{town:tid}); }
             else add(d,'def',`Enemy repelled at <b class="c-good">${esc(tname(tid))}</b>.`,{town:tid});
             R.defOutcome='held';
-          } else { loseTown(tid,d,`defense not completed (${Math.round(defN)}/${set.defenseQ})`); R.losses.push(tid); R.defOutcome='lost'; }
+          } else { loseTown(tid,d,`defense not completed (${Math.round(defN)}/${DQ})`); R.losses.push(tid); R.defOutcome='lost'; }
         }
       }
       // missed goal → enemy push (question days)
@@ -715,10 +785,11 @@ function simulate(st, extra){
         G.missStreak++;
         const deficit = R.quota - R.q;
         const mult = Math.min(3, 1 + 0.5*(G.missStreak-1));
-        const li = applyLoss(deficit*0.5*mult, d, R.q===0?'no work reported':'daily goal missed', G.missStreak>=2);
+        const li = applyLoss(deficit*0.5*mult*(G.perk.chaplain?0.75:1), d, R.q===0?'no work reported':'daily goal missed', G.missStreak>=2);
         R.lostGround += li.lost;
         add(d,'miss',`Goal missed (${R.q}/${R.quota}). Enemy pushed back ${r1(li.lost)} ground${li.towns?`, ${li.towns} town${li.towns>1?'s':''} lost`:''}.`);
       } else if(!R.leave) G.missStreak=0;
+      if(G.perk.quartermaster && R.anki && R.anki.due===0){ R.gained += addGround(5, d, false); add(d,'officer','Quartermaster Hale: supply lines clear — +5 ground.'); }
       // Anki supply lines
       R.backlog = R.siege && G.siege;
       if(G.siege){
@@ -758,13 +829,14 @@ function render(){
   const v = $('#view');
   if(tab==='campaign'){ if(!v.querySelector('#mapsvg')) v.innerHTML = viewCampaignShell(); updateCampaign(); }
   else if(tab==='battles') v.innerHTML = viewBattles();
+  else if(tab==='command') v.innerHTML = viewCommand();
   else if(tab==='election'){ if(!v.querySelector('#elroot')){ v.innerHTML = viewElection(); afterElectionRender(); } else elDraw(); }
   else if(tab==='log') v.innerHTML = viewLog();
   else if(tab==='stats') v.innerHTML = viewStats();
   else if(tab==='hall'){ v.innerHTML = viewHall(); afterHallRender(); }
   else v.innerHTML = viewSettings();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
-  $('#fabs').style.display = (tab==='settings'||tab==='election') ? 'none' : '';
+  $('#fabs').style.display = (tab==='settings'||tab==='election'||tab==='command') ? 'none' : '';
 }
 
 function viewCampaignShell(){
@@ -934,7 +1006,7 @@ function updateCampaign(){
       <div class="note" style="margin-top:6px">Today: <b>${rv} / ${tg2}</b> reviews${G.siegeInfo&&G.siegeInfo.tomorrow!=null?` · tomorrow's pile so far: <b>${((G.ankiDue||0)+G.siegeInfo.tomorrow).toLocaleString()}</b> (${(G.ankiDue||0).toLocaleString()} left today + ${G.siegeInfo.tomorrow.toLocaleString()} scheduled)`:''}. No question quota until the siege breaks; questions earn half ground and add cards.</div>
       ${G.siegeInfo?`<div class="note" style="margin-top:4px;font-size:12px">Goal = (${rv.toLocaleString()} reviewed + ${(G.siegeInfo.B-rv).toLocaleString()} due today${G.siegeInfo.left>1?` + ${G.siegeInfo.incoming.toLocaleString()} ${G.siegeInfo.method==='forecast'?'already scheduled':'estimated new'} through ${fmtD(addDays(G.siegeBy,0))}`:''}) ÷ ${G.siegeInfo.left} day${G.siegeInfo.left>1?'s':''}, with +${Math.round(G.siegeInfo.lapse*100)}% on the cards ahead for ones you'll fail${G.siegeInfo.measured!=null?` (your Again rate today: ${Math.round(G.siegeInfo.measured*100)}%)`:''}. ${G.siegeInfo.method==='forecast'?'Updates as you fail or unlock cards.':'Open the app with Anki running for an exact forecast.'}</div>`:''}</div>`; }
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
-    bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${set.defenseQ} questions today defend it. Progress: ${dn}/${set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
+    bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${td.defQ||set.defenseQ} questions today defend it. Progress: ${dn}/${td.defQ||set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
   if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
   $('#banners').innerHTML=bn;
   // cards
@@ -1095,7 +1167,7 @@ function viewLog(){
   const items=[];
   for(const b of G.blocks){ const e=b.e; if(e.type==='cms') continue;
     items.push({d:b.d, ts:e.ts, html:`<b>${esc(e.name||'Block')}</b> — ${b.n} ${e.src==='uw'?'UWorld':'AMBOSS'} at <b class="${b.acc>=0.65?'c-good':b.acc>=0.5?'c-warn':'c-bad'}">${Math.round(b.acc*100)}%</b>${b.def?` · ${Math.round(b.def)} on defense`:''}${b.lossInfo?` · <span class="c-bad">counterattack −${r1(b.lossInfo.lost)}</span>`:` · +${r1(b.ground)} ground`}${e.tags?' · intel ✓':''}`, id:e.id, del:true}); }
-  G.log.forEach((x,i)=>{ if(x.kind!=='cap'&&x.kind!=='lost'&&x.kind!=='def'&&x.kind!=='miss'&&x.kind!=='atk'&&x.kind!=='cons'&&x.kind!=='front'&&x.kind!=='supply') return; items.push({d:x.d, ts:i, html:x.html}); });
+  G.log.forEach((x,i)=>{ if(!['cap','lost','def','miss','atk','cons','front','supply','general','officer','battle','siege'].includes(x.kind)) return; items.push({d:x.d, ts:i, html:x.html}); });
   items.sort((a,b)=>b.d.localeCompare(a.d) || (b.ts-a.ts));
   return `<div class="card"><h3>War log</h3><ul class="log">${items.map(x=>`<li><span class="d">${fmtD(x.d)}</span><span>${x.html}</span>${x.del?`<button class="x" data-a="del" data-id="${x.id}" title="Delete" aria-label="Delete entry">×</button>`:''}</li>`).join('')||'<li class="c-muted">Nothing yet.</li>'}</ul></div>`;
 }
@@ -1273,7 +1345,7 @@ function openReport(){
   const orders=[
     G.backlog?`<li class="c-bad"><b>Siege:</b> ${(due||0).toLocaleString()} AnKing due. Today's goal: <b>${Td?Td.ankiGoal:set.ankiGoal} reviews</b> to reach 0 by ${fmtDow(G.siegeBy||set.clearBy)}.</li>`:`<li>Anki: ${set.ankiGoal} reviews${due!=null?` (${due.toLocaleString()} due)`:''}.</li>`,
     Td&&Td.leave?'<li>Leave day — no question quota.</li>':Td&&Td.siege?'<li>Questions: none required during the siege (they earn half ground).</li>':`<li>Questions: <b>${Td?Td.quota:0}</b> today (${G.remainingUW} UWorld IM left).</li>`,
-    Td&&Td.attack!=null?`<li class="c-warn"><b>Enemy offensive</b> against ${esc(G.tname(Td.attack))} — your first ${set.defenseQ} questions defend it.</li>`:'',
+    Td&&Td.attack!=null?`<li class="c-warn"><b>Enemy offensive</b> against ${esc(G.tname(Td.attack))} — your first ${(G.today&&G.today.defQ||set.defenseQ)} questions defend it.</li>`:'',
     tg?`<li>Offensive: ${esc(G.tname(tg.id))} — ${r1(G.town[tg.id].prog)}/${tg.cost} ground.</li>`:`<li>No target set — choose one${G.reserve>0?` (${r1(G.reserve)} ground waiting)`:''}.</li>`,
     Td&&Td.momentum?'<li class="c-good">Momentum: +15% ground today.</li>':'',
   ].join('');
@@ -1349,7 +1421,7 @@ function drawOp(first){
   const t = tid!=null ? T[tid] : HOME;
   const prog = capturedNow ? t.cost : (Gs.town[t.id] ? Gs.town[t.id].prog : 0);
   const defN = Gs.today && Gs.today.def ? Gs.today.def.n : 0;
-  const inDef = td.attack!=null && G.town[td.attack].owner==='us' && defN < set.defenseQ;
+  const inDef = td.attack!=null && G.town[td.attack].owner==='us' && defN < (G.today&&G.today.defQ||set.defenseQ);
   const gain = (Gs.today?Gs.today.gained:0) - OP.base.g;
   const lostG = (Gs.today?Gs.today.lostGround:0) - OP.base.l;
   let nextHtml='';
@@ -1365,7 +1437,7 @@ function drawOp(first){
     <div class="op-head"><input class="op-name" id="opname" value="${esc(OP.name)}" aria-label="Operation name"><button class="btn sm" data-a="op-dice" title="New name">🎲</button>
       <div class="seg" style="width:auto"><button data-os="uw" class="${OP.src==='uw'?'on':''}">UW</button><button data-os="amboss" class="${OP.src==='amboss'?'on':''}">AMB</button></div></div>
     <div class="op-body">
-      <div class="note" style="text-align:center">${inDef?`<b class="c-warn">DEFENDING ${esc(G.tname(td.attack))}</b> · question ${Math.min(defN+1,set.defenseQ)} of ${set.defenseQ}`:capturedNow?`<b class="c-good">${esc(G.tname(t.id))} has fallen</b>${Gs.target==null?' · extra ground goes to reserve':''}`:`Assaulting <b>${esc(G.tname(t.id))}</b> · ${REG[t.r].land}`}</div>
+      <div class="note" style="text-align:center">${inDef?`<b class="c-warn">DEFENDING ${esc(G.tname(td.attack))}</b> · question ${Math.min(defN+1,(G.today&&G.today.defQ||set.defenseQ))} of ${(G.today&&G.today.defQ||set.defenseQ)}`:capturedNow?`<b class="c-good">${esc(G.tname(t.id))} has fallen</b>${Gs.target==null?' · extra ground goes to reserve':''}`:`Assaulting <b>${esc(G.tname(t.id))}</b> · ${REG[t.r].land}`}</div>
       <div id="opcity">${citySVG(t, prog)}</div>
       <div class="op-stats"><span>Questions <b>${n}</b></span><span>Correct <b>${c}</b></span><span>Accuracy <b>${acc==null?'–':Math.round(acc*100)+'%'}</b></span><span>Ground <b class="${lostG>0?'c-bad':'c-good'}">${lostG>0?'−'+r1(lostG):'+'+r1(gain)}</b></span></div>
       <div class="op-msg" id="opmsg">${OP.msg||mood}</div>
@@ -1593,7 +1665,7 @@ function storyVars(){
     f.siegeBroken=!!R.siegeBroken;
   }
   f.siege=!!G.backlog; v.due=(G.ankiDue||0).toLocaleString(); v.ankiGoal=(Td.ankiGoal||set.ankiGoal).toLocaleString(); v.clearBy=fmtDow(G.siegeBy||set.clearBy||t);
-  f.attack=Td.attack!=null && G.town[Td.attack].owner==='us'; v.attackTown=f.attack?G.tname(Td.attack):''; v.defenseQ=set.defenseQ;
+  f.attack=Td.attack!=null && G.town[Td.attack].owner==='us'; v.attackTown=f.attack?G.tname(Td.attack):''; v.defenseQ=(G.today&&G.today.defQ||set.defenseQ);
   v.target=G.target!=null?G.tname(G.target):'no target'; v.towns=G.town.filter(x=>x.owner==='us').length;
   v.daysToShelf=Math.max(0,daysBetween(t,set.shelf)); v.targetPct=set.targetPct; v.remainingUW=G.remainingUW;
   let met=0,cnt=0; const dots=[]; for(let i=7;i>=1;i--){ const r=G.days[addDays(t,-i)]; if(!r){ dots.push(null); continue; } cnt++; if(r.goalMet) met++; dots.push(!!r.goalMet); } v.met7=met; v.cnt7=cnt; v.dots=dots;
@@ -1831,5 +1903,6 @@ $('#gatequiet').addEventListener('click', ()=>enterApp(false));
 </script>
 <script src="battle.js"></script>
 <script src="election.js"></script>
+<script src="command.js"></script>
 </body>
 </html>
