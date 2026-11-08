@@ -374,6 +374,21 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 .gmini.down{opacity:.6}.gmini.down .pt{filter:grayscale(1)}
 .offgrid{display:grid;gap:2px}.offc.locked{opacity:.7}
 .dispatch{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 12px;margin:0}
+
+/* profile & orders */
+.prof .profhead{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.pinfo{flex:1;min-width:220px}
+.ptitle{font-family:var(--display);font-size:28px;letter-spacing:.05em;color:#f1e6cc}
+.xpbar{height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;margin:10px 0 6px}.xpbar div{height:100%;background:linear-gradient(90deg,#c9a34a,#ffe08a);border-radius:5px}
+.ordl{list-style:none;padding:0;margin:6px 0 0}.ord{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.ord .ock{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(217,199,160,.5);display:grid;place-items:center;font-size:12px;flex:none}
+.ord.done .ock{background:var(--good,#3fb27f);border-color:transparent;color:#fff}.ord.done>span:nth-child(2){opacity:.65;text-decoration:line-through}
+.oxp{margin-left:auto;color:#e3b54a;font-size:12px;white-space:nowrap}
+.banner.orders{display:block}.banner.orders .ordl b.oxp{font-size:12px;letter-spacing:0;text-transform:none;font-family:inherit}.banner.orders .ord{font-size:14px;text-transform:none;letter-spacing:0}.banner.orders .ordl{margin:4px 0 8px}
+.xptbl{width:100%;border-collapse:collapse;font-size:13.5px}.xptbl th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;padding:4px}.xptbl td{padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.06)}.xptbl tfoot td{font-weight:700;border:0}
+.ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}.rk{display:flex;gap:8px;align-items:center;opacity:.45;padding:4px;border-radius:6px}.rk.got{opacity:.85}.rk.here{opacity:1;background:rgba(227,181,74,.12);outline:1px solid rgba(227,181,74,.5)}
+.prow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.pr{display:grid;justify-items:center;opacity:.3;font-size:11px}.pr.got{opacity:1}
+.rankchip svg{vertical-align:-5px;margin-right:4px}
+.rankup .insig{margin:0 auto 6px;display:block}
 </style>
 </head>
 <body>
@@ -390,6 +405,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
     <button data-t="battles">Battles</button>
     <button data-t="election">Election</button>
     <button data-t="command">Command</button>
+    <button data-t="profile">Profile</button>
     <button data-t="stats">Stats</button>
     <button data-t="hall">Hall 🔒</button>
     <button data-t="log">War log</button>
@@ -409,7 +425,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 
 <script>
 'use strict';
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.5';
 
 /* ================= Regions ================= */
 const REG = {
@@ -673,6 +689,7 @@ function simulate(st, extra){
       if(weaker && (!cur || cur.n<10 || G.regAcc[weaker].c/G.regAcc[weaker].n < cur.c/cur.n - 0.05)){ add(d,'general',`Intel: your weakest front is ${REG[weaker].name}. ${GENERALS[G.gen.r].name} withdraws.`); G.gen=null; }
     }
     if(!G.gen && G.gensDown.length<Object.keys(GENERALS).length) pickGeneral(d);
+    R.genR = G.gen ? G.gen.r : null;
     // start of day: consolidation
     for(const x of town){ if(x.status==='occupied' && x.consAt && d>=x.consAt){ x.status='held'; R.cons.push(x.id); add(d,'cons',`${esc(tname(x.id))} consolidated — now solid.`,{town:x.id}); } }
     // quota
@@ -721,7 +738,7 @@ function simulate(st, extra){
         let ground=0, lossInfo=null;
         if(nOff>0){
           if(acc<0.37){
-            const wk=mondayOf(d);
+            const wk=weekMonday(d);
             if(G.perk.surgeon && G.surgeonWeek!==wk){ G.surgeonWeek=wk; lossInfo={lost:0,towns:0,saved:true}; add(d,'officer',`Surgeon Maren steadies the line — counterattack after a rough block cancelled.`); }
             else { lossInfo = applyLoss(0.3*nOff, d, 'enemy counterattack after a rough block', false);
             R.lostGround += lossInfo.lost; }
@@ -824,19 +841,21 @@ let showArrows = localStorage.getItem(LS_ARROWS)!=='0';
 function render(){
   if(!T) return;
   G = simulate(S);
+  try{ if(typeof renderRankChip==='function') setTimeout(renderRankChip,0); }catch(e){}
   $('#cd').textContent = Math.max(0, daysBetween(today(), S.settings.shelf));
   renderSync();
   const v = $('#view');
   if(tab==='campaign'){ if(!v.querySelector('#mapsvg')) v.innerHTML = viewCampaignShell(); updateCampaign(); }
   else if(tab==='battles') v.innerHTML = viewBattles();
   else if(tab==='command') v.innerHTML = viewCommand();
+  else if(tab==='profile') v.innerHTML = viewProfile();
   else if(tab==='election'){ if(!v.querySelector('#elroot')){ v.innerHTML = viewElection(); afterElectionRender(); } else elDraw(); }
   else if(tab==='log') v.innerHTML = viewLog();
   else if(tab==='stats') v.innerHTML = viewStats();
   else if(tab==='hall'){ v.innerHTML = viewHall(); afterHallRender(); }
   else v.innerHTML = viewSettings();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
-  $('#fabs').style.display = (tab==='settings'||tab==='election'||tab==='command') ? 'none' : '';
+  $('#fabs').style.display = (tab==='settings'||tab==='election'||tab==='command'||tab==='profile') ? 'none' : '';
 }
 
 function viewCampaignShell(){
@@ -1008,6 +1027,7 @@ function updateCampaign(){
   if(td.attack!=null){ const ours=G.town[td.attack].owner==='us'; const dn=Math.round((td.def&&td.def.n)||0);
     bn+=`<div class="banner attack"><b class="c-warn">⚔ Enemy offensive: ${esc(G.tname(td.attack))}</b><span class="note">${ours?`Your first ${td.defQ||set.defenseQ} questions today defend it. Progress: ${dn}/${td.defQ||set.defenseQ}.`:'The town has fallen.'}</span><button class="btn sm" data-a="goto" data-t="${td.attack}">Show</button></div>`; }
   if(G.target==null && !pickMode) bn+=`<div class="banner info"><b>No active offensive</b><span class="note">${G.reserve>0?`${r1(G.reserve)} ground in reserve. `:''}Pick the next town to attack.</span><button class="btn pri sm" data-a="pick">Choose target</button></div>`;
+  if(typeof ordersCompact==='function') bn+=ordersCompact();
   $('#banners').innerHTML=bn;
   // cards
   const qpct = td.quota? Math.min(100, td.q/td.quota*100) : 100;
@@ -1904,5 +1924,6 @@ $('#gatequiet').addEventListener('click', ()=>enterApp(false));
 <script src="battle.js"></script>
 <script src="election.js"></script>
 <script src="command.js"></script>
+<script src="profile.js"></script>
 </body>
 </html>
