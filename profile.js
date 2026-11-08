@@ -102,7 +102,7 @@ function profileState(){
 
 /* ---------- insignia (drawn in code; colour = prestige) ---------- */
 // Painted emblems: add a rank number here when art/rank_NN.webp exists (and prestige numbers for art/prestige_NN.webp).
-const RANK_ART=new Set([1,2,3]), PRESTIGE_ART=new Set([]);
+const RANK_ART=new Set([1,2,3,4]), PRESTIGE_ART=new Set([]);
 function insignia(lvl, prestige, size){
   const ri=RANKS.indexOf(rankOf(lvl))+1;
   if(RANK_ART.has(ri)){ const s=size||64, P=PRESTIGE[Math.min(prestige,MAX_PRESTIGE)];
