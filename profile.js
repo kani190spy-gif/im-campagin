@@ -101,7 +101,15 @@ function profileState(){
 }
 
 /* ---------- insignia (drawn in code; colour = prestige) ---------- */
+// Painted emblems: add a rank number here when art/rank_NN.webp exists (and prestige numbers for art/prestige_NN.webp).
+const RANK_ART=new Set([1]), PRESTIGE_ART=new Set([]);
 function insignia(lvl, prestige, size){
+  const ri=RANKS.indexOf(rankOf(lvl))+1;
+  if(RANK_ART.has(ri)){ const s=size||64, P=PRESTIGE[Math.min(prestige,MAX_PRESTIGE)];
+    return `<span class="insig art" style="width:${s}px;height:${s}px${prestige?`;--pc:${P.c}`:''}"><img src="art/rank_${String(ri).padStart(2,'0')}.webp" alt="${esc(rankOf(lvl).t)}">${prestige?`<i class="pmark">${PRESTIGE_ART.has(prestige)?`<img src="art/prestige_${String(prestige).padStart(2,'0')}.webp" alt="">`:prestige}</i>`:''}</span>`; }
+  return insignia_drawn(lvl, prestige, size);
+}
+function insignia_drawn(lvl, prestige, size){
   const r=rankOf(lvl), P=PRESTIGE[Math.min(prestige,MAX_PRESTIGE)], col=prestige?P.c:'#d9c7a0', s=size||64;
   const chev=(y)=>`<path d="M14,${y} L32,${y+10} L50,${y} L50,${y+6} L32,${y+16} L14,${y+6} Z" fill="${col}"/>`;
   const rock=(y)=>`<path d="M14,${y} Q32,${y+10} 50,${y} L50,${y+5} Q32,${y+15} 14,${y+5} Z" fill="${col}"/>`;
