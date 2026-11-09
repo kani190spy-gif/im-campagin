@@ -110,12 +110,13 @@ function collection(){
 }
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
-const COIN_METAL_ART=new Set(['prayer']);   // pre-tinted per metal: art/coin_<k>_<metal>.webp (gold/gem details kept)
+// Per-level coin art: add '<coin>_<metal>' when art/coin_<coin>_<metal>.webp exists. (prayer tiers are interim tints of your nickel Vigil coin)
+const COIN_FILES=new Set(['prayer_copper','prayer_bronze','prayer_silver','prayer_gold']);
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';
   if(metal==='obsidian' && COIN_ART.has(k+'_obsidian')) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_obsidian.webp" alt=""></span>`;
-  if(COIN_METAL_ART.has(k) && metal!=='obsidian') return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_${metal}.webp" alt=""></span>`;
+  if(COIN_FILES.has(k+'_'+metal)) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_${metal}.webp" alt=""></span>`;
   if(COIN_ART.has(k)) return `<span class="coin art m-${metal}" style="width:${s}px;height:${s}px"><img src="art/coin_${k}.webp" alt=""></span>`;
   return `<span class="coin m-${metal}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
 }
