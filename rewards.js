@@ -24,7 +24,7 @@ const DUTY_VARIANTS=[
 const DUTY_W=[12,10,8.5,7,5.5,4.2,3,2,1.2,0.6];   // draw weights by rarity 1→10 (heart ≈ 1 in 90)
 function dutyDraw(d){ const tot=DUTY_W.reduce((a,b)=>a+b,0); let x=hash('duty:'+d)*tot; for(let i=0;i<DUTY_VARIANTS.length;i++){ x-=DUTY_W[i]; if(x<0) return DUTY_VARIANTS[i]; } return DUTY_VARIANTS[0]; }
 const COINS={
-  prayer:{n:'Vigil coin',   g:'☾', why:'Prayers in a day', tiers:'1 copper · 2 bronze · 3 silver · 4 gold · all 5 obsidian'},
+  prayer:{n:'Vigil coin',   g:'☾', why:'Prayers in a day', tiers:'1 nickel · 2 bronze · 3 silver · 4 gold · all 5 obsidian'},
   duty:  {n:'Participant coin', g:'✚', why:'Daily clinical activities completed', tiers:'a random design each day: collect all 10, rarer ones are harder to find'},
   iron:  {n:'Forge coin',   g:'⚒', why:'Every gym session (metal by session # that week)', tiers:'1st nickel · 2nd copper · 3rd silver · 4th+ gold'},
   supply:{n:'Supply coin',  g:'⛭', why:'Anki each day', tiers:'½ goal nickel · ¾ goal copper · goal hit silver · 0 due gold'},
@@ -97,7 +97,7 @@ function collection(){
   const give=(k,m,d)=>{ if(!m) return; coins[k][m]++; coins[k].total++; coinLog.push({k,m,d}); };
   const gymWeek={};
   for(const d of seasonDays()){ const R=G.days[d];
-    const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'copper','bronze','silver','gold','obsidian'][np],d);
+    const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'nickel','bronze','silver','gold','obsidian'][np],d);
     if(habitVal(d,'duty')==='done'){ const v=dutyDraw(d); give('duty','nickel',d); duty[v.k]=(duty[v.k]||0)+1; dutyLog.push({k:v.k,d}); }
     if(habitVal(d,'gym')===true){ const w=weekMonday(d); gymWeek[w]=(gymWeek[w]||0)+1; give('iron',[null,'nickel','copper','silver','gold'][Math.min(4,gymWeek[w])],d); }
     const A=R.anki||G.ankiByDay[d]; if(A){ const goal=R.ankiGoal||S.settings.ankiGoal, f=goal?A.reviewed/goal:0; give('supply', A.due===0?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
@@ -127,7 +127,7 @@ function collection(){
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
 // Per-level coin art: add '<coin>_<metal>' when art/coin_<coin>_<metal>.webp exists. (prayer tiers are interim tints of your nickel Vigil coin)
-const COIN_FILES=new Set(['prayer_copper','prayer_bronze','prayer_silver','prayer_gold']);
+const COIN_FILES=new Set(['prayer_nickel','prayer_bronze','prayer_silver','prayer_gold']);
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';
