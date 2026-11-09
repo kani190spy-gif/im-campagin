@@ -110,10 +110,12 @@ function collection(){
 }
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
+const COIN_METAL_ART=new Set(['prayer']);   // pre-tinted per metal: art/coin_<k>_<metal>.webp (gold/gem details kept)
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';
   if(metal==='obsidian' && COIN_ART.has(k+'_obsidian')) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_obsidian.webp" alt=""></span>`;
+  if(COIN_METAL_ART.has(k) && metal!=='obsidian') return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_${metal}.webp" alt=""></span>`;
   if(COIN_ART.has(k)) return `<span class="coin art m-${metal}" style="width:${s}px;height:${s}px"><img src="art/coin_${k}.webp" alt=""></span>`;
   return `<span class="coin m-${metal}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
 }
