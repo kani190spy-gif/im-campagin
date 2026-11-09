@@ -8,9 +8,24 @@
 const METALS=['nickel','iron','copper','bronze','silver','gold','obsidian'];   // obsidian: prayer coin only (all five)
 const METAL_COL={nickel:'#c8ccd2', iron:'#7d8088', copper:'#c87a4a', bronze:'#b08a4a', silver:'#e6e9ef', gold:'#e3b54a', obsidian:'#7a5ab8'};
 // Each family is one coin design; the metal shows how far you went that day (or that week, for gym).
+// Participant coin designs, rarity 1 (common) → 10 (rarest). One is drawn at random each completed day.
+const DUTY_VARIANTS=[
+  {k:'clipboard', n:'Clipboard',              r:1,  g:'📋'},
+  {k:'vessel',    n:'Aortic Tree',            r:2,  g:'⟟'},
+  {k:'rbc',       n:'Red Cell',               r:3,  g:'◍'},
+  {k:'dua',       n:'Hands in Dua',           r:4,  g:'🤲'},
+  {k:'kidneys',   n:'Kidneys, Aorta & IVC',   r:5,  g:'⫶'},
+  {k:'neutrophil',n:'Neutrophil',             r:6,  g:'✺'},
+  {k:'lungs',     n:'Lungs',                  r:7,  g:'🫁'},
+  {k:'brain',     n:'Vascularized Brain',     r:8,  g:'🧠'},
+  {k:'gut',       n:'Stomach & Intestines',   r:9,  g:'∾'},
+  {k:'heart',     n:'Vascularized Heart',     r:10, g:'❤'},
+];
+const DUTY_W=[12,10,8.5,7,5.5,4.2,3,2,1.2,0.6];   // draw weights by rarity 1→10 (heart ≈ 1 in 90)
+function dutyDraw(d){ const tot=DUTY_W.reduce((a,b)=>a+b,0); let x=hash('duty:'+d)*tot; for(let i=0;i<DUTY_VARIANTS.length;i++){ x-=DUTY_W[i]; if(x<0) return DUTY_VARIANTS[i]; } return DUTY_VARIANTS[0]; }
 const COINS={
   prayer:{n:'Vigil coin',   g:'☾', why:'Prayers in a day', tiers:'1 copper · 2 bronze · 3 silver · 4 gold · all 5 obsidian'},
-  duty:  {n:'Participant coin', g:'✚', why:'Daily clinical activities completed', tiers:'one coin per day you mark completed (N/A days skip)'},
+  duty:  {n:'Participant coin', g:'✚', why:'Daily clinical activities completed', tiers:'a random design each day: collect all 10, rarer ones are harder to find'},
   iron:  {n:'Forge coin',   g:'⚒', why:'Every gym session (metal by session # that week)', tiers:'1st nickel · 2nd copper · 3rd silver · 4th+ gold'},
   supply:{n:'Supply coin',  g:'⛭', why:'Anki each day', tiers:'½ goal nickel · ¾ goal copper · goal hit silver · 0 due gold'},
   field: {n:'Field coin',   g:'⚔', why:'Each 40-question block (metal by accuracy)', tiers:'50% nickel · 55% iron · 60% copper · 65% bronze · 70% silver · 75% gold'},
@@ -78,11 +93,12 @@ function seasonDays(){ return Object.keys(G.days).sort().filter(d=>d<=today() &&
 /* ---------- compute the collection ---------- */
 function collection(){
   const coins={}, coinLog=[]; for(const k in COINS){ coins[k]={total:0}; for(const m of METALS) coins[k][m]=0; }
+  const duty={}, dutyLog=[];
   const give=(k,m,d)=>{ if(!m) return; coins[k][m]++; coins[k].total++; coinLog.push({k,m,d}); };
   const gymWeek={};
   for(const d of seasonDays()){ const R=G.days[d];
     const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'copper','bronze','silver','gold','obsidian'][np],d);
-    if(habitVal(d,'duty')==='done') give('duty','nickel',d);
+    if(habitVal(d,'duty')==='done'){ const v=dutyDraw(d); give('duty','nickel',d); duty[v.k]=(duty[v.k]||0)+1; dutyLog.push({k:v.k,d}); }
     if(habitVal(d,'gym')===true){ const w=weekMonday(d); gymWeek[w]=(gymWeek[w]||0)+1; give('iron',[null,'nickel','copper','silver','gold'][Math.min(4,gymWeek[w])],d); }
     const A=R.anki||G.ankiByDay[d]; if(A){ const goal=R.ankiGoal||S.settings.ankiGoal, f=goal?A.reviewed/goal:0; give('supply', A.due===0?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
     if(!R.leave && R.quota){ const f=R.q/R.quota; give('march', f>=1.25?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
@@ -106,7 +122,7 @@ function collection(){
     award('r_clerk', due.length>0 && due.every(it=>{ const e=ts[it.k]; return e&&e.val&&e.date<=clerkDue(it.due); }));
   }
   const medals=MEDALS.map(m=>{ let d=null; try{ d=m.ok()||null; }catch(e){} if(d && d>seasonEnd()) d=null; return {...m, d, lost:!d && seasonOver()}; });
-  return {coins, coinLog, ribbons, ribLog, medals};
+  return {coins, coinLog, ribbons, ribLog, medals, duty, dutyLog};
 }
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
@@ -120,6 +136,11 @@ function coinHtml(k, metal, size){
   if(COIN_ART.has(k)) return `<span class="coin art m-${metal}" style="width:${s}px;height:${s}px"><img src="art/coin_${k}.webp" alt=""></span>`;
   return `<span class="coin m-${metal}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
 }
+const DUTY_ART=new Set([]);   // add variant keys when art/coin_duty_<key>.webp exists
+function dutyCoinHtml(v,size,hidden){ const s=size||56;
+  if(DUTY_ART.has(v.k) && !hidden) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_duty_${v.k}.webp" alt=""></span>`;
+  const col=v.r>=9?'#e3b54a':v.r>=7?'#e8d29a':v.r>=4?'#e6e9ef':'#c8ccd2';
+  return `<span class="coin r${v.r}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.42}px">${hidden?'?':v.g}</span>`; }
 function ribbonHtml(k, w){
   const r=RIBBONS[k]; w=w||96;
   if(RIBBON_ART.has(k)) return `<span class="ribbon art" style="width:${w}px"><img src="art/ribbon_${k.slice(2)}.webp" alt=""></span>`;
@@ -145,6 +166,7 @@ function collectionCard(){
   return `<div class="card"><h3>Collection</h3>
     <div class="note">Tasks earn XP and collectibles. Coins are daily, ribbons weekly, medals once. Medals not earned by ${fmtD(seasonEnd())} are lost for good.</div>
     <h4>Coins <small class="c-muted">the metal shows how far you went: nickel → iron → copper → bronze → silver → gold (→ obsidian for all five prayers)</small></h4><div class="col-row">${coinRow}</div>
+    <h4>Participant coins <small class="c-muted">${Object.keys(C.duty).length}/${DUTY_VARIANTS.length} designs found · rarity 1–10</small></h4><div class="col-row">${DUTY_VARIANTS.map(v=>{ const n=C.duty[v.k]||0; return `<div class="col-it ${n?'':'dim'}">${dutyCoinHtml(v,52,!n)}<b>${n?'×'+n:'?'}</b><span>${n?esc(v.n):'Undiscovered'}</span><small>Rarity ${v.r}/10</small></div>`; }).join('')}</div>
     <h4>Ribbons <small class="c-muted">weekly</small></h4><div class="col-row">${ribRow}</div>
     <h4 style="margin-top:16px">Medals <small class="c-muted">${earned}/${MEDALS.length}</small></h4>${medRows}</div>`;
 }
@@ -162,6 +184,7 @@ function checkRewards(){
   for(const f of fresh){ const [t,k]=f.split(':');
     if(t==='m'){ const m=C.medals.find(x=>x.k===k); items.push(`<div class="col-it med">${medalHtml(m,80)}<span><b>${esc(m.n)}</b></span><small>${esc(m.why)}</small></div>`); }
     else if(t==='r'){ items.push(`<div class="col-it rib">${ribbonHtml(k,110)}<span><b>${esc(RIBBONS[k].n)}</b> ×${C.ribbons[k]}</span><small>${esc(RIBBONS[k].why)}</small></div>`); }
+    else if(k==='duty'){ const last=C.dutyLog[C.dutyLog.length-1], v=DUTY_VARIANTS.find(x=>x.k===last.k); items.push(`<div class="col-it">${dutyCoinHtml(v,64)}<span><b>Participant coin: ${esc(v.n)}</b></span><small>Rarity ${v.r}/10${C.duty[v.k]===1?' · new design!':''}</small></div>`); }
     else { const m=f.split(':')[2]; items.push(`<div class="col-it">${coinHtml(k,m,60)}<span><b>${esc(COINS[k].n)}</b> · ${m}</span><small>${esc(COINS[k].why)}</small></div>`); }
   }
   openSheet(`<div class="donebox"><h2>${fresh.some(f=>f[0]==='m')?'Medal awarded':'Collected'}</h2><div class="col-row" style="justify-content:center">${items.slice(0,8).join('')}</div>${items.length>8?`<div class="note">+${items.length-8} more in your Collection</div>`:''}
