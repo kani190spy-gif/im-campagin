@@ -6,7 +6,7 @@
    ===================================================================== */
 const MAX_LEVEL=50, MAX_PRESTIGE=10;
 // The curve is scaled so that the full plan below (see PLAN) lands exactly on Prestige 10, level 50.
-const XP_K = 1.207;   // = planXP() / (11 × unscaled prestige); re-check if PLAN or XP_RULES change
+const XP_K = 1.192;   // = planXP() / (11 × unscaled prestige); re-check if PLAN or XP_RULES change
 const XP_NEXT = L => Math.round(XP_K*(40 + 2.2*Math.pow(L,1.4)));   // XP to go from level L to L+1
 const XP_TABLE = (()=>{ const t=[0,0]; for(let L=1;L<MAX_LEVEL;L++) t[L+1]=t[L]+XP_NEXT(L); return t; })(); // XP needed to reach level L
 const XP_PER_PRESTIGE = XP_TABLE[MAX_LEVEL];
@@ -21,7 +21,7 @@ const PRESTIGE=[ // theme and accent colour per prestige
   {n:'Unranked', c:'#8a93a3'},{n:'The Lamp', c:'#e3b54a'},{n:'Rootbound', c:'#4fbf6a'},{n:'Tidebreaker', c:'#3f8fd0'},{n:'Ironwolf', c:'#9fd4ff'},{n:'The Abyss', c:'#2fd0c8'},
   {n:'Stormforged', c:'#9a6ae0'},{n:'Clockwork', c:'#d08a3a'},{n:"Serpent's Oath", c:'#2fbf7f'},{n:'Dragonfire', c:'#ff5a2a'},{n:'Those Who Did Not Wait', c:'#fff1b8'} ];
 
-const XP_RULES={ qBase:20, qAcc:30, ankiRev:1.5, ankiOn:200, goal:150, gym:150, gymMod:0.10, gymDays:3, diet:60, pray:20, prayAll:60, cap:40, general:600, siege:1500, cms:2000, orderD:2.5, orderW:2 };
+const XP_RULES={ qBase:20, qAcc:30, ankiRev:1.5, ankiOn:200, goal:150, gym:150, gymMod:0.10, gymDays:3, pray:20, prayAll:60, cap:40, general:600, siege:1500, cms:2000, orderD:2.5, orderW:2 };
 const PRAYERS=['Fajr','Dhuhr','Asr','Maghrib','Isha'];
 
 /* ---------- clerkship checklist (MSU CHM Internal Medicine, 2026–27) ----------
@@ -70,7 +70,6 @@ const DAILY={
   early:{ ok:()=>true, xp:40, txt:()=>`Log your first block before noon`, ev:(R,d)=>{ const b=dayBlocks(d).map(x=>x.e.ts).filter(Boolean).sort(); return {done:!!b.length && new Date(b[0]).getHours()<12 && ymd(new Date(b[0]))===d, p:b.length?`first at ${new Date(b[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`:'none yet'}; } },
   two:{ ok:()=>true, xp:50, txt:()=>`Do two blocks today`, ev:(R,d)=>{ const n=dayBlocks(d).length; return {done:n>=2, p:`${n}/2`}; } },
   gym:{ ok:()=>true, xp:40, txt:()=>`Get a gym session in`, ev:(R,d)=>({done:habitVal(d,'gym')===true, p:habitVal(d,'gym')===true?'logged':'not yet'}) },
-  diet:{ ok:()=>true, xp:30, txt:()=>`Hold low-carb today`, ev:(R,d)=>({done:habitVal(d,'diet')===true, p:habitVal(d,'diet')===true?'logged':'not yet'}) },
 };
 const WEEKLY={
   gen:{ ok:w=>!!w.genR, xp:300, txt:()=>`Break a general`, ev:w=>{ const n=G.gensDown.filter(g=>g.d>=w.mon&&g.d<=w.sun).length; return {done:n>=1, p:`${n}/1`}; } },
@@ -79,7 +78,6 @@ const WEEKLY={
   acc:{ ok:()=>true, xp:200, txt:()=>`150+ questions at 65%+ for the week`, ev:w=>{ const n=w.days.reduce((a,R)=>a+R.q,0), c=w.days.reduce((a,R)=>a+R.c,0); return {done:n>=150 && c/n>=0.65, p:`${n} q${n?` · ${Math.round(c/n*100)}%`:''}`}; } },
   anki6:{ ok:()=>true, xp:200, txt:()=>`Anki on target 6 days (goal hit or 0 due)`, ev:w=>{ const n=w.days.filter(R=>R.anki && ((R.anki.due===0) || (R.ankiGoal && R.anki.reviewed>=R.ankiGoal))).length; return {done:n>=6, p:`${n}/6`}; } },
   gym3:{ ok:()=>true, xp:150, txt:()=>`3 gym sessions`, ev:w=>{ const n=w.dates.filter(d=>habitVal(d,'gym')===true).length; return {done:n>=3, p:`${n}/3`}; } },
-  diet5:{ ok:()=>true, xp:150, txt:()=>`Low-carb 5 days`, ev:w=>{ const n=w.dates.filter(d=>habitVal(d,'diet')===true).length; return {done:n>=5, p:`${n}/5`}; } },
 };
 function volN(R){ return Math.max(40, Math.round((R.quota||40)/5)*5); }
 function pickN(keys, n, seed){ return keys.map(k=>({k,h:hash(seed+k)})).sort((a,b)=>a.h-b.h).slice(0,n).map(x=>x.k); }
@@ -87,7 +85,7 @@ function dailyOrders(d){
   const R=G.days[d]; if(!R || R.leave) return [];
   const study = DAILY.weak.ok(R) && hash('st'+d)<0.6 ? 'weak' : 'vol';
   const anki = R.siege ? 'ankiGoal' : 'anki0';
-  const rest = pickN(['acc70','early','two','gym','diet',study==='weak'?'vol':'weak'].filter(k=>DAILY[k].ok(R)), 1, 'd'+d);
+  const rest = pickN(['acc70','early','two','gym',study==='weak'?'vol':'weak'].filter(k=>DAILY[k].ok(R)), 1, 'd'+d);
   return [study, anki, ...rest].map(k=>{ const o=DAILY[k], r=o.ev(R,d); return {k, kind:'daily', d, xp:Math.round(o.xp*XP_RULES.orderD), txt:o.txt(R), done:r.done, p:r.p}; });
 }
 function weekCtx(mon){
@@ -100,13 +98,15 @@ function weeklyOrders(mon){
   const w=weekCtx(mon); if(!w.days.length) return [];
   const a = hash('wq'+mon)<0.5 ? 'qweek' : 'goal5';
   const b = w.genR ? 'gen' : (a==='qweek'?'goal5':'qweek');
-  const c = pickN(['acc','anki6','gym3','diet5'], 1, 'w'+mon)[0];
+  const c = pickN(['acc','anki6','gym3'], 1, 'w'+mon)[0];
   return [a,b,c].map(k=>{ const o=WEEKLY[k], r=o.ev(w); return {k, kind:'weekly', d:mon, xp:Math.round(o.xp*XP_RULES.orderW), txt:o.txt(w), done:r.done, p:r.p}; });
 }
 
 /* ---------- XP ledger ---------- */
+function seasonEnd(){ return S.settings.seasonEnd || clerkDue([7,1]); }   // evaluations deadline, week 7 Monday
+function seasonOver(){ return today()>seasonEnd(); }
 function xpLedger(){
-  const L=[]; const add=(d,src,xp,label)=>{ if(xp>0) L.push({d,src,xp,label}); };
+  const L=[]; const END=seasonEnd(); const add=(d,src,xp,label)=>{ if(xp>0 && d<=END) L.push({d,src,xp,label}); };
   const t=today(), R_=XP_RULES;
   for(const b of G.blocks){ const e=b.e; if(e.type==='cms'){ add(b.d,'cms',R_.cms,`CMS form ${esc(e.form||'')} (${e.pct}%)`); continue; } add(b.d,'q',b.n*(R_.qBase+R_.qAcc*b.acc),`${b.n} questions at ${Math.round(b.acc*100)}%`); }
   const weeks=new Set();
@@ -116,7 +116,6 @@ function xpLedger(){
     if(A && (A.due===0 || (R.ankiGoal && A.reviewed>=R.ankiGoal))) add(d,'anki',R_.ankiOn,'Anki on target');
     if(R.goalMet && !R.leave && d<t) add(d,'goal',R_.goal,'Daily goal met');
     if(habitVal(d,'gym')===true) add(d,'gym',R_.gym,'Gym session');
-    if(habitVal(d,'diet')===true) add(d,'diet',R_.diet,'Low-carb day');
     const pr=prayersOn(d), np=pr.filter(Boolean).length; if(np) add(d,'pray',np*R_.pray+(np===5?R_.prayAll:0),`${np}/5 prayers${np===5?' (all five)':''}`);
     if(R.caps&&R.caps.length) add(d,'cap',R.caps.length*R_.cap,`${R.caps.length} town${R.caps.length>1?'s':''} taken`);
     if(R.siegeBroken) add(d,'siege',R_.siege,'Siege broken');
@@ -132,12 +131,12 @@ function xpLedger(){
   return L;
 }
 /* ---------- the plan: doing all of this should land exactly on Prestige 10, level 50 ---------- */
-const PLAN={ uw:1092, amb:300, acc:0.65, ankiPerDay:250, ankiOnRate:0.97, cms:4, goalRate:0.95, prayRate:0.9, gymPerWeek:3, dietPerWeek:5, towns:60, generals:9, ordersDaily:0.7, ordersWeekly:0.67 };
+const PLAN={ uw:1092, amb:300, acc:0.65, ankiPerDay:250, ankiOnRate:0.97, cms:4, goalRate:0.95, prayRate:0.9, gymPerWeek:3, towns:60, generals:9, ordersDaily:0.7, ordersWeekly:0.67 };
 function planXP(){
   const set=S.settings, R_=XP_RULES, days=Math.max(1,daysBetween(set.campaignStart,set.shelf)+1), weeks=days/7;
   const clerk=CLERK.reduce((a,g)=>a+g.items.reduce((b,i)=>b+i.xp,0),0)+CLERK_MILESTONES.reduce((a,m)=>a+m.xp,0);
   const base = (PLAN.uw+PLAN.amb)*(R_.qBase+R_.qAcc*PLAN.acc) + days*PLAN.ankiPerDay*R_.ankiRev + days*PLAN.ankiOnRate*R_.ankiOn
-    + PLAN.cms*R_.cms + days*PLAN.goalRate*R_.goal + days*PLAN.prayRate*(5*R_.pray+R_.prayAll) + weeks*PLAN.dietPerWeek*R_.diet
+    + PLAN.cms*R_.cms + days*PLAN.goalRate*R_.goal + days*PLAN.prayRate*(5*R_.pray+R_.prayAll)
     + PLAN.towns*R_.cap + PLAN.generals*R_.general + R_.siege + clerk
     + days*3*65*R_.orderD*PLAN.ordersDaily + weeks*3*230*R_.orderW*PLAN.ordersWeekly;
   const modCover=Math.min(1, PLAN.gymPerWeek*R_.gymDays/7);
@@ -195,13 +194,14 @@ function viewProfile(){
   const P=profileState(), t=today(), mon=weekMonday(t);
   const pct=P.need?Math.min(100,P.into/P.need*100):100;
   const dd=dailyOrders(t), ww=weeklyOrders(mon);
-  const srcName={q:'Questions',anki:'Anki',cms:'CMS forms',clerk:'Clerkship',order:'Orders',goal:'Daily goals',pray:'Prayers',gym:'Gym',diet:'Diet',cap:'Towns',general:'Generals',siege:'Siege'};
+  const srcName={q:'Questions',anki:'Anki',cms:'CMS forms',clerk:'Clerkship',order:'Orders',goal:'Daily goals',pray:'Prayers',gym:'Gym',cap:'Towns',general:'Generals',siege:'Siege'};
   const sum=(f)=>{ const m={}; for(const x of P.led) if(f(x)) m[x.src]=(m[x.src]||0)+x.xp; return m; };
   const todayM=sum(x=>x.d===t), weekM=sum(x=>x.d>=mon && x.d<=addDays(mon,6)), allM=sum(()=>true);
   const tot=m=>Object.values(m).reduce((a,b)=>a+b,0);
   const srcRows=Object.keys(srcName).filter(k=>allM[k]).map(k=>`<tr><td>${srcName[k]}</td><td>${todayM[k]||0}</td><td>${weekM[k]||0}</td><td>${allM[k].toLocaleString()}</td></tr>`).join('');
   const ladder=RANKS.map((r,i)=>{ const lo=Math.ceil(i*MAX_LEVEL/RANKS.length)+1; const here=rankOf(P.lvl)===r; return `<div class="rk ${here?'here':''} ${P.lvl>=lo?'got':''}">${insignia(lo,P.prestige,34)}<div><b>${r.t}</b><div class="sub">Level ${lo}</div></div></div>`; }).join('');
-  const pres=PRESTIGE.slice(1).map((p,i)=>`<div class="pr ${P.prestige>=i+1?'got':''}" title="Prestige ${i+1}: ${esc(p.n)}">${PRESTIGE_ART.has(i+1)?`<img class="pimg" src="art/prestige_${String(i+1).padStart(2,'0')}.webp" alt="">`:insignia(MAX_LEVEL,i+1,56)}<span>${i+1} · ${esc(p.n)}</span></div>`).join('');
+  const over=seasonOver();
+  const pres=PRESTIGE.slice(1).map((p,i)=>`<div class="pr ${P.prestige>=i+1?'got':over?'lost':''}" title="Prestige ${i+1}: ${esc(p.n)}${P.prestige<i+1&&over?' — not earned this season':''}">${PRESTIGE_ART.has(i+1)?`<img class="pimg" src="art/prestige_${String(i+1).padStart(2,'0')}.webp" alt="">`:insignia(MAX_LEVEL,i+1,56)}<span>${i+1} · ${esc(p.n)}</span></div>`).join('');
   return `<div class="card prof">
       <div class="profhead">${insignia(P.lvl,P.prestige,96)}
         <div class="pinfo"><div class="ptitle">${esc(P.rank.t)}</div><div class="sub">${P.prestige?`Prestige ${P.prestige} · ${esc(PRESTIGE[P.prestige].n)} · `:''}Level ${P.lvl} of ${MAX_LEVEL}</div>
@@ -222,7 +222,7 @@ function viewProfile(){
 }
 
 function xpRulesText(){ const R=XP_RULES;
-  return `Each question: ${R.qBase} + ${R.qAcc}×accuracy (65% = ${Math.round(R.qBase+R.qAcc*0.65)} XP) · Anki: ${R.ankiRev}/review, +${R.ankiOn} on target (0 due or goal hit) · CMS form +${R.cms} · daily goal +${R.goal} · prayers ${R.pray} each, +${R.prayAll} for all five · low-carb +${R.diet} · gym +${R.gym} and <b>+${Math.round(R.gymMod*100)}% on all XP</b> that day and the next ${R.gymDays-1} · town +${R.cap} · general +${R.general} · siege +${R.siege} · clerkship tasks 60–2,500 (half XP if checked off after the due date) · orders as listed.`; }
+  return `Each question: ${R.qBase} + ${R.qAcc}×accuracy (65% = ${Math.round(R.qBase+R.qAcc*0.65)} XP) · Anki: ${R.ankiRev}/review, +${R.ankiOn} on target (0 due or goal hit) · CMS form +${R.cms} · daily goal +${R.goal} · prayers ${R.pray} each, +${R.prayAll} for all five · gym +${R.gym} and <b>+${Math.round(R.gymMod*100)}% on all XP</b> that day and the next ${R.gymDays-1} · town +${R.cap} · general +${R.general} · siege +${R.siege} · clerkship tasks 60–2,500 (half XP if checked off after the due date) · orders as listed.`; }
 function paceCard(P){
   const pl=planXP(), set=S.settings, el=Math.min(pl.days, Math.max(1,daysBetween(set.campaignStart,today())+1));
   const goal=XP_PER_PRESTIGE*(MAX_PRESTIGE+1), toDate=goal*el/pl.days, pct=P.total/goal*100, diff=P.total-toDate;

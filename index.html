@@ -386,7 +386,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 .banner.orders{display:block}.banner.orders .ordl b.oxp{font-size:12px;letter-spacing:0;text-transform:none;font-family:inherit}.banner.orders .ord{font-size:14px;text-transform:none;letter-spacing:0}.banner.orders .ordl{margin:4px 0 8px}
 .xptbl{width:100%;border-collapse:collapse;font-size:13.5px}.xptbl th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;padding:4px}.xptbl td{padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.06)}.xptbl tfoot td{font-weight:700;border:0}
 .ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}.rk{display:flex;gap:8px;align-items:center;opacity:.45;padding:4px;border-radius:6px}.rk.got{opacity:.85}.rk.here{opacity:1;background:rgba(227,181,74,.12);outline:1px solid rgba(227,181,74,.5)}
-.prow{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:10px}.pr{display:grid;justify-items:center;gap:4px;opacity:.35;font-size:11px;text-align:center}.pr.got{opacity:1}.pr .pimg{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}.pr:not(.got) .pimg{filter:grayscale(.85) brightness(.7)}
+.prow{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:10px}.pr{display:grid;justify-items:center;gap:4px;opacity:.35;font-size:11px;text-align:center}.pr.got{opacity:1}.pr.lost{opacity:.18}.pr.lost span::after{content:' · lost';color:#e0705f}.pr .pimg{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}.pr:not(.got) .pimg{filter:grayscale(.85) brightness(.7)}
 .rankchip svg,.rankchip .insig.art{vertical-align:-5px;margin-right:4px}
 .insig.art{display:inline-block;position:relative;flex:none}.insig.art>img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
 .insig.art .pmark{position:absolute;right:-4%;bottom:-4%;width:38%;height:38%;border-radius:50%;background:#111;border:2px solid var(--pc,#ccc);color:var(--pc,#ccc);font:700 10px/1 system-ui;display:grid;place-items:center;font-style:normal}.insig.art .pmark img{width:100%;height:100%;object-fit:contain}
@@ -1082,15 +1082,14 @@ function updateCampaign(){
     </div>`;
   // lower
   const dots = kind => { let h=''; for(let i=6;i>=0;i--){ const d=addDays(t,-i); const v=habitVal(d,kind); h+=`<i class="${v===true?'y':v===false?'n':''}" title="${fmtD(d)}"></i>`; } return h; };
-  const gym=habitVal(t,'gym')===true, diet=habitVal(t,'diet')===true;
+  const gym=habitVal(t,'gym')===true;
   const recent = G.log.slice(-6).reverse();
   $('#lower').innerHTML = `
     <div class="card"><div class="row" style="justify-content:space-between"><h3>Latest dispatches</h3><button class="btn sm" data-a="summon" title="Show a reminder from your hall">🕯 Summon a reminder</button></div><ul class="log">${recent.map(x=>`<li><span class="d">${fmtD(x.d)}</span><span>${x.html}</span></li>`).join('')||'<li class="c-muted">No reports yet. Start an operation.</li>'}</ul></div>
     <div class="card"><h3>Body & supply</h3>
       <div class="toggle"><div><div>Gym today</div><div class="dots">${dots('gym')}</div></div><button class="sw ${gym?'on':''}" data-a="habit" data-k="gym" aria-label="Gym today"></button></div>
-      <div class="toggle"><div><div>Low-carb held today</div><div class="dots">${dots('diet')}</div></div><button class="sw ${diet?'on':''}" data-a="habit" data-k="diet" aria-label="Low-carb today"></button></div>
       ${typeof prayersRow==='function'?prayersRow():''}
-      <p class="note" style="margin:8px 0 0">Gym gives +150 XP and a +10% XP boost for 3 days. Prayers and low-carb earn XP too — see Profile.</p>
+      <p class="note" style="margin:8px 0 0">Gym gives +150 XP and a +10% XP boost for 3 days. Prayers earn XP too — see Profile.</p>
     </div>`;
   updateMap();
 }
@@ -1167,7 +1166,7 @@ function viewStats(){
     const goal = R.leave?'<span class="c-muted">leave</span>' : R.d===t?'<span class="c-muted">today</span>' : R.goalMet?'<span class="c-good">✓</span>':'<span class="c-bad">✗</span>';
     const mode = R.leave?'<span class="tag leave">Leave</span>':R.siege?'<span class="tag siege">Siege</span>':'<span class="tag atk">Attack</span>';
     const tgt = R.siege ? (R.ankiGoal||set.ankiGoal) : set.ankiGoal;
-    return {R,caps,lost,acc,net,rev,due,html:`<tr class="${R.d===t?'today':''}"><td>${fmtDow(R.d)} ${mode}</td><td>${R.q}${R.siege?'':`<span class="c-muted">/${R.quota}</span>`}</td><td class="${acc==null?'':acc>=set.targetPct?'c-good':acc>=50?'c-warn':'c-bad'}">${acc==null?'–':acc+'%'}</td><td class="${net>0?'c-good':net<0?'c-bad':''}">${net>0?'+':''}${r1(net)}</td><td>${caps?`<span class="c-us">+${caps}</span>`:''}${lost?` <span class="c-bad">−${lost}</span>`:''}${!caps&&!lost?'–':''}</td><td>${(()=>{ const o=liveEvents(S).find(x=>x.type==='oath'&&x.date===R.d); return o?(o.val==='march'?'<span class="c-good">⚔</span>':'<span class="c-warn">Not today</span>'):'–'; })()}</td><td>${rev==null?'–':rev}<span class="c-muted">/${tgt}</span></td><td>${(()=>{ const nt=ankiNet(R.anki||(R.d===t?G.ankiByDay[t]:null), 0.08); return nt?`<span class="${nt.net>=0?'c-good':'c-bad'}">${nt.net>=0?'+':'−'}${Math.abs(nt.net)}</span>`:'–'; })()}</td><td>${due==null?'–':due.toLocaleString()}</td><td>${goal}</td><td>${hab(R.d,'gym')===true?'<span class="c-good">✓</span>':'–'}</td><td>${hab(R.d,'diet')===true?'<span class="c-good">✓</span>':'–'}</td></tr>`};
+    return {R,caps,lost,acc,net,rev,due,html:`<tr class="${R.d===t?'today':''}"><td>${fmtDow(R.d)} ${mode}</td><td>${R.q}${R.siege?'':`<span class="c-muted">/${R.quota}</span>`}</td><td class="${acc==null?'':acc>=set.targetPct?'c-good':acc>=50?'c-warn':'c-bad'}">${acc==null?'–':acc+'%'}</td><td class="${net>0?'c-good':net<0?'c-bad':''}">${net>0?'+':''}${r1(net)}</td><td>${caps?`<span class="c-us">+${caps}</span>`:''}${lost?` <span class="c-bad">−${lost}</span>`:''}${!caps&&!lost?'–':''}</td><td>${(()=>{ const o=liveEvents(S).find(x=>x.type==='oath'&&x.date===R.d); return o?(o.val==='march'?'<span class="c-good">⚔</span>':'<span class="c-warn">Not today</span>'):'–'; })()}</td><td>${rev==null?'–':rev}<span class="c-muted">/${tgt}</span></td><td>${(()=>{ const nt=ankiNet(R.anki||(R.d===t?G.ankiByDay[t]:null), 0.08); return nt?`<span class="${nt.net>=0?'c-good':'c-bad'}">${nt.net>=0?'+':'−'}${Math.abs(nt.net)}</span>`:'–'; })()}</td><td>${due==null?'–':due.toLocaleString()}</td><td>${goal}</td><td>${hab(R.d,'gym')===true?'<span class="c-good">✓</span>':'–'}</td><td>${(()=>{ const n=[1,2,3,4,5].filter(i=>hab(R.d,'p'+i)===true).length; return n?`<span class="${n===5?'c-good':''}">${n}/5</span>`:'–'; })()}</td></tr>`};
   };
   const weeks={}; for(const R of days){ (weeks[weekMonday(R.d)] ||= []).push(R); }
   const keys=Object.keys(weeks).sort().reverse();
@@ -1192,7 +1191,7 @@ function viewStats(){
     return `<div class="card" style="margin-bottom:10px">
       <div class="wkhead"><h3 style="margin:0">Week of ${fmtD(k)}</h3>${spark(dues)}</div>
       <div class="wkstats"><span>Questions <b>${q}</b></span><span>Accuracy <b>${acc==null?'–':acc+'%'}</b></span><span>Ground <b class="${net>=0?'c-good':'c-bad'}">${net>=0?'+':''}${r1(net)}</b></span><span>Towns <b>+${caps}${lost?' / −'+lost:''}</b></span><span>Reviews <b>${rev.toLocaleString()}</b></span><span>Due <b>${firstDue==null?'–':firstDue.toLocaleString()} → ${lastDue==null?'–':lastDue.toLocaleString()}</b></span><span>Goals <b>${wm}/${comp.length}</b></span><span>Gym <b>${gym}</b></span>${siegeD?`<span>Siege days <b>${siegeD}</b></span>`:''}${(()=>{ const n=rows.filter(r=>liveEvents(S).some(x=>x.type==='oath'&&x.date===r.R.d&&x.val==='rest')).length; return n?`<span>Not today <b class="c-warn">×${n}</b></span>`:''; })()}</div>
-      <div class="tblwrap"><table class="st"><thead><tr><th>Day</th><th>Qs</th><th>Acc</th><th>Ground</th><th>Towns</th><th>Oath</th><th>Reviews</th><th>Net</th><th>Due</th><th>Goal</th><th>Gym</th><th>Diet</th></tr></thead><tbody>${rows.map(r=>r.html).join('')}</tbody></table></div>
+      <div class="tblwrap"><table class="st"><thead><tr><th>Day</th><th>Qs</th><th>Acc</th><th>Ground</th><th>Towns</th><th>Oath</th><th>Reviews</th><th>Net</th><th>Due</th><th>Goal</th><th>Gym</th><th>Prayers</th></tr></thead><tbody>${rows.map(r=>r.html).join('')}</tbody></table></div>
     </div>`;
   }).join('');
   return top + wk + `<p class="note">Reviews and due counts come from the last Anki reading each day — open the app on your Mac with Anki running before bed so the day is recorded.</p>`;
