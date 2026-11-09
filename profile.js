@@ -5,7 +5,9 @@
    events and the campaign simulation, so phone and Mac always agree.
    ===================================================================== */
 const MAX_LEVEL=50, MAX_PRESTIGE=10;
-const XP_NEXT = L => Math.round(40 + 2.2*Math.pow(L,1.4));          // XP to go from level L to L+1
+// The curve is scaled so that the full plan below (see PLAN) lands exactly on Prestige 10, level 50.
+const XP_K = 1.207;   // = planXP() / (11 × unscaled prestige); re-check if PLAN or XP_RULES change
+const XP_NEXT = L => Math.round(XP_K*(40 + 2.2*Math.pow(L,1.4)));   // XP to go from level L to L+1
 const XP_TABLE = (()=>{ const t=[0,0]; for(let L=1;L<MAX_LEVEL;L++) t[L+1]=t[L]+XP_NEXT(L); return t; })(); // XP needed to reach level L
 const XP_PER_PRESTIGE = XP_TABLE[MAX_LEVEL];
 
@@ -19,7 +21,42 @@ const PRESTIGE=[ // theme and accent colour per prestige
   {n:'Unranked', c:'#8a93a3'},{n:'The Lamp', c:'#e3b54a'},{n:'Rootbound', c:'#4fbf6a'},{n:'Tidebreaker', c:'#3f8fd0'},{n:'Ironwolf', c:'#9fd4ff'},{n:'The Abyss', c:'#2fd0c8'},
   {n:'Stormforged', c:'#9a6ae0'},{n:'Clockwork', c:'#d08a3a'},{n:"Serpent's Oath", c:'#2fbf7f'},{n:'Dragonfire', c:'#ff5a2a'},{n:'Those Who Did Not Wait', c:'#fff1b8'} ];
 
-const XP_RULES={ q:'per question: 0.5 + accuracy (a 70% block = 1.2 XP each)', anki:'0.15 per Anki review', ankiZero:40, goal:60, gym:50, diet:30, cap:15, general:250, siege:300, cms:200 };
+const XP_RULES={ qBase:20, qAcc:30, ankiRev:1.5, ankiOn:200, goal:150, gym:150, gymMod:0.10, gymDays:3, diet:60, pray:20, prayAll:60, cap:40, general:600, siege:1500, cms:2000, orderD:2.5, orderW:2 };
+const PRAYERS=['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+
+/* ---------- clerkship checklist (MSU CHM Internal Medicine, 2026–27) ----------
+   due = [week, weekday] counted from the IM start date (week 1 = the week IM starts; 1=Mon … 5=Fri). */
+const CLERK=[
+  {g:'Assignments', items:[
+    {k:'hp',   t:'History & physical write-up',            xp:1200, due:[2,4]},
+    {k:'dc',   t:'Discharge summary',                      xp:1000, due:[3,4]},
+    {k:'self', t:'Mid-clerkship self-assessment',          xp:300,  due:[3,4]},
+    {k:'pba',  t:'Performance-based assessments',          xp:800,  due:[4,3]},
+    {k:'ebm',  t:'Evidence-based medicine (optional)',     xp:800,  due:[4,4]},
+    {k:'oral', t:'Oral case presentation (passing)',       xp:1500, due:[5,5]},
+    {k:'nbme', t:'NBME Subject Examination',               xp:2500, due:[6,5]},
+    {k:'evals',t:'Clerkship evaluations (end, director, 10 faculty)', xp:500, due:[7,1]},
+  ]},
+  {g:'Weekly team email to Mindy', items:[1,2,3,4,5,6].map(w=>({k:'mail'+w, t:`Week ${w}: names of interns, residents & attendings`, xp:100, due:[w,w===6?2:3]}))},
+  {g:'Workplace-based assessments', note:'4 by week 3 Thursday · all 8 by week 6 Wednesday', items:['Admission','Communication / case presentation','Discharge planning','Documentation','Hand-off / sign-out','History','Physical exam (1 of 2)','Physical exam (2 of 2)'].map((t,i)=>({k:'wba'+i, t, xp:150, due:[6,3]}))},
+  {g:'Aquifer cases', note:'2 by week 3 Thursday · all 4 by week 6 Wednesday', items:['Case 8: T2DM chronic disease management','Case 18: memory problems','Case 19: anemia','Case 23: CKD'].map((t,i)=>({k:'aq'+i, t, xp:200, due:[6,3]}))},
+  {g:'Patient encounter logs (student role)', note:'12 by week 3 Thursday · all 24 by week 6 Wednesday', items:['Abdominal pain','Acute/chronic renal failure','Altered mental status','Anemia','Anticoagulation','Arrhythmia','Back pain','Chest pain/dyslipidemia','Chronic pain','Congestive heart failure','Common cancers','COPD/asthma','Cough','Diabetes','Dysuria/UTI','Fluid/electrolyte/acid-base','GI bleeding','Headache','Hypertension','Immunological disorders','Liver disease','Musculoskeletal pain','Psycho/social/impairment to care','Substance use disorder'].map((t,i)=>({k:'dx'+i, t, xp:60, due:[6,3]}))},
+];
+const CLERK_MILESTONES=[ // the week-3 minimums
+  {k:'m_wba', t:'4 workplace-based assessments by week 3', pre:'wba', n:4, due:[3,4], xp:250},
+  {k:'m_aq',  t:'2 Aquifer cases by week 3',               pre:'aq',  n:2, due:[3,4], xp:150},
+  {k:'m_dx',  t:'12 diagnosis logs by week 3',             pre:'dx',  n:12,due:[3,4], xp:250},
+];
+function clerkDue(due){ const [w,wd]=due; return addDays(S.settings.imStart, (w-1)*7 + (wd-1)); }
+function taskState(){ const m={}; for(const e of liveEvents(S)) if(e.type==='task') m[e.k]=e; return m; }
+function clerkXP(){ // entries {d, xp, label, late}
+  const ts=taskState(), out=[];
+  for(const g of CLERK) for(const it of g.items){ const e=ts[it.k]; if(!e||!e.val) continue; const due=clerkDue(it.due), late=e.date>due; out.push({d:e.date, xp:late?it.xp*0.5:it.xp, label:`${it.t}${late?' (late, half XP)':''}`}); }
+  for(const m of CLERK_MILESTONES){ const due=clerkDue(m.due); const done=Object.values(ts).filter(e=>e.val && e.k.startsWith(m.pre) && e.date<=due).length; if(done>=m.n) out.push({d:due<=today()?due:today(), xp:m.xp, label:m.t}); }
+  return out;
+}
+function prayersOn(d){ return PRAYERS.map((_,i)=>habitVal(d,'p'+(i+1))===true); }
+function gymModDays(){ const set=new Set(); for(const e of liveEvents(S)) if(e.type==='habit' && e.kind==='gym' && e.val) for(let i=0;i<XP_RULES.gymDays;i++) set.add(addDays(e.date,i)); return set; }
 
 /* ---------- Orders ---------- */
 function dayBlocks(d){ return G.blocks.filter(b=>b.d===d && b.e.type!=='cms'); }
@@ -27,8 +64,8 @@ function tagged(d, r){ let n=0,c=0; for(const b of dayBlocks(d)){ const e=b.e; i
 const DAILY={
   weak:{ ok:R=>!!R.genR, xp:80, txt:R=>`20 ${REG[R.genR].name} questions at 65%+`, ev:(R,d)=>{ const t=tagged(d,R.genR); return {done:t.n>=20 && t.c/t.n>=0.65, p:`${t.n}/20${t.n?` · ${Math.round(t.c/t.n*100)}%`:''}`}; } },
   vol:{ ok:()=>true, xp:60, txt:R=>`Complete ${volN(R)} questions`, ev:R=>({done:R.q>=volN(R), p:`${R.q}/${volN(R)}`}) },
-  anki0:{ ok:R=>!R.siege, xp:60, txt:()=>`End the day with AnKing at 0 due`, ev:R=>({done:!!(R.anki&&R.anki.due===0), p:R.anki?`${R.anki.due} due`:'no reading'}) },
-  ankiGoal:{ ok:R=>R.siege, xp:70, txt:R=>`Hit today's Anki goal (${R.ankiGoal||'—'} reviews)`, ev:R=>{ const r=R.anki?R.anki.reviewed:0; return {done:!!R.ankiGoal && r>=R.ankiGoal, p:`${r}/${R.ankiGoal||'—'}`}; } },
+  anki0:{ ok:R=>!R.siege, xp:60, txt:()=>`End the day with AnKing at 0 due`, ev:(R,d)=>{ const A=R.anki||G.ankiByDay[d]; return {done:!!(A&&A.due===0), p:A?`${A.due} due`:'no reading'}; } },
+  ankiGoal:{ ok:R=>R.siege, xp:70, txt:R=>`Hit today's Anki goal (${R.ankiGoal||'—'} reviews)`, ev:(R,d)=>{ const A=R.anki||G.ankiByDay[d]; const r=A?A.reviewed:0; return {done:!!R.ankiGoal && r>=R.ankiGoal, p:`${r}/${R.ankiGoal||'—'}`}; } },
   acc70:{ ok:()=>true, xp:50, txt:()=>`Finish a block of 20+ at 70% or better`, ev:(R,d)=>{ const b=dayBlocks(d).filter(b=>b.n>=20); const best=b.reduce((m,x)=>Math.max(m,x.acc),0); return {done:b.some(x=>x.acc>=0.7), p:b.length?`best ${Math.round(best*100)}%`:'no block yet'}; } },
   early:{ ok:()=>true, xp:40, txt:()=>`Log your first block before noon`, ev:(R,d)=>{ const b=dayBlocks(d).map(x=>x.e.ts).filter(Boolean).sort(); return {done:!!b.length && new Date(b[0]).getHours()<12 && ymd(new Date(b[0]))===d, p:b.length?`first at ${new Date(b[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`:'none yet'}; } },
   two:{ ok:()=>true, xp:50, txt:()=>`Do two blocks today`, ev:(R,d)=>{ const n=dayBlocks(d).length; return {done:n>=2, p:`${n}/2`}; } },
@@ -51,7 +88,7 @@ function dailyOrders(d){
   const study = DAILY.weak.ok(R) && hash('st'+d)<0.6 ? 'weak' : 'vol';
   const anki = R.siege ? 'ankiGoal' : 'anki0';
   const rest = pickN(['acc70','early','two','gym','diet',study==='weak'?'vol':'weak'].filter(k=>DAILY[k].ok(R)), 1, 'd'+d);
-  return [study, anki, ...rest].map(k=>{ const o=DAILY[k], r=o.ev(R,d); return {k, kind:'daily', d, xp:o.xp, txt:o.txt(R), done:r.done, p:r.p}; });
+  return [study, anki, ...rest].map(k=>{ const o=DAILY[k], r=o.ev(R,d); return {k, kind:'daily', d, xp:Math.round(o.xp*XP_RULES.orderD), txt:o.txt(R), done:r.done, p:r.p}; });
 }
 function weekCtx(mon){
   const dates=[]; for(let i=0;i<7;i++) dates.push(addDays(mon,i));
@@ -64,30 +101,47 @@ function weeklyOrders(mon){
   const a = hash('wq'+mon)<0.5 ? 'qweek' : 'goal5';
   const b = w.genR ? 'gen' : (a==='qweek'?'goal5':'qweek');
   const c = pickN(['acc','anki6','gym3','diet5'], 1, 'w'+mon)[0];
-  return [a,b,c].map(k=>{ const o=WEEKLY[k], r=o.ev(w); return {k, kind:'weekly', d:mon, xp:o.xp, txt:o.txt(w), done:r.done, p:r.p}; });
+  return [a,b,c].map(k=>{ const o=WEEKLY[k], r=o.ev(w); return {k, kind:'weekly', d:mon, xp:Math.round(o.xp*XP_RULES.orderW), txt:o.txt(w), done:r.done, p:r.p}; });
 }
 
 /* ---------- XP ledger ---------- */
 function xpLedger(){
-  const L=[]; const add=(d,src,xp,label)=>{ if(xp>0) L.push({d,src,xp:Math.round(xp),label}); };
-  const t=today();
-  for(const b of G.blocks){ const e=b.e; if(e.type==='cms'){ add(b.d,'cms',XP_RULES.cms,`CMS form ${esc(e.form||'')}`); continue; } add(b.d,'q',b.n*(0.5+b.acc),`${b.n} questions at ${Math.round(b.acc*100)}%`); }
+  const L=[]; const add=(d,src,xp,label)=>{ if(xp>0) L.push({d,src,xp,label}); };
+  const t=today(), R_=XP_RULES;
+  for(const b of G.blocks){ const e=b.e; if(e.type==='cms'){ add(b.d,'cms',R_.cms,`CMS form ${esc(e.form||'')} (${e.pct}%)`); continue; } add(b.d,'q',b.n*(R_.qBase+R_.qAcc*b.acc),`${b.n} questions at ${Math.round(b.acc*100)}%`); }
   const weeks=new Set();
   for(const [d,R] of Object.entries(G.days)){ if(d>t) continue;
-    if(R.anki) add(d,'anki',R.anki.reviewed*0.15,`${R.anki.reviewed} Anki reviews`);
-    if(R.anki && R.anki.due===0) add(d,'anki',XP_RULES.ankiZero,'AnKing at 0 due');
-    if(R.goalMet && !R.leave && d<t) add(d,'goal',XP_RULES.goal,'Daily goal met');
-    if(habitVal(d,'gym')===true) add(d,'gym',XP_RULES.gym,'Gym session');
-    if(habitVal(d,'diet')===true) add(d,'diet',XP_RULES.diet,'Low-carb day');
-    if(R.caps&&R.caps.length) add(d,'cap',R.caps.length*XP_RULES.cap,`${R.caps.length} town${R.caps.length>1?'s':''} taken`);
-    if(R.siegeBroken) add(d,'siege',XP_RULES.siege,'Siege broken');
+    const A=R.anki||G.ankiByDay[d];
+    if(A) add(d,'anki',A.reviewed*R_.ankiRev,`${A.reviewed} Anki reviews`);
+    if(A && (A.due===0 || (R.ankiGoal && A.reviewed>=R.ankiGoal))) add(d,'anki',R_.ankiOn,'Anki on target');
+    if(R.goalMet && !R.leave && d<t) add(d,'goal',R_.goal,'Daily goal met');
+    if(habitVal(d,'gym')===true) add(d,'gym',R_.gym,'Gym session');
+    if(habitVal(d,'diet')===true) add(d,'diet',R_.diet,'Low-carb day');
+    const pr=prayersOn(d), np=pr.filter(Boolean).length; if(np) add(d,'pray',np*R_.pray+(np===5?R_.prayAll:0),`${np}/5 prayers${np===5?' (all five)':''}`);
+    if(R.caps&&R.caps.length) add(d,'cap',R.caps.length*R_.cap,`${R.caps.length} town${R.caps.length>1?'s':''} taken`);
+    if(R.siegeBroken) add(d,'siege',R_.siege,'Siege broken');
     for(const o of dailyOrders(d)) if(o.done) add(d,'order',o.xp,`Order: ${o.txt}`);
     weeks.add(weekMonday(d));
   }
   for(const mon of weeks){ for(const o of weeklyOrders(mon)) if(o.done) add(o.d<=t?([...weekCtx(mon).dates].reverse().find(d=>d<=t)||mon):mon,'order',o.xp,`Weekly order: ${o.txt}`); }
-  for(const g of G.gensDown) add(g.d,'general',XP_RULES.general,`${GENERALS[g.r].name} broken`);
+  for(const g of G.gensDown) add(g.d,'general',R_.general,`${GENERALS[g.r].name} broken`);
+  for(const c of clerkXP()) add(c.d,'clerk',c.xp,c.label);
+  const mod=gymModDays();
+  for(const x of L){ if(x.src!=='gym' && mod.has(x.d)){ x.xp*=1+R_.gymMod; x.mod=true; } x.xp=Math.round(x.xp); }
   L.sort((a,b)=>a.d.localeCompare(b.d));
   return L;
+}
+/* ---------- the plan: doing all of this should land exactly on Prestige 10, level 50 ---------- */
+const PLAN={ uw:1092, amb:300, acc:0.65, ankiPerDay:250, ankiOnRate:0.97, cms:4, goalRate:0.95, prayRate:0.9, gymPerWeek:3, dietPerWeek:5, towns:60, generals:9, ordersDaily:0.7, ordersWeekly:0.67 };
+function planXP(){
+  const set=S.settings, R_=XP_RULES, days=Math.max(1,daysBetween(set.campaignStart,set.shelf)+1), weeks=days/7;
+  const clerk=CLERK.reduce((a,g)=>a+g.items.reduce((b,i)=>b+i.xp,0),0)+CLERK_MILESTONES.reduce((a,m)=>a+m.xp,0);
+  const base = (PLAN.uw+PLAN.amb)*(R_.qBase+R_.qAcc*PLAN.acc) + days*PLAN.ankiPerDay*R_.ankiRev + days*PLAN.ankiOnRate*R_.ankiOn
+    + PLAN.cms*R_.cms + days*PLAN.goalRate*R_.goal + days*PLAN.prayRate*(5*R_.pray+R_.prayAll) + weeks*PLAN.dietPerWeek*R_.diet
+    + PLAN.towns*R_.cap + PLAN.generals*R_.general + R_.siege + clerk
+    + days*3*65*R_.orderD*PLAN.ordersDaily + weeks*3*230*R_.orderW*PLAN.ordersWeekly;
+  const modCover=Math.min(1, PLAN.gymPerWeek*R_.gymDays/7);
+  return {total: Math.round(base*(1+R_.gymMod*modCover) + weeks*PLAN.gymPerWeek*R_.gym), days};
 }
 function profileState(){
   const led=xpLedger(); const total=led.reduce((a,x)=>a+x.xp,0);
@@ -141,7 +195,7 @@ function viewProfile(){
   const P=profileState(), t=today(), mon=weekMonday(t);
   const pct=P.need?Math.min(100,P.into/P.need*100):100;
   const dd=dailyOrders(t), ww=weeklyOrders(mon);
-  const srcName={q:'Questions',anki:'Anki',goal:'Daily goals',gym:'Gym',diet:'Diet',cap:'Towns',general:'Generals',siege:'Siege',cms:'CMS forms',order:'Orders'};
+  const srcName={q:'Questions',anki:'Anki',cms:'CMS forms',clerk:'Clerkship',order:'Orders',goal:'Daily goals',pray:'Prayers',gym:'Gym',diet:'Diet',cap:'Towns',general:'Generals',siege:'Siege'};
   const sum=(f)=>{ const m={}; for(const x of P.led) if(f(x)) m[x.src]=(m[x.src]||0)+x.xp; return m; };
   const todayM=sum(x=>x.d===t), weekM=sum(x=>x.d>=mon && x.d<=addDays(mon,6)), allM=sum(()=>true);
   const tot=m=>Object.values(m).reduce((a,b)=>a+b,0);
@@ -154,20 +208,56 @@ function viewProfile(){
           <div class="xpbar"><div style="width:${pct}%"></div></div>
           <div class="sub">${P.need?`${P.into.toLocaleString()} / ${P.need.toLocaleString()} XP to level ${P.lvl+1}`:P.maxed?'Master Prestige — the top of the ladder.':'Level 50 reached.'} · ${P.total.toLocaleString()} XP lifetime</div>
           ${P.canPrestige?`<button class="btn pri" data-a="prestige" style="margin-top:8px">★ Enter Prestige ${P.prestige+1}</button>`:''}</div></div></div>
+    ${paceCard(P)}
     <div class="cmdgrid">
       <div class="card"><h3>Today's orders</h3><ul class="ordl">${dd.map(orderRow).join('')||'<li class="c-muted">Leave day — no orders.</li>'}</ul>
         <h3 style="margin-top:14px">This week's orders <small class="c-muted">${fmtD(mon)} – ${fmtD(addDays(mon,6))}</small></h3><ul class="ordl">${ww.map(orderRow).join('')}</ul>
         <div class="note" style="margin-top:6px">Orders change daily and weekly, and lean toward your weakest system and whatever's behind.</div></div>
       <div class="card"><h3>XP</h3><table class="xptbl"><thead><tr><th>Source</th><th>Today</th><th>Week</th><th>All</th></tr></thead><tbody>${srcRows||'<tr><td colspan="4" class="c-muted">No XP yet.</td></tr>'}</tbody>
         <tfoot><tr><td>Total</td><td>${tot(todayM)}</td><td>${tot(weekM)}</td><td>${tot(allM).toLocaleString()}</td></tr></tfoot></table>
-        <div class="note" style="margin-top:8px">Questions: 0.5 + accuracy each · Anki: 0.15 per review, +${XP_RULES.ankiZero} at 0 due · daily goal +${XP_RULES.goal} · gym +${XP_RULES.gym} · low-carb +${XP_RULES.diet} · town +${XP_RULES.cap} · general +${XP_RULES.general} · siege broken +${XP_RULES.siege} · CMS form +${XP_RULES.cms}. Toggle gym and low-carb on the Campaign tab.</div></div></div>
+        <div class="note" style="margin-top:8px">${xpRulesText()}</div></div></div></div>
+    ${clerkCard()}
     <div class="card"><h3>Ranks</h3><div class="ladder">${ladder}</div></div>
     <div class="card"><h3>Prestige</h3><div class="note">At level ${MAX_LEVEL} you can enter the next prestige: your level resets to 1, and you keep the new emblem frame for good. Each prestige is ${XP_PER_PRESTIGE.toLocaleString()} XP.</div><div class="prow">${pres}</div></div>`;
 }
 
+function xpRulesText(){ const R=XP_RULES;
+  return `Each question: ${R.qBase} + ${R.qAcc}×accuracy (65% = ${Math.round(R.qBase+R.qAcc*0.65)} XP) · Anki: ${R.ankiRev}/review, +${R.ankiOn} on target (0 due or goal hit) · CMS form +${R.cms} · daily goal +${R.goal} · prayers ${R.pray} each, +${R.prayAll} for all five · low-carb +${R.diet} · gym +${R.gym} and <b>+${Math.round(R.gymMod*100)}% on all XP</b> that day and the next ${R.gymDays-1} · town +${R.cap} · general +${R.general} · siege +${R.siege} · clerkship tasks 60–2,500 (half XP if checked off after the due date) · orders as listed.`; }
+function paceCard(P){
+  const pl=planXP(), set=S.settings, el=Math.min(pl.days, Math.max(1,daysBetween(set.campaignStart,today())+1));
+  const goal=XP_PER_PRESTIGE*(MAX_PRESTIGE+1), toDate=goal*el/pl.days, pct=P.total/goal*100, diff=P.total-toDate;
+  return `<div class="card"><h3>Road to Prestige 10 · General</h3>
+    <div class="xpbar big"><div style="width:${Math.min(100,pct)}%"></div><i style="left:${Math.min(100,toDate/goal*100)}%" title="Where the plan says you should be today"></i></div>
+    <div class="sub"><b>${P.total.toLocaleString()}</b> / ${goal.toLocaleString()} XP (${pct.toFixed(1)}%) · day ${el} of ${pl.days} · <span class="${diff>=0?'c-good':'c-warn'}">${diff>=0?`${Math.round(diff).toLocaleString()} XP ahead of plan`:`${Math.round(-diff).toLocaleString()} XP behind plan`}</span></div>
+    <div class="note" style="margin-top:6px">The plan: all ${PLAN.uw.toLocaleString()} UWorld IM + ${PLAN.amb} AMBOSS at ~${Math.round(PLAN.acc*100)}%, Anki on target ${Math.round(PLAN.ankiOnRate*100)}% of days, all ${PLAN.cms} CMS forms, every clerkship task on time, all five prayers most days, gym ${PLAN.gymPerWeek}×/week, and most orders. Hit that and you finish as a Prestige 10 General.</div></div>`;
+}
+function clerkCard(){
+  const ts=taskState(), t=today();
+  const row=it=>{ const e=ts[it.k], on=!!(e&&e.val), due=clerkDue(it.due), late=on?e.date>due:t>due;
+    return `<li class="ord ${on?'done':''}"><button class="ock tk" data-a="task" data-k="${it.k}" aria-label="Toggle">${on?'✓':''}</button><span>${esc(it.t)}<span class="c-muted"> · due ${fmtDow(due)}${!on&&late?' · <b class="c-bad">overdue</b>':''}${on&&late?' · late':''}</span></span><b class="oxp">${on&&late?'+'+Math.round(it.xp/2):'+'+it.xp} XP</b></li>`; };
+  const allItems=CLERK.flatMap(g=>g.items), done=allItems.filter(i=>ts[i.k]&&ts[i.k].val).length;
+  return `<div class="card"><h3>IM clerkship checklist <small class="c-muted">${done}/${allItems.length}</small></h3>
+    <div class="note">Tick items as you finish them. On time = full XP, late = half. Week 1 starts ${fmtDow(S.settings.imStart)}.</div>
+    ${CLERK.map(g=>{ const n=g.items.filter(i=>ts[i.k]&&ts[i.k].val).length; return `<details class="clerkg" ${g.items.some(i=>!(ts[i.k]&&ts[i.k].val) && daysBetween(t,clerkDue(i.due))<=7)?'open':''}><summary><b>${esc(g.g)}</b> <span class="c-muted">${n}/${g.items.length}${g.note?` · ${esc(g.note)}`:''}</span></summary><ul class="ordl">${g.items.map(row).join('')}</ul></details>`; }).join('')}
+    <div class="note" style="margin-top:6px">Week-3 minimum bonuses: ${CLERK_MILESTONES.map(m=>`${esc(m.t)} (+${m.xp})`).join(' · ')}.</div></div>`;
+}
+function prayersRow(){
+  const t=today(), on=prayersOn(t), n=on.filter(Boolean).length;
+  return `<div class="toggle pray"><div><div>Prayers <span class="c-muted">${n}/5${n===5?' · all five':''}</span></div></div><div class="prow5">${PRAYERS.map((p,i)=>`<button class="pbtn ${on[i]?'on':''}" data-a="habit" data-k="p${i+1}" title="${p}">${p}</button>`).join('')}</div></div>`;
+}
+
+/* ---------- corner rank widget ---------- */
+function renderRankCorner(){
+  if(!G) return; const P=profileState(); let el=$('#rankcorner');
+  if(!el){ el=document.createElement('button'); el.id='rankcorner'; el.setAttribute('data-a','go-profile'); document.body.appendChild(el); }
+  const mod=gymModDays(), t=today(), on=mod.has(t); let until=null; if(on){ let d=t; while(mod.has(addDays(d,1))) d=addDays(d,1); until=d; }
+  const pct=P.need?Math.min(100,P.into/P.need*100):100;
+  el.innerHTML=`${insignia(P.lvl,P.prestige,58)}<div class="rcb"><div class="rct">${esc(P.rank.t)}</div><div class="rcs">${P.prestige?`P${P.prestige} · `:''}Lv ${P.lvl}${P.need?` · ${(P.need-P.into).toLocaleString()} XP to go`:''}</div><div class="xpbar sm"><div style="width:${pct}%"></div></div>${on?`<div class="rcm">💪 Gym +${Math.round(XP_RULES.gymMod*100)}% XP · through ${until===t?'today':fmtDow(until).split(',')[0]}</div>`:''}</div>`;
+}
+
 /* ---------- rank-up moment & header badge ---------- */
 function renderRankChip(){
-  if(!G) return; const P=profileState(); let el=$('#rankchip');
+  if(!G) return; try{ renderRankCorner(); }catch(e){} const P=profileState(); let el=$('#rankchip');
   if(!el){ el=document.createElement('button'); el.id='rankchip'; el.className='chip rankchip'; el.setAttribute('data-a','go-profile'); const sd=$('#syncdot'); sd.parentNode.insertBefore(el, sd); }
   el.innerHTML=`${insignia(P.lvl,P.prestige,20)}${P.prestige?`P${P.prestige} · `:''}Lv ${P.lvl}`;
   const key=`${P.prestige}:${P.lvl}`; let last=null; try{ last=localStorage.getItem('imc.rankSeen'); }catch(e){}
@@ -184,5 +274,6 @@ function renderRankChip(){
 document.addEventListener('click', e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a;
   if(a==='go-profile'){ tab='profile'; document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='profile')); render(); }
+  else if(a==='task'){ const k=b.dataset.k, cur=taskState()[k]; addEvent({id:'task-'+k, type:'task', k, val:!(cur&&cur.val), date:today()}); }
   else if(a==='prestige'){ const P=profileState(); if(!P.canPrestige) return; if(confirm(`Enter Prestige ${P.prestige+1}? Your level resets to 1; your ${PRESTIGE[P.prestige+1].n} emblem frame is permanent.`)){ addEvent({type:'prestige', n:P.prestige+1, base:P.total}); try{ localStorage.setItem('imc.rankSeen',`${P.prestige}:${P.lvl}`); }catch(e){} } }
 });

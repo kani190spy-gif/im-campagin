@@ -392,6 +392,16 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 .insig.art .pmark{position:absolute;right:-4%;bottom:-4%;width:38%;height:38%;border-radius:50%;background:#111;border:2px solid var(--pc,#ccc);color:var(--pc,#ccc);font:700 10px/1 system-ui;display:grid;place-items:center;font-style:normal}.insig.art .pmark img{width:100%;height:100%;object-fit:contain}
 .rankup .insig.art{margin:0 auto 6px;display:block}
 .rankup .insig{margin:0 auto 6px;display:block}
+
+/* rank corner, pace, clerkship, prayers */
+#rankcorner{position:fixed;left:14px;bottom:calc(14px + var(--safe-b,0px));z-index:19;display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;background:rgba(12,14,20,.86);border:1px solid rgba(214,196,150,.3);border-radius:12px;color:#efe4c8;cursor:pointer;backdrop-filter:blur(6px);max-width:280px;text-align:left}
+#rankcorner .rcb{min-width:150px}#rankcorner .rct{font-family:var(--display);font-size:14px;letter-spacing:.04em}#rankcorner .rcs{font-size:11px;opacity:.75}
+#rankcorner .rcm{font-size:11px;color:#7fd38a;margin-top:3px}
+.xpbar.sm{height:6px;margin:5px 0 0}.xpbar.big{position:relative;height:14px}.xpbar.big i{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;opacity:.8}
+.clerkg{border-top:1px solid rgba(255,255,255,.06);padding:6px 0}.clerkg summary{cursor:pointer;font-size:14px}
+.ock.tk{background:transparent;color:inherit;cursor:pointer;padding:0}
+.toggle.pray{flex-wrap:wrap;gap:8px}.prow5{display:flex;gap:4px;flex-wrap:wrap}.pbtn{font-size:11px;padding:5px 8px;border-radius:14px;border:1px solid rgba(214,196,150,.35);background:transparent;color:inherit;cursor:pointer}.pbtn.on{background:#3fb27f;border-color:#3fb27f;color:#fff}
+@media (max-width:700px){#rankcorner{left:8px;bottom:calc(74px + var(--safe-b,0px));padding:6px 10px 6px 6px}#rankcorner .insig{width:42px!important;height:42px!important}#rankcorner .rcb{min-width:110px}}
 </style>
 </head>
 <body>
@@ -428,7 +438,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 
 <script>
 'use strict';
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 
 /* ================= Regions ================= */
 const REG = {
@@ -1079,7 +1089,8 @@ function updateCampaign(){
     <div class="card"><h3>Body & supply</h3>
       <div class="toggle"><div><div>Gym today</div><div class="dots">${dots('gym')}</div></div><button class="sw ${gym?'on':''}" data-a="habit" data-k="gym" aria-label="Gym today"></button></div>
       <div class="toggle"><div><div>Low-carb held today</div><div class="dots">${dots('diet')}</div></div><button class="sw ${diet?'on':''}" data-a="habit" data-k="diet" aria-label="Low-carb today"></button></div>
-      <p class="note" style="margin:8px 0 0">Gym and diet tracking only for now — they'll join the campaign later.</p>
+      ${typeof prayersRow==='function'?prayersRow():''}
+      <p class="note" style="margin:8px 0 0">Gym gives +150 XP and a +10% XP boost for 3 days. Prayers and low-carb earn XP too — see Profile.</p>
     </div>`;
   updateMap();
 }
