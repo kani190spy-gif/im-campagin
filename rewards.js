@@ -17,14 +17,14 @@ const COINS={
   orders:{n:'Command coin', g:'✉', why:'Daily orders done', tiers:'1 bronze · 2 silver · all 3 gold'},
 };
 const RIBBONS={ // weekly; stripes drawn in code (colors left→right)
-  r_prayer:{n:'Week of Devotion',    s:['#1f3b5a','#9fc7e8','#f2efe6','#9fc7e8','#1f3b5a'], why:'All five prayers on 6 of 7 days'},
-  r_supply:{n:'Unbroken Supply',     s:['#1d4d2b','#7fd38a','#1d4d2b','#e3b54a','#1d4d2b'], why:'Anki on target 6 of 7 days'},
-  r_march: {n:'Forced March',        s:['#5a4a2a','#d9c7a0','#8a2d2d','#d9c7a0','#5a4a2a'], why:'Daily goal met 5 of 7 days'},
-  r_bank:  {n:'Bank Assault',        s:['#7a1f1f','#e0705f','#f2efe6','#e0705f','#7a1f1f'], why:'250+ questions in a week'},
-  r_sharp: {n:'Marksman',            s:['#2a2f3a','#e3b54a','#2a2f3a','#e3b54a','#2a2f3a'], why:'150+ questions at 70%+ in a week'},
-  r_orders:{n:'Staff Commendation',  s:['#3a2a5a','#e3b54a','#f2efe6','#e3b54a','#3a2a5a'], why:'All three weekly orders done'},
-  r_iron:  {n:'Iron Discipline',     s:['#3a3f4a','#b0b6c2','#e0705f','#b0b6c2','#3a3f4a'], why:'3 gym sessions in a week'},
-  r_clerk: {n:'Clean Paperwork',     s:['#0d5c45','#f2efe6','#0d5c45','#f2efe6','#0d5c45'], why:'Every clerkship item due that week done on time'},
+  r_prayer:{n:'Week of Devotion',    s:['#1f3b5a','#9fc7e8','#f2efe6','#9fc7e8','#1f3b5a'], d:'☾', why:'All five prayers on 6 of 7 days'},
+  r_supply:{n:'Unbroken Supply',     s:['#1d4d2b','#7fd38a','#1d4d2b','#e3b54a','#1d4d2b'], d:'⛭', why:'Anki on target 6 of 7 days'},
+  r_march: {n:'Forced March',        s:['#5a4a2a','#d9c7a0','#8a2d2d','#d9c7a0','#5a4a2a'], d:'⚑', why:'Daily goal met 5 of 7 days'},
+  r_bank:  {n:'Bank Assault',        s:['#7a1f1f','#e0705f','#f2efe6','#e0705f','#7a1f1f'], d:'♜', why:'250+ questions in a week'},
+  r_sharp: {n:'Marksman',            s:['#2a2f3a','#e3b54a','#2a2f3a','#e3b54a','#2a2f3a'], d:'◎', why:'150+ questions at 70%+ in a week'},
+  r_orders:{n:'Staff Commendation',  s:['#3a2a5a','#e3b54a','#f2efe6','#e3b54a','#3a2a5a'], d:'✉', why:'All three weekly orders done'},
+  r_iron:  {n:'Iron Discipline',     s:['#3a3f4a','#b0b6c2','#e0705f','#b0b6c2','#3a3f4a'], d:'⚒', why:'3 gym sessions in a week'},
+  r_clerk: {n:'Clean Paperwork',     s:['#0d5c45','#f2efe6','#0d5c45','#f2efe6','#0d5c45'], d:'✚', why:'Every clerkship item due that week done on time'},
 };
 // Medals: one-time. sym = placeholder glyph; band = ribbon colors for the drop.
 const MEDALS=[
@@ -117,7 +117,7 @@ function ribbonHtml(k, w){
   const r=RIBBONS[k]; w=w||96;
   if(RIBBON_ART.has(k)) return `<span class="ribbon art" style="width:${w}px"><img src="art/ribbon_${k.slice(2)}.webp" alt=""></span>`;
   const n=r.s.length, stops=r.s.map((col,i)=>`${col} ${i/n*100}% ${(i+1)/n*100}%`).join(',');
-  return `<span class="ribbon" style="width:${w}px;height:${w*0.3}px;background:linear-gradient(90deg,${stops})"></span>`;
+  return `<span class="ribbon" style="width:${w}px;height:${w*0.3}px;background:linear-gradient(90deg,${stops})"><i class="dev" style="width:${w*0.24}px;height:${w*0.24}px;font-size:${w*0.15}px">${r.d||'✦'}</i></span>`;
 }
 function medalHtml(m, size){
   const s=size||72;
