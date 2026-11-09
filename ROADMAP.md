@@ -7,6 +7,10 @@
    - Prestiges 1–10 each need a new set of 21, styled to that prestige's order and color (Bronze/Lamp, Silver/Unbroken Line, Gold/First Ground, Emerald/Marsh Crossing, Sapphire/Night Watch, Ruby/Iron Heart, Amethyst/Waking Mind, Obsidian/Ledger, Crimson Gold/Last Fortress, Master/Those Who Did Not Wait).
    - App change when the first set arrives: look up `art/p{N}/rank_XX.webp` for prestige N, and fall back to the Prestige 0 set if missing.
    - Write one brief per prestige set once the prestige emblems are final, so each set builds on its prestige emblem.
+3. **Rewards unlocked by completing orders.** Completing daily and weekly orders unlocks rewards, not just XP. To be designed after the prestige icons. Ideas to start from:
+   - collectible emblems and calling cards for order streaks (e.g. 7 days of all daily orders done)
+   - weekly-order rewards that unlock cosmetics such as emblem frames, title cards and muster lines
+   - occasional rare drops (an officer early, a Hall frame)
 
 ## Art still open
 - Officer portraits (8): `off_*`. Brief: `IM-Campaign-generals-officers-brief.md`.
