@@ -5,13 +5,13 @@
    Everything is derived from synced events, so all devices agree.
    Medals not earned by the season's end are lost for good.
    ===================================================================== */
-const COINS={
-  prayer:{n:'Prayer coin', g:'☾', c:'#9fc7e8', why:'All five prayers in a day'},
-  supply:{n:'Supply coin', g:'⛭', c:'#7fd38a', why:'Anki on target (0 due or goal hit)'},
-  orders:{n:'Orders coin', g:'✉', c:'#e3b54a', why:'Every daily order done'},
-  march: {n:'March coin',  g:'⚑', c:'#d9c7a0', why:'Daily goal met'},
-  iron:  {n:'Iron coin',   g:'⚒', c:'#b0b6c2', why:'Gym session'},
-  field: {n:'Field coin',  g:'⚔', c:'#e0705f', why:'A 40-question block at 65% or better'},
+const COINS={ // metal = how hard the task is (nickel easiest → gold hardest)
+  prayer:{n:'Vigil coin',   metal:'Nickel', g:'☾', c:'#c8ccd2', why:'All five prayers in a day'},
+  iron:  {n:'Forge coin',   metal:'Iron',   g:'⚒', c:'#7d8088', why:'Gym session'},
+  supply:{n:'Supply coin',  metal:'Copper', g:'⛭', c:'#c87a4a', why:'Anki on target (0 due or goal hit)'},
+  field: {n:'Field coin',   metal:'Bronze', g:'⚔', c:'#b08a4a', why:'A 40-question block at 65% or better'},
+  march: {n:'March coin',   metal:'Silver', g:'⚑', c:'#dfe3ea', why:'Daily goal met'},
+  orders:{n:'Command coin', metal:'Gold',   g:'✉', c:'#e3b54a', why:'Every daily order done'},
 };
 const RIBBONS={ // weekly; stripes drawn in code (colors left→right)
   r_prayer:{n:'Week of Devotion',    s:['#1f3b5a','#9fc7e8','#f2efe6','#9fc7e8','#1f3b5a'], why:'All five prayers on 6 of 7 days'},
@@ -105,9 +105,9 @@ function collection(){
 /* ---------- drawing (placeholders until art arrives) ---------- */
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, n, size){
-  const c=COINS[k], s=size||56, gold=n>=10;
-  if(COIN_ART.has(k)) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}${gold?'_gold':''}.webp" alt=""></span>`;
-  return `<span class="coin ${gold?'gold':''}" style="--cc:${c.c};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
+  const c=COINS[k], s=size||56, stars=Math.min(5,Math.floor((n||0)/10)), pips=stars?`<i class="pips">${'★'.repeat(stars)}</i>`:'';
+  if(COIN_ART.has(k)) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${c.metal.toLowerCase()}.webp" alt="">${pips}</span>`;
+  return `<span class="coin" style="--cc:${c.c};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}${pips}</span>`;
 }
 function ribbonHtml(k, w){
   const r=RIBBONS[k]; w=w||96;
@@ -125,13 +125,13 @@ function medalHtml(m, size){
 /* ---------- view ---------- */
 function collectionCard(){
   const C=collection(), earned=C.medals.filter(m=>m.d).length;
-  const coinRow=Object.keys(COINS).map(k=>`<div class="col-it ${C.coins[k]?'':'dim'}" title="${esc(COINS[k].why)}">${coinHtml(k,C.coins[k],52)}<b>×${C.coins[k]}</b><span>${esc(COINS[k].n)}${C.coins[k]>=10?' · gold':''}</span><small>${esc(COINS[k].why)}</small></div>`).join('');
+  const coinRow=Object.keys(COINS).map(k=>`<div class="col-it ${C.coins[k]?'':'dim'}" title="${esc(COINS[k].why)}">${coinHtml(k,C.coins[k],52)}<b>×${C.coins[k]}</b><span>${esc(COINS[k].n)} <span class="c-muted">· ${COINS[k].metal}</span></span><small>${esc(COINS[k].why)}</small></div>`).join('');
   const ribRow=Object.keys(RIBBONS).map(k=>`<div class="col-it rib ${C.ribbons[k]?'':'dim'}" title="${esc(RIBBONS[k].why)}">${ribbonHtml(k,96)}<b>×${C.ribbons[k]}</b><span>${esc(RIBBONS[k].n)}</span><small>${esc(RIBBONS[k].why)}</small></div>`).join('');
   const cats=[...new Set(MEDALS.map(m=>m.cat))];
   const medRows=cats.map(cat=>`<h4>${esc(cat)}</h4><div class="col-row">${C.medals.filter(m=>m.cat===cat).map(m=>`<div class="col-it med ${m.d?'':m.lost?'lost':'dim'}" title="${esc(m.why)}">${medalHtml(m,64)}<span>${esc(m.n)}</span><small>${m.d?`Earned ${fmtD(m.d)}`:m.lost?'Lost — not earned this season':esc(m.why)}</small></div>`).join('')}</div>`).join('');
   return `<div class="card"><h3>Collection</h3>
     <div class="note">Tasks earn XP and collectibles. Coins are daily, ribbons weekly, medals once. Medals not earned by ${fmtD(seasonEnd())} are lost for good.</div>
-    <h4>Coins <small class="c-muted">every 10 turns that coin gold</small></h4><div class="col-row">${coinRow}</div>
+    <h4>Coins <small class="c-muted">metal = difficulty, nickel to gold · a star for every 10</small></h4><div class="col-row">${coinRow}</div>
     <h4>Ribbons <small class="c-muted">weekly</small></h4><div class="col-row">${ribRow}</div>
     <h4 style="margin-top:16px">Medals <small class="c-muted">${earned}/${MEDALS.length}</small></h4>${medRows}</div>`;
 }
@@ -149,7 +149,7 @@ function checkRewards(){
   for(const f of fresh){ const [t,k]=f.split(':');
     if(t==='m'){ const m=C.medals.find(x=>x.k===k); items.push(`<div class="col-it med">${medalHtml(m,80)}<span><b>${esc(m.n)}</b></span><small>${esc(m.why)}</small></div>`); }
     else if(t==='r'){ items.push(`<div class="col-it rib">${ribbonHtml(k,110)}<span><b>${esc(RIBBONS[k].n)}</b> ×${C.ribbons[k]}</span><small>${esc(RIBBONS[k].why)}</small></div>`); }
-    else { const n=C.coins[k]; items.push(`<div class="col-it">${coinHtml(k,n,60)}<span><b>${esc(COINS[k].n)}</b> ×${n}${n===10?' · now gold':''}</span><small>${esc(COINS[k].why)}</small></div>`); }
+    else { const n=C.coins[k]; items.push(`<div class="col-it">${coinHtml(k,n,60)}<span><b>${esc(COINS[k].n)}</b> ×${n}${n%10===0?' · new star':''}</span><small>${esc(COINS[k].why)}</small></div>`); }
   }
   openSheet(`<div class="donebox"><h2>${fresh.some(f=>f[0]==='m')?'Medal awarded':'Collected'}</h2><div class="col-row" style="justify-content:center">${items.slice(0,8).join('')}</div>${items.length>8?`<div class="note">+${items.length-8} more in your Collection</div>`:''}
     <div class="actions" style="justify-content:center"><button class="btn" data-a="go-profile">View collection</button><button class="btn pri" data-a="close">Carry on</button></div></div>`);
