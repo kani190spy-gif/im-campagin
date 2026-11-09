@@ -251,6 +251,10 @@ function clerkCard(){
     ${CLERK.map(g=>{ const n=g.items.filter(i=>ts[i.k]&&ts[i.k].val).length; return `<details class="clerkg" ${g.items.some(i=>!(ts[i.k]&&ts[i.k].val) && daysBetween(t,clerkDue(i.due))<=7)?'open':''}><summary><b>${esc(g.g)}</b> <span class="c-muted">${n}/${g.items.length}${g.note?` · ${esc(g.note)}`:''}</span></summary><ul class="ordl">${g.items.map(row).join('')}</ul></details>`; }).join('')}
     <div class="note" style="margin-top:6px">Week-3 minimum bonuses: ${CLERK_MILESTONES.map(m=>`${esc(m.t)} (+${m.xp})`).join(' · ')}.</div></div>`;
 }
+function dutyRow(){
+  const v=habitVal(today(),'duty');
+  return `<div class="toggle"><div><div>Daily clinical activities</div><div class="note" style="margin:0">Participant coin when completed</div></div><div class="prow5"><button class="pbtn ${v==='done'?'on':''}" data-a="duty" data-v="done">Completed</button><button class="pbtn ${v==='na'?'on na':''}" data-a="duty" data-v="na">N/A today</button></div></div>`;
+}
 function prayersRow(){
   const t=today(), on=prayersOn(t), n=on.filter(Boolean).length;
   return `<div class="toggle pray"><div><div>Prayers <span class="c-muted">${n}/5${n===5?' · all five':''}</span></div></div><div class="prow5">${PRAYERS.map((p,i)=>`<button class="pbtn ${on[i]?'on':''}" data-a="habit" data-k="p${i+1}" title="${p}">${p}</button>`).join('')}</div></div>`;
@@ -284,6 +288,7 @@ function renderRankChip(){
 document.addEventListener('click', e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a;
   if(a==='go-profile'){ tab='profile'; document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='profile')); render(); }
+  else if(a==='duty'){ const cur=habitVal(today(),'duty'), v=b.dataset.v; addEvent({id:`habit-${today()}-duty`, type:'habit', kind:'duty', val: cur===v?null:v}); }
   else if(a==='task'){ const k=b.dataset.k, cur=taskState()[k]; addEvent({id:'task-'+k, type:'task', k, val:!(cur&&cur.val), date:today()}); }
   else if(a==='prestige'){ const P=profileState(); if(!P.canPrestige) return; if(confirm(`Enter Prestige ${P.prestige+1}? Your level resets to 1; your ${PRESTIGE[P.prestige+1].n} emblem frame is permanent.`)){ addEvent({type:'prestige', n:P.prestige+1, base:P.total}); try{ localStorage.setItem('imc.rankSeen',`${P.prestige}:${P.lvl}`); }catch(e){} } }
 });

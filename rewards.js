@@ -5,11 +5,12 @@
    Everything is derived from synced events, so all devices agree.
    Medals not earned by the season's end are lost for good.
    ===================================================================== */
-const METALS=['nickel','iron','copper','bronze','silver','gold'];
-const METAL_COL={nickel:'#c8ccd2', iron:'#7d8088', copper:'#c87a4a', bronze:'#b08a4a', silver:'#e6e9ef', gold:'#e3b54a'};
+const METALS=['nickel','iron','copper','bronze','silver','gold','obsidian'];   // obsidian: prayer coin only (all five)
+const METAL_COL={nickel:'#c8ccd2', iron:'#7d8088', copper:'#c87a4a', bronze:'#b08a4a', silver:'#e6e9ef', gold:'#e3b54a', obsidian:'#7a5ab8'};
 // Each family is one coin design; the metal shows how far you went that day (or that week, for gym).
 const COINS={
-  prayer:{n:'Vigil coin',   g:'☾', why:'Prayers in a day', tiers:'1 nickel · 2 copper · 3 bronze · 4 silver · 5 gold'},
+  prayer:{n:'Vigil coin',   g:'☾', why:'Prayers in a day', tiers:'1 copper · 2 bronze · 3 silver · 4 gold · all 5 obsidian'},
+  duty:  {n:'Participant coin', g:'✚', why:'Daily clinical activities completed', tiers:'one coin per day you mark completed (N/A days skip)'},
   iron:  {n:'Forge coin',   g:'⚒', why:'Every gym session (metal by session # that week)', tiers:'1st nickel · 2nd copper · 3rd silver · 4th+ gold'},
   supply:{n:'Supply coin',  g:'⛭', why:'Anki each day', tiers:'½ goal nickel · ¾ goal copper · goal hit silver · 0 due gold'},
   field: {n:'Field coin',   g:'⚔', why:'Each 40-question block (metal by accuracy)', tiers:'50% nickel · 55% iron · 60% copper · 65% bronze · 70% silver · 75% gold'},
@@ -39,6 +40,7 @@ const MEDALS=[
   {k:'uw50', n:'Half Bank',     g:'½', band:['#7a1f1f','#f2efe6','#7a1f1f'], cat:'Question bank', why:'50% of UWorld IM done', ok:()=>uwDate(0.5)},
   {k:'uw75', n:'Three Quarters',g:'¾', band:['#7a1f1f','#f2efe6','#7a1f1f'], cat:'Question bank', why:'75% of UWorld IM done', ok:()=>uwDate(0.75)},
   {k:'uw100',n:'Bank Cleared',  g:'✦', band:['#e3b54a','#7a1f1f','#e3b54a'], cat:'Question bank', why:'All UWorld IM done', ok:()=>uwDate(1)},
+  {k:'block40', n:'Full Block', g:'⓸', band:['#7a1f1f','#e3b54a','#7a1f1f'], cat:'Question bank', why:'Complete a 40-question block in one day', ok:()=>{ const b=G.blocks.find(b=>b.e.type==='block'&&b.n>=40); return b&&b.d; }},
   {k:'amb300',n:'Second Front', g:'A', band:['#2a4a7a','#f2efe6','#2a4a7a'], cat:'Question bank', why:'300 AMBOSS questions', ok:()=>ambDate(300)},
   // clerkship
   {k:'hp',   n:'The First Write-up', g:'✎', band:['#0d5c45','#f2efe6','#0d5c45'], cat:'Clerkship', why:'History & physical submitted', ok:()=>taskDate('hp')},
@@ -79,7 +81,8 @@ function collection(){
   const give=(k,m,d)=>{ if(!m) return; coins[k][m]++; coins[k].total++; coinLog.push({k,m,d}); };
   const gymWeek={};
   for(const d of seasonDays()){ const R=G.days[d];
-    const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'nickel','copper','bronze','silver','gold'][np],d);
+    const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'copper','bronze','silver','gold','obsidian'][np],d);
+    if(habitVal(d,'duty')==='done') give('duty','nickel',d);
     if(habitVal(d,'gym')===true){ const w=weekMonday(d); gymWeek[w]=(gymWeek[w]||0)+1; give('iron',[null,'nickel','copper','silver','gold'][Math.min(4,gymWeek[w])],d); }
     const A=R.anki||G.ankiByDay[d]; if(A){ const goal=R.ankiGoal||S.settings.ankiGoal, f=goal?A.reviewed/goal:0; give('supply', A.due===0?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
     if(!R.leave && R.quota){ const f=R.q/R.quota; give('march', f>=1.25?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
@@ -110,6 +113,7 @@ function collection(){
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';
+  if(metal==='obsidian' && COIN_ART.has(k+'_obsidian')) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_${k}_obsidian.webp" alt=""></span>`;
   if(COIN_ART.has(k)) return `<span class="coin art m-${metal}" style="width:${s}px;height:${s}px"><img src="art/coin_${k}.webp" alt=""></span>`;
   return `<span class="coin m-${metal}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
 }
@@ -131,13 +135,13 @@ function collectionCard(){
   const C=collection(), earned=C.medals.filter(m=>m.d).length;
   const coinRow=Object.keys(COINS).map(k=>{ const cc=C.coins[k], best=[...METALS].reverse().find(m=>cc[m])||'nickel';
     return `<div class="col-it coinfam ${cc.total?'':'dim'}" title="${esc(COINS[k].tiers)}">${coinHtml(k,best,52)}<b>×${cc.total}</b><span>${esc(COINS[k].n)}</span><small>${esc(COINS[k].why)}</small>
-      <div class="mtl">${METALS.map(m=>`<i class="${cc[m]?'':'z'}" style="--mc:${METAL_COL[m]}" title="${m}">${cc[m]}</i>`).join('')}</div><small class="tiers">${esc(COINS[k].tiers)}</small></div>`; }).join('');
+      <div class="mtl">${METALS.filter(m=>m!=='obsidian'||k==='prayer').map(m=>`<i class="${cc[m]?'':'z'}" style="--mc:${METAL_COL[m]}" title="${m}">${cc[m]}</i>`).join('')}</div><small class="tiers">${esc(COINS[k].tiers)}</small></div>`; }).join('');
   const ribRow=Object.keys(RIBBONS).map(k=>`<div class="col-it rib ${C.ribbons[k]?'':'dim'}" title="${esc(RIBBONS[k].why)}">${ribbonHtml(k,96)}<b>×${C.ribbons[k]}</b><span>${esc(RIBBONS[k].n)}</span><small>${esc(RIBBONS[k].why)}</small></div>`).join('');
   const cats=[...new Set(MEDALS.map(m=>m.cat))];
   const medRows=cats.map(cat=>`<h4>${esc(cat)}</h4><div class="col-row">${C.medals.filter(m=>m.cat===cat).map(m=>`<div class="col-it med ${m.d?'':m.lost?'lost':'dim'}" title="${esc(m.why)}">${medalHtml(m,64)}<span>${esc(m.n)}</span><small>${m.d?`Earned ${fmtD(m.d)}`:m.lost?'Lost — not earned this season':esc(m.why)}</small></div>`).join('')}</div>`).join('');
   return `<div class="card"><h3>Collection</h3>
     <div class="note">Tasks earn XP and collectibles. Coins are daily, ribbons weekly, medals once. Medals not earned by ${fmtD(seasonEnd())} are lost for good.</div>
-    <h4>Coins <small class="c-muted">the metal shows how far you went: nickel → iron → copper → bronze → silver → gold</small></h4><div class="col-row">${coinRow}</div>
+    <h4>Coins <small class="c-muted">the metal shows how far you went: nickel → iron → copper → bronze → silver → gold (→ obsidian for all five prayers)</small></h4><div class="col-row">${coinRow}</div>
     <h4>Ribbons <small class="c-muted">weekly</small></h4><div class="col-row">${ribRow}</div>
     <h4 style="margin-top:16px">Medals <small class="c-muted">${earned}/${MEDALS.length}</small></h4>${medRows}</div>`;
 }
