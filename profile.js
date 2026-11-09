@@ -6,7 +6,7 @@
    ===================================================================== */
 const MAX_LEVEL=50, MAX_PRESTIGE=10;
 // The curve is scaled so that the full plan below (see PLAN) lands exactly on Prestige 10, level 50.
-const XP_K = 1.192;   // = planXP() / (11 × unscaled prestige); re-check if PLAN or XP_RULES change
+const XP_K = 1.196;   // = planXP() / (11 × unscaled prestige); re-check if PLAN or XP_RULES change
 const XP_NEXT = L => Math.round(XP_K*(40 + 2.2*Math.pow(L,1.4)));   // XP to go from level L to L+1
 const XP_TABLE = (()=>{ const t=[0,0]; for(let L=1;L<MAX_LEVEL;L++) t[L+1]=t[L]+XP_NEXT(L); return t; })(); // XP needed to reach level L
 const XP_PER_PRESTIGE = XP_TABLE[MAX_LEVEL];
@@ -26,28 +26,37 @@ const PRAYERS=['Fajr','Dhuhr','Asr','Maghrib','Isha'];
 
 /* ---------- clerkship checklist (MSU CHM Internal Medicine, 2026–27) ----------
    due = [week, weekday] counted from the IM start date (week 1 = the week IM starts; 1=Mon … 5=Fri). */
-const CLERK=[
+const CLERK=[ // due dates from the IM clerkship calendar (Nov 9 – Dec 18, 2026), including the Thanksgiving shifts
   {g:'Assignments', items:[
-    {k:'hp',   t:'History & physical write-up',            xp:1200, due:[2,4]},
-    {k:'dc',   t:'Discharge summary',                      xp:1000, due:[3,4]},
-    {k:'self', t:'Mid-clerkship self-assessment',          xp:300,  due:[3,4]},
-    {k:'pba',  t:'Performance-based assessments',          xp:800,  due:[4,3]},
-    {k:'ebm',  t:'Evidence-based medicine (optional)',     xp:800,  due:[4,4]},
-    {k:'oral', t:'Oral case presentation (passing)',       xp:1500, due:[5,5]},
-    {k:'nbme', t:'NBME Subject Examination',               xp:2500, due:[6,5]},
-    {k:'evals',t:'Clerkship evaluations (end, director, 10 faculty)', xp:500, due:[7,1]},
+    {k:'tk',   t:'Things To Know: review and e-sign',      xp:100,  due:'2026-11-11'},
+    {k:'hp',   t:'History & physical write-up',            xp:1200, due:'2026-11-19'},
+    {k:'dc',   t:'Discharge summary',                      xp:1000, due:'2026-11-30'},
+    {k:'self', t:'Mid-clerkship self-assessment',          xp:300,  due:'2026-11-30'},
+    {k:'pba',  t:'PBA: chest X-ray interpretation',        xp:400,  due:'2026-12-02'},
+    {k:'pba2', t:'PBA: EKG interpretation',                xp:400,  due:'2026-12-02'},
+    {k:'ebm',  t:'Evidence-based medicine (Honors point)', xp:800,  due:'2026-12-03'},
+    {k:'oral', t:'Oral case presentation (passing)',       xp:1500, due:'2026-12-11'},
+    {k:'nbme', t:'NBME Subject Examination',               xp:2500, due:'2026-12-18'},
+    {k:'evals',t:'Clerkship evaluations (end, director, 10 faculty)', xp:500, due:'2026-12-21'},
   ]},
-  {g:'Weekly team email to Mindy', items:[1,2,3,4,5,6].map(w=>({k:'mail'+w, t:`Week ${w}: names of interns, residents & attendings`, xp:100, due:[w,w===6?2:3]}))},
-  {g:'Workplace-based assessments', note:'4 by week 3 Thursday · all 8 by week 6 Wednesday', items:['Admission','Communication / case presentation','Discharge planning','Documentation','Hand-off / sign-out','History','Physical exam (1 of 2)','Physical exam (2 of 2)'].map((t,i)=>({k:'wba'+i, t, xp:150, due:[6,3]}))},
-  {g:'Aquifer cases', note:'2 by week 3 Thursday · all 4 by week 6 Wednesday', items:['Case 8: T2DM chronic disease management','Case 18: memory problems','Case 19: anemia','Case 23: CKD'].map((t,i)=>({k:'aq'+i, t, xp:200, due:[6,3]}))},
-  {g:'Patient encounter logs (student role)', note:'12 by week 3 Thursday · all 24 by week 6 Wednesday', items:['Abdominal pain','Acute/chronic renal failure','Altered mental status','Anemia','Anticoagulation','Arrhythmia','Back pain','Chest pain/dyslipidemia','Chronic pain','Congestive heart failure','Common cancers','COPD/asthma','Cough','Diabetes','Dysuria/UTI','Fluid/electrolyte/acid-base','GI bleeding','Headache','Hypertension','Immunological disorders','Liver disease','Musculoskeletal pain','Psycho/social/impairment to care','Substance use disorder'].map((t,i)=>({k:'dx'+i, t, xp:60, due:[6,3]}))},
+  {g:'Lectures & reviews (attend or watch)', items:[
+    {k:'lec_ekg', t:'EKG lecture (Dr. Tavera)',        xp:100, due:'2026-11-09'},
+    {k:'lec_cxr', t:'Chest X-ray lecture (Dr. Baker)', xp:100, due:'2026-11-10'},
+    {k:'lec_pba', t:'PBA review (Dr. Jameson)',        xp:100, due:'2026-11-25'},
+    {k:'lec_nb1', t:'NBME review part 1',              xp:100, due:'2026-12-09'},
+    {k:'lec_nb2', t:'NBME review part 2',              xp:100, due:'2026-12-16'},
+  ]},
+  {g:'Weekly preceptor list to Mindy', items:['2026-11-11','2026-11-18','2026-11-24','2026-12-02','2026-12-09','2026-12-15'].map((d,i)=>({k:'mail'+(i+1), t:`Week ${i+1}: names of interns, residents & attendings`, xp:100, due:d}))},
+  {g:'Workplace-based assessments', note:'4 by Nov 30 · all 8 by Dec 16', items:['Admission','Communication / case presentation','Discharge planning','Documentation','Hand-off / sign-out','History','Physical exam (1 of 2)','Physical exam (2 of 2)'].map((t,i)=>({k:'wba'+i, t, xp:150, due:'2026-12-16'}))},
+  {g:'Aquifer cases', note:'2 by Nov 30 · all 4 by Dec 16', items:['Case 8: T2DM chronic disease management','Case 18: memory problems','Case 19: anemia','Case 23: CKD'].map((t,i)=>({k:'aq'+i, t, xp:200, due:'2026-12-16'}))},
+  {g:'Patient encounter logs (student role)', note:'12 by Nov 30 · all 24 by Dec 16', items:['Abdominal pain','Acute/chronic renal failure','Altered mental status','Anemia','Anticoagulation','Arrhythmia','Back pain','Chest pain/dyslipidemia','Chronic pain','Congestive heart failure','Common cancers','COPD/asthma','Cough','Diabetes','Dysuria/UTI','Fluid/electrolyte/acid-base','GI bleeding','Headache','Hypertension','Immunological disorders','Liver disease','Musculoskeletal pain','Psycho/social/impairment to care','Substance use disorder'].map((t,i)=>({k:'dx'+i, t, xp:60, due:'2026-12-16'}))},
 ];
-const CLERK_MILESTONES=[ // the week-3 minimums
-  {k:'m_wba', t:'4 workplace-based assessments by week 3', pre:'wba', n:4, due:[3,4], xp:250},
-  {k:'m_aq',  t:'2 Aquifer cases by week 3',               pre:'aq',  n:2, due:[3,4], xp:150},
-  {k:'m_dx',  t:'12 diagnosis logs by week 3',             pre:'dx',  n:12,due:[3,4], xp:250},
+const CLERK_MILESTONES=[ // mid-clerkship minimums
+  {k:'m_wba', t:'4 workplace-based assessments by Nov 30', pre:'wba', n:4,  due:'2026-11-30', xp:250},
+  {k:'m_aq',  t:'2 Aquifer cases by Nov 30',               pre:'aq',  n:2,  due:'2026-11-30', xp:150},
+  {k:'m_dx',  t:'12 diagnosis logs by Nov 30',             pre:'dx',  n:12, due:'2026-11-30', xp:250},
 ];
-function clerkDue(due){ const [w,wd]=due; return addDays(S.settings.imStart, (w-1)*7 + (wd-1)); }
+function clerkDue(due){ if(typeof due==='string') return due; const [w,wd]=due; return addDays(S.settings.imStart, (w-1)*7 + (wd-1)); }
 function taskState(){ const m={}; for(const e of liveEvents(S)) if(e.type==='task') m[e.k]=e; return m; }
 function clerkXP(){ // entries {d, xp, label, late}
   const ts=taskState(), out=[];
@@ -103,7 +112,7 @@ function weeklyOrders(mon){
 }
 
 /* ---------- XP ledger ---------- */
-function seasonEnd(){ return S.settings.seasonEnd || clerkDue([7,1]); }   // evaluations deadline, week 7 Monday
+function seasonEnd(){ return S.settings.seasonEnd || '2026-12-21'; }   // clerkship evaluations deadline
 function seasonOver(){ return today()>seasonEnd(); }
 function xpLedger(){
   const L=[]; const END=seasonEnd(); const add=(d,src,xp,label)=>{ if(xp>0 && d<=END) L.push({d,src,xp,label}); };
@@ -217,6 +226,7 @@ function viewProfile(){
         <tfoot><tr><td>Total</td><td>${tot(todayM)}</td><td>${tot(weekM)}</td><td>${tot(allM).toLocaleString()}</td></tr></tfoot></table>
         <div class="note" style="margin-top:8px">${xpRulesText()}</div></div></div></div>
     ${clerkCard()}
+    ${typeof collectionCard==='function'?collectionCard():''}
     <div class="card"><h3>Ranks</h3><div class="ladder">${ladder}</div></div>
     <div class="card"><h3>Prestige</h3><div class="note">At level ${MAX_LEVEL} you can enter the next prestige: your level resets to 1, and you keep the new emblem frame for good. Each prestige is ${XP_PER_PRESTIGE.toLocaleString()} XP.</div><div class="prow">${pres}</div></div>`;
 }
@@ -237,7 +247,7 @@ function clerkCard(){
     return `<li class="ord ${on?'done':''}"><button class="ock tk" data-a="task" data-k="${it.k}" aria-label="Toggle">${on?'✓':''}</button><span>${esc(it.t)}<span class="c-muted"> · due ${fmtDow(due)}${!on&&late?' · <b class="c-bad">overdue</b>':''}${on&&late?' · late':''}</span></span><b class="oxp">${on&&late?'+'+Math.round(it.xp/2):'+'+it.xp} XP</b></li>`; };
   const allItems=CLERK.flatMap(g=>g.items), done=allItems.filter(i=>ts[i.k]&&ts[i.k].val).length;
   return `<div class="card"><h3>IM clerkship checklist <small class="c-muted">${done}/${allItems.length}</small></h3>
-    <div class="note">Tick items as you finish them. On time = full XP, late = half. Week 1 starts ${fmtDow(S.settings.imStart)}.</div>
+    <div class="note">Tick items as you finish them. On time = full XP, late = half. Due dates follow the clerkship calendar, including the Thanksgiving changes.</div>
     ${CLERK.map(g=>{ const n=g.items.filter(i=>ts[i.k]&&ts[i.k].val).length; return `<details class="clerkg" ${g.items.some(i=>!(ts[i.k]&&ts[i.k].val) && daysBetween(t,clerkDue(i.due))<=7)?'open':''}><summary><b>${esc(g.g)}</b> <span class="c-muted">${n}/${g.items.length}${g.note?` · ${esc(g.note)}`:''}</span></summary><ul class="ordl">${g.items.map(row).join('')}</ul></details>`; }).join('')}
     <div class="note" style="margin-top:6px">Week-3 minimum bonuses: ${CLERK_MILESTONES.map(m=>`${esc(m.t)} (+${m.xp})`).join(' · ')}.</div></div>`;
 }
