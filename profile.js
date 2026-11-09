@@ -15,9 +15,9 @@ const RANKS=[ // spread across the 50 levels
   {t:'Warrant Officer',i:'wo'},{t:'Second Lieutenant',i:'b1g'},{t:'First Lieutenant',i:'b1'},{t:'Captain',i:'b2'},{t:'Major',i:'leafg'},
   {t:'Lieutenant Colonel',i:'leaf'},{t:'Colonel',i:'eagle'},{t:'Brigadier General',i:'s1'},{t:'Major General',i:'s2'},{t:'Lieutenant General',i:'s3'},{t:'General',i:'s4'} ];
 const rankOf = L => RANKS[Math.min(RANKS.length-1, Math.floor((L-1)*RANKS.length/MAX_LEVEL))];
-const PRESTIGE=[ // frame colour and name per prestige
-  {n:'Unranked', c:'#8a93a3'},{n:'Bronze', c:'#b07a4a'},{n:'Silver', c:'#c9ced6'},{n:'Gold', c:'#e3b54a'},{n:'Emerald', c:'#3fb27f'},{n:'Sapphire', c:'#4a7fe0'},
-  {n:'Ruby', c:'#d94a5a'},{n:'Amethyst', c:'#9a6ae0'},{n:'Obsidian', c:'#5a5f6e'},{n:'Crimson Gold', c:'#e0703a'},{n:'Master', c:'#ffe08a'} ];
+const PRESTIGE=[ // theme and accent colour per prestige
+  {n:'Unranked', c:'#8a93a3'},{n:'The Lamp', c:'#e3b54a'},{n:'Rootbound', c:'#4fbf6a'},{n:'Tidebreaker', c:'#3f8fd0'},{n:'Ironwolf', c:'#9fd4ff'},{n:'The Abyss', c:'#2fd0c8'},
+  {n:'Stormforged', c:'#9a6ae0'},{n:'Clockwork', c:'#d08a3a'},{n:"Serpent's Oath", c:'#2fbf7f'},{n:'Dragonfire', c:'#ff5a2a'},{n:'Those Who Did Not Wait', c:'#fff1b8'} ];
 
 const XP_RULES={ q:'per question: 0.5 + accuracy (a 70% block = 1.2 XP each)', anki:'0.15 per Anki review', ankiZero:40, goal:60, gym:50, diet:30, cap:15, general:250, siege:300, cms:200 };
 
@@ -102,7 +102,7 @@ function profileState(){
 
 /* ---------- insignia (drawn in code; colour = prestige) ---------- */
 // Painted emblems: add a rank number here when art/rank_NN.webp exists (and prestige numbers for art/prestige_NN.webp).
-const RANK_ART=new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]), PRESTIGE_ART=new Set([]);
+const RANK_ART=new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]), PRESTIGE_ART=new Set([1]);
 function insignia(lvl, prestige, size){
   const ri=RANKS.indexOf(rankOf(lvl))+1;
   if(RANK_ART.has(ri)){ const s=size||64, P=PRESTIGE[Math.min(prestige,MAX_PRESTIGE)];
@@ -147,10 +147,10 @@ function viewProfile(){
   const tot=m=>Object.values(m).reduce((a,b)=>a+b,0);
   const srcRows=Object.keys(srcName).filter(k=>allM[k]).map(k=>`<tr><td>${srcName[k]}</td><td>${todayM[k]||0}</td><td>${weekM[k]||0}</td><td>${allM[k].toLocaleString()}</td></tr>`).join('');
   const ladder=RANKS.map((r,i)=>{ const lo=Math.ceil(i*MAX_LEVEL/RANKS.length)+1; const here=rankOf(P.lvl)===r; return `<div class="rk ${here?'here':''} ${P.lvl>=lo?'got':''}">${insignia(lo,P.prestige,34)}<div><b>${r.t}</b><div class="sub">Level ${lo}</div></div></div>`; }).join('');
-  const pres=PRESTIGE.slice(1).map((p,i)=>`<div class="pr ${P.prestige>=i+1?'got':''}" title="Prestige ${i+1}: ${p.n}">${insignia(MAX_LEVEL,i+1,40)}<span>${i+1}</span></div>`).join('');
+  const pres=PRESTIGE.slice(1).map((p,i)=>`<div class="pr ${P.prestige>=i+1?'got':''}" title="Prestige ${i+1}: ${esc(p.n)}">${PRESTIGE_ART.has(i+1)?`<img class="pimg" src="art/prestige_${String(i+1).padStart(2,'0')}.webp" alt="">`:insignia(MAX_LEVEL,i+1,56)}<span>${i+1} · ${esc(p.n)}</span></div>`).join('');
   return `<div class="card prof">
       <div class="profhead">${insignia(P.lvl,P.prestige,96)}
-        <div class="pinfo"><div class="ptitle">${esc(P.rank.t)}</div><div class="sub">${P.prestige?`Prestige ${P.prestige} · ${PRESTIGE[P.prestige].n} · `:''}Level ${P.lvl} of ${MAX_LEVEL}</div>
+        <div class="pinfo"><div class="ptitle">${esc(P.rank.t)}</div><div class="sub">${P.prestige?`Prestige ${P.prestige} · ${esc(PRESTIGE[P.prestige].n)} · `:''}Level ${P.lvl} of ${MAX_LEVEL}</div>
           <div class="xpbar"><div style="width:${pct}%"></div></div>
           <div class="sub">${P.need?`${P.into.toLocaleString()} / ${P.need.toLocaleString()} XP to level ${P.lvl+1}`:P.maxed?'Master Prestige — the top of the ladder.':'Level 50 reached.'} · ${P.total.toLocaleString()} XP lifetime</div>
           ${P.canPrestige?`<button class="btn pri" data-a="prestige" style="margin-top:8px">★ Enter Prestige ${P.prestige+1}</button>`:''}</div></div></div>
