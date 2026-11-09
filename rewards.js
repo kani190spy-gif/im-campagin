@@ -56,7 +56,7 @@ const MEDALS=[
   // campaign
   {k:'gen1', n:'First Blood',     g:'☠', band:['#3a2a2a','#e0705f','#3a2a2a'], cat:'Campaign', why:'Break your first general', ok:()=>G.gensDown[0]&&G.gensDown[0].d},
   {k:'gen9', n:'Bane of Generals',g:'♛', band:['#e0705f','#3a2a2a','#e0705f'], cat:'Campaign', why:'Break all nine core generals', ok:()=>{ const core=G.gensDown.filter(g=>GEN_CORE.includes(g.r)); return core.length>=GEN_CORE.length && core[core.length-1].d; }},
-  {k:'siege',n:'Siege Breaker',   g:'⛫', band:['#1d4d2b','#7fd38a','#1d4d2b'], cat:'Campaign', why:'Break the Anki siege', ok:()=>{ const d=Object.values(G.days).find(R=>R.siegeBroken); return d&&d.d; }},
+  {k:'siege',n:'Siegebreaker',    g:'⛫', band:['#1d4d2b','#7fd38a','#1d4d2b'], cat:'Campaign', why:'Break your first Anki siege', ok:()=>{ const d=Object.values(G.days).find(R=>R.siegeBroken); return d&&d.d; }},
   // streaks
   {k:'st_pray', n:'Steadfast',  g:'☾', band:['#1f3b5a','#9fc7e8','#1f3b5a'], cat:'Streaks', why:'All five prayers 14 days in a row', ok:()=>streakDate(d=>prayersOn(d).every(Boolean),14)},
   {k:'st_anki', n:'Iron Memory',g:'∞', band:['#1d4d2b','#7fd38a','#1d4d2b'], cat:'Streaks', why:'Anki on target 14 days in a row', ok:()=>streakDate(ankiOnDay,14)},
