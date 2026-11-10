@@ -17,7 +17,7 @@ const DUTY_VARIANTS=[
   {k:'kidneys',   n:'Kidneys, Aorta & IVC',   r:5,  g:'⫶'},
   {k:'dendritic', n:'Dendritic Cell',         r:6,  g:'✺'},
   {k:'lungs',     n:'Lungs',                  r:7,  g:'🫁'},
-  {k:'brain',     n:'Vascularized Brain',     r:8,  g:'🧠'},
+  {k:'brain',     n:'Brain',                  r:8,  g:'🧠'},
   {k:'gut',       n:'Stomach & Intestines',   r:9,  g:'∾'},
   {k:'heart',     n:'Vascularized Heart',     r:10, g:'❤'},
 ];
@@ -136,7 +136,7 @@ function coinHtml(k, metal, size){
   if(COIN_ART.has(k)) return `<span class="coin art m-${metal}" style="width:${s}px;height:${s}px"><img src="art/coin_${k}.webp" alt=""></span>`;
   return `<span class="coin m-${metal}" style="--cc:${col};width:${s}px;height:${s}px;font-size:${s*0.45}px">${c.g}</span>`;
 }
-const DUTY_ART=new Set(['clipboard','vessel','rbc','dua','kidneys','dendritic','lungs']);   // add variant keys when art/coin_duty_<key>.webp exists
+const DUTY_ART=new Set(['clipboard','vessel','rbc','dua','kidneys','dendritic','lungs','brain']);   // add variant keys when art/coin_duty_<key>.webp exists
 function dutyCoinHtml(v,size,hidden){ const s=size||56;
   if(DUTY_ART.has(v.k) && !hidden) return `<span class="coin art" style="width:${s}px;height:${s}px"><img src="art/coin_duty_${v.k}.webp" alt=""></span>`;
   const col=v.r>=9?'#e3b54a':v.r>=7?'#e8d29a':v.r>=4?'#e6e9ef':'#c8ccd2';
