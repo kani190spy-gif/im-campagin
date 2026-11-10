@@ -86,7 +86,7 @@ function taskDate(k){ const e=taskState()[k]; return e&&e.val?e.date:null; }
 function bothTasks(a,b){ const x=taskDate(a), y=taskDate(b); return x&&y?(x>y?x:y):null; }
 function allPrefix(pre,n){ const es=Object.values(taskState()).filter(e=>e.val&&e.k.startsWith(pre)); return es.length>=n?es.map(e=>e.date).sort().pop():null; }
 function neverLate(){ const ts=taskState(); let last=null; for(const g of CLERK) for(const it of g.items){ if(it.k==='ebm') continue; const e=ts[it.k]; if(!e||!e.val||e.date>clerkDue(it.due)) return null; if(!last||e.date>last) last=e.date; } return last; }
-function ankiOnDay(d){ const R=G.days[d]; if(!R) return false; const A=R.anki||G.ankiByDay[d]; return !!(A && (A.due===0 || (R.ankiGoal && A.reviewed>=R.ankiGoal))); }
+function ankiOnDay(d){ const R=G.days[d]; if(!R) return false; const A=R.anki||G.ankiByDay[d]; return !!(A && (a0(A) || (R.ankiGoal && A.reviewed>=R.ankiGoal))); }
 function streakDate(f,N){ let run=0; for(const d of Object.keys(G.days).sort()){ if(d>today()) break; if(f(d)){ if(++run>=N) return d; } else run=0; } return null; }
 function seasonDays(){ return Object.keys(G.days).sort().filter(d=>d<=today() && d<=seasonEnd()); }
 
@@ -100,7 +100,7 @@ function collection(){
     const np=prayersOn(d).filter(Boolean).length; give('prayer',[null,'nickel','bronze','silver','gold','obsidian'][np],d);
     if(habitVal(d,'duty')==='done'){ const v=dutyDraw(d); give('duty','nickel',d); duty[v.k]=(duty[v.k]||0)+1; dutyLog.push({k:v.k,d}); }
     if(habitVal(d,'gym')===true){ const w=weekMonday(d); gymWeek[w]=(gymWeek[w]||0)+1; give('iron',[null,'nickel','copper','silver','gold'][Math.min(4,gymWeek[w])],d); }
-    const A=R.anki||G.ankiByDay[d]; if(A){ const goal=R.ankiGoal||S.settings.ankiGoal, f=goal?A.reviewed/goal:0; give('supply', A.due===0?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
+    const A=R.anki||G.ankiByDay[d]; if(A){ const goal=R.ankiGoal||S.settings.ankiGoal, f=goal?A.reviewed/goal:0; give('supply', a0(A)?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
     if(!R.leave && R.quota){ const f=R.q/R.quota; give('march', f>=1.25?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
     const od=dailyOrders(d).filter(o=>o.done).length; give('orders',[null,'bronze','silver','gold'][Math.min(3,od)],d);
   }
@@ -134,7 +134,7 @@ function collection(){
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
 // Per-level coin art: add '<coin>_<metal>' when art/coin_<coin>_<metal>.webp exists. (prayer tiers are interim tints of your nickel Vigil coin)
-const COIN_FILES=new Set(['prayer_nickel','prayer_bronze','prayer_silver','prayer_gold','prayer_obsidian','supply_nickel']);
+const COIN_FILES=new Set(['prayer_nickel','prayer_bronze','prayer_silver','prayer_gold','prayer_obsidian','supply_nickel','supply_copper']);
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';

@@ -73,7 +73,7 @@ function tagged(d, r){ let n=0,c=0; for(const b of dayBlocks(d)){ const e=b.e; i
 const DAILY={
   weak:{ ok:R=>!!R.genR, xp:80, txt:R=>`20 ${REG[R.genR].name} questions at 65%+`, ev:(R,d)=>{ const t=tagged(d,R.genR); return {done:t.n>=20 && t.c/t.n>=0.65, p:`${t.n}/20${t.n?` · ${Math.round(t.c/t.n*100)}%`:''}`}; } },
   vol:{ ok:()=>true, xp:60, txt:R=>`Complete ${volN(R)} questions`, ev:R=>({done:R.q>=volN(R), p:`${R.q}/${volN(R)}`}) },
-  anki0:{ ok:R=>!R.siege, xp:60, txt:()=>`End the day with AnKing at 0 due`, ev:(R,d)=>{ const A=R.anki||G.ankiByDay[d]; return {done:!!(A&&A.due===0), p:A?`${A.due} due`:'no reading'}; } },
+  anki0:{ ok:R=>!R.siege, xp:60, txt:()=>`End the day with AnKing at 0 due`, ev:(R,d)=>{ const A=R.anki||G.ankiByDay[d]; return {done:a0(A), p:A?`${A.due} due`:'no reading'}; } },
   ankiGoal:{ ok:R=>R.siege, xp:70, txt:R=>`Hit today's Anki goal (${R.ankiGoal||'—'} reviews)`, ev:(R,d)=>{ const A=R.anki||G.ankiByDay[d]; const r=A?A.reviewed:0; return {done:!!R.ankiGoal && r>=R.ankiGoal, p:`${r}/${R.ankiGoal||'—'}`}; } },
   acc70:{ ok:()=>true, xp:50, txt:()=>`Finish a block of 20+ at 70% or better`, ev:(R,d)=>{ const b=dayBlocks(d).filter(b=>b.n>=20); const best=b.reduce((m,x)=>Math.max(m,x.acc),0); return {done:b.some(x=>x.acc>=0.7), p:b.length?`best ${Math.round(best*100)}%`:'no block yet'}; } },
   early:{ ok:()=>true, xp:40, txt:()=>`Log your first block before noon`, ev:(R,d)=>{ const b=dayBlocks(d).map(x=>x.e.ts).filter(Boolean).sort(); return {done:!!b.length && new Date(b[0]).getHours()<12 && ymd(new Date(b[0]))===d, p:b.length?`first at ${new Date(b[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`:'none yet'}; } },
@@ -85,7 +85,7 @@ const WEEKLY={
   goal5:{ ok:()=>true, xp:250, txt:()=>`Meet your daily goal 5 days`, ev:w=>{ const n=w.days.filter(R=>R.goalMet&&!R.leave).length; return {done:n>=5, p:`${n}/5`}; } },
   qweek:{ ok:()=>true, xp:250, txt:w=>`${w.qN} questions this week`, ev:w=>{ const n=w.days.reduce((a,R)=>a+R.q,0); return {done:n>=w.qN, p:`${n}/${w.qN}`}; } },
   acc:{ ok:()=>true, xp:200, txt:()=>`150+ questions at 65%+ for the week`, ev:w=>{ const n=w.days.reduce((a,R)=>a+R.q,0), c=w.days.reduce((a,R)=>a+R.c,0); return {done:n>=150 && c/n>=0.65, p:`${n} q${n?` · ${Math.round(c/n*100)}%`:''}`}; } },
-  anki6:{ ok:()=>true, xp:200, txt:()=>`Anki on target 6 days (goal hit or 0 due)`, ev:w=>{ const n=w.days.filter(R=>R.anki && ((R.anki.due===0) || (R.ankiGoal && R.anki.reviewed>=R.ankiGoal))).length; return {done:n>=6, p:`${n}/6`}; } },
+  anki6:{ ok:()=>true, xp:200, txt:()=>`Anki on target 6 days (goal hit or 0 due)`, ev:w=>{ const n=w.days.filter(R=>R.anki && (a0(R.anki) || (R.ankiGoal && R.anki.reviewed>=R.ankiGoal))).length; return {done:n>=6, p:`${n}/6`}; } },
   gym3:{ ok:()=>true, xp:150, txt:()=>`3 gym sessions`, ev:w=>{ const n=w.dates.filter(d=>habitVal(d,'gym')===true).length; return {done:n>=3, p:`${n}/3`}; } },
 };
 function volN(R){ return Math.max(40, Math.round((R.quota||40)/5)*5); }
@@ -122,7 +122,7 @@ function xpLedger(){
   for(const [d,R] of Object.entries(G.days)){ if(d>t) continue;
     const A=R.anki||G.ankiByDay[d];
     if(A) add(d,'anki',A.reviewed*R_.ankiRev,`${A.reviewed} Anki reviews`);
-    if(A && (A.due===0 || (R.ankiGoal && A.reviewed>=R.ankiGoal))) add(d,'anki',R_.ankiOn,'Anki on target');
+    if(A && (a0(A) || (R.ankiGoal && A.reviewed>=R.ankiGoal))) add(d,'anki',R_.ankiOn,'Anki on target');
     if(R.goalMet && !R.leave && d<t) add(d,'goal',R_.goal,'Daily goal met');
     if(habitVal(d,'gym')===true) add(d,'gym',R_.gym,'Gym session');
     const pr=prayersOn(d), np=pr.filter(Boolean).length; if(np) add(d,'pray',np*R_.pray+(np===5?R_.prayAll:0),`${np}/5 prayers${np===5?' (all five)':''}`);
@@ -268,7 +268,7 @@ function checklistCard(){
   const d=CKD, ts=taskState();
   const blocks=G.blocks.filter(b=>b.d===d && b.e.type==='block'), qn=blocks.reduce((a,b)=>a+b.n,0), qc=blocks.reduce((a,b)=>a+b.c,0);
   const R=G.days[d], quota=R&&!R.leave?R.quota:0;
-  const gym=habitVal(d,'gym')===true, duty=habitVal(d,'duty'), on=prayersOn(d), np=on.filter(Boolean).length;
+  const A=G.ankiByDay[d]||(R&&R.anki), gym=habitVal(d,'gym')===true, duty=habitVal(d,'duty'), on=prayersOn(d), np=on.filter(Boolean).length;
   const tasks=CLERK.flatMap(g=>g.items).filter(it=>{ const e=ts[it.k]; return (e&&e.val) ? e.date===d : clerkDue(it.due)<=addDays(d,7); });
   const trow=it=>{ const e=ts[it.k], done=!!(e&&e.val), due=clerkDue(it.due), late=d>due;
     return `<li class="ord ${done?'done':''}"><button class="ock tk" data-a="ck-task" data-k="${it.k}" aria-label="Toggle">${done?'✓':''}</button><span>${esc(it.t)}<span class="c-muted"> · due ${fmtDow(due)}${late?' · <b class="c-bad">late</b>':''}</span></span><b class="oxp">+${late?Math.round(it.xp/2):it.xp} XP</b></li>`; };
@@ -278,6 +278,7 @@ function checklistCard(){
     <div class="seg wrap ckdays">${days.map(x=>`<button data-a="ck-day" data-d="${x}" class="${x===d?'on':''}">${dayChip(x)}</button>`).join('')}</div>
     <div class="ckh">${fmtDow(d)}</div>
     <div class="toggle"><div><div>Questions <span class="c-muted">${qn}${quota?` / ${quota}`:''}${qn?` · ${Math.round(qc/qn*100)}%`:''}</span></div><div class="note" style="margin:0">${blocks.length?blocks.map(b=>`${b.n} ${b.e.src==='amboss'?'AMBOSS':'UW'} @ ${Math.round(b.acc*100)}%`).join(' · '):'Nothing logged yet'}</div></div><button class="btn sm pri" data-a="ck-q">+ Add questions</button></div>
+    <div class="toggle"><div><div>Anki <span class="c-muted">${A?`${(A.reviewed||0).toLocaleString()} reviewed · ${a0(A)?'<span class="c-good">reached 0 due</span>':`${(A.due||0).toLocaleString()} due`}`:'no reading'}</span></div><div class="note" style="margin:0">${d===today()?'Updates itself when Anki is connected':'Fix this day if Anki was off or the reading is wrong'}</div></div><button class="btn sm" data-a="ck-anki">Edit</button></div>
     <div class="toggle"><div>Gym</div><button class="sw ${gym?'on':''}" data-a="ck-hab" data-k="gym" aria-label="Gym"></button></div>
     <div class="toggle"><div>Daily clinical activities</div><div class="prow5"><button class="pbtn ${duty==='done'?'on':''}" data-a="ck-duty" data-v="done">Completed</button><button class="pbtn ${duty==='na'?'on na':''}" data-a="ck-duty" data-v="na">N/A</button></div></div>
     <div class="toggle pray"><div>Prayers <span class="c-muted">${np}/5</span></div><div class="prow5">${PRAYERS.map((p,i)=>`<button class="pbtn ${on[i]?'on':''}" data-a="ck-hab" data-k="p${i+1}">${p}</button>`).join('')}</div></div>
@@ -289,6 +290,7 @@ document.addEventListener('click', e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a, d=CKD||today();
   if(a==='ck-day'){ CKD=b.dataset.d; render(); }
   else if(a==='ck-q'){ openLog(null, d); }
+  else if(a==='ck-anki'){ openAnkiManual(d); }
   else if(a==='ck-hab'){ const k=b.dataset.k, cur=habitVal(d,k); addEvent({id:`habit-${d}-${k}`, type:'habit', kind:k, val: cur!==true, date:d}); }
   else if(a==='ck-duty'){ const cur=habitVal(d,'duty'), v=b.dataset.v; addEvent({id:`habit-${d}-duty`, type:'habit', kind:'duty', val: cur===v?null:v, date:d}); }
   else if(a==='ck-task'){ const k=b.dataset.k, cur=taskState()[k]; addEvent({id:'task-'+k, type:'task', k, val:!(cur&&cur.val), date:d}); }

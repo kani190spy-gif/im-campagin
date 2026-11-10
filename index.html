@@ -455,7 +455,7 @@ label.dep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px
 
 <script>
 'use strict';
-const APP_VERSION = '2.7';
+const APP_VERSION = '2.8';
 
 /* ================= Regions ================= */
 const REG = {
@@ -496,6 +496,7 @@ const DEFAULT_SETTINGS = () => ({
   backlogAt: 700,
   clearBy: '2026-11-07',
   ankiDeck: 'AnKing*',
+  rollover: 4,
   defenseQ: 20,
   offDays: [],
   cms: {1:'2026-11-14', 2:'2026-11-29', 3:'2026-12-08', 4:'2026-12-14'},
@@ -504,7 +505,10 @@ const DEFAULT_SETTINGS = () => ({
 /* ================= Utilities ================= */
 const pad = n => String(n).padStart(2,'0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const today = () => ymd(new Date());
+// The study day starts at Anki's "next day starts at" hour (default 4 AM), so a 1 AM session counts for the day before, as it does in Anki.
+const rolloverH = () => { try{ const h=S&&S.settings&&S.settings.rollover; return (h>=0&&h<=12)?+h:4; }catch(e){ return 4; } };
+const today = () => ymd(new Date(Date.now()-rolloverH()*3600e3));
+const a0 = A => !!A && (A.due===0 || !!A.hit0);   // AnKing reached 0 due at some point that day
 const parseD = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
 const addDays = (s,n) => { const d=parseD(s); d.setDate(d.getDate()+n); return ymd(d); };
 const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/864e5);
@@ -801,7 +805,7 @@ function simulate(st, extra){
       } else if(e.type==='anki'){
         G.ankiByDay[d]=e; G.anki=e; if(e.again!=null && e.reviewed>=30) G.lapseRef=e;
         if(!G.siege && e.due > set.backlogAt){ G.siege=true; G.siegeStart=d; add(d,'siege',`Backlog: <b class="c-bad">${e.due.toLocaleString()}</b> AnKing cards due. Siege begins — clear to 0.`); }
-        else if(G.siege && e.due===0){ G.siege=false; R.siegeBroken=true; G.siegeEverBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
+        else if(G.siege && a0(e)){ G.siege=false; R.siegeBroken=true; G.siegeEverBroken=true; add(d,'siege',`<b class="c-good">Siege broken!</b> AnKing at 0 due. Bonus ground, and towns resume consolidating.`); R.gained += addGround(15, d, false); }
       }
     }
     if(defN>0) R.def={n:defN, c:defC};
@@ -813,7 +817,7 @@ function simulate(st, extra){
       const sg = R.siege ? siegeGoal(d) : null;
       if(sg) R.ankiGoal = sg.goal;
       const rev0 = R.anki ? R.anki.reviewed : 0;
-      R.goalMet = !!(R.leave || (R.siege ? (rev0 >= R.ankiGoal || (R.anki && R.anki.due===0) || R.siegeBroken) : R.q >= R.quota));
+      R.goalMet = !!(R.leave || (R.siege ? (rev0 >= R.ankiGoal || a0(R.anki) || R.siegeBroken) : R.q >= R.quota));
       // defense
       if(R.attack!=null){
         const tid=R.attack;
@@ -836,7 +840,7 @@ function simulate(st, extra){
         R.lostGround += li.lost;
         add(d,'miss',`Goal missed (${R.q}/${R.quota}). Enemy pushed back ${r1(li.lost)} ground${li.towns?`, ${li.towns} town${li.towns>1?'s':''} lost`:''}.`);
       } else if(!R.leave) G.missStreak=0;
-      if(G.perk.quartermaster && R.anki && R.anki.due===0){ R.gained += addGround(5, d, false); add(d,'officer','Quartermaster Hale: supply lines clear — +5 ground.'); }
+      if(G.perk.quartermaster && a0(R.anki)){ R.gained += addGround(5, d, false); add(d,'officer','Quartermaster Hale: supply lines clear — +5 ground.'); }
       // Anki supply lines
       R.backlog = R.siege && G.siege;
       if(G.siege){
@@ -1247,6 +1251,7 @@ function viewSettings(){
       <div class="field"><label>Clear backlog by</label><input type="date" data-s="clearBy" value="${set.clearBy||''}"></div>
       <p class="note">During a siege the daily review goal is whatever gets AnKing to 0 by this date (at least your daily goal). The siege ends when AnKing hits 0.</p>
       <div class="field"><label>Deck to track</label><input type="text" data-s="ankiDeck" value="${esc(set.ankiDeck)}" placeholder="AnKing*"></div>
+      <div class="field"><label>New day starts at (hour, match Anki → Preferences → "Next day starts at")</label><input type="number" inputmode="numeric" min="0" max="12" data-s="rollover" value="${set.rollover??4}"></div>
       ${ankiAuto?`<button class="btn sm" data-a="anki-pull">Test Anki connection</button>`:''}
     </div>
     <div class="card"><h3>Sync between devices</h3>
@@ -1363,12 +1368,15 @@ function afterReport(before,n,c){
 }
 function flashTowns(ids){ if(tab!=='campaign') return; ids.forEach(id=>{ const g=document.querySelector(`.town[data-t="${id}"]`); if(g){ g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'),3000);} }); }
 
-function openAnkiManual(){
-  const snap=G.ankiByDay[today()];
-  openSheet(`<h2>Anki report</h2><div class="note">AnKing deck only. Use on your phone or if Anki isn't connected.</div>
+let AKD=null;
+function openAnkiManual(date){
+  AKD=date||today(); const past=AKD!==today();
+  const snap=G.ankiByDay[AKD];
+  openSheet(`<h2>Anki report${past?` · ${fmtDow(AKD)}`:''}</h2><div class="note">AnKing deck only. ${past?'Fixing a past day: enter that day\'s reviews (Anki → Stats shows reviews by day) and whether you got to 0 due.':'Use on your phone or if Anki isn\'t connected.'}</div>
     <div class="pair"><div class="field"><label>Reviewed today</label><input type="number" inputmode="numeric" id="ak-r" value="${snap?snap.reviewed:''}"></div>
     <div class="field"><label>Cards due now</label><input type="number" inputmode="numeric" id="ak-d" value="${snap?snap.due:''}"></div></div>
-    <div class="field"><label>Due tomorrow (optional)</label><input type="number" inputmode="numeric" id="ak-f" value="${snap&&snap.fut?snap.fut[0]:''}" placeholder="From Anki → Stats → Future due"></div>
+    <label class="toggle" style="cursor:pointer"><div>Reached 0 due ${past?'that day':'today'}<div class="note" style="margin:0">Counts even if new cards came due later</div></div><input type="checkbox" id="ak-0" ${snap&&a0(snap)?'checked':''}></label>
+    ${past?'':`<div class="field"><label>Due tomorrow (optional)</label><input type="number" inputmode="numeric" id="ak-f" value="${snap&&snap.fut?snap.fut[0]:''}" placeholder="From Anki → Stats → Future due"></div>`}
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="anki-save">Save</button></div>`);
 }
 function openCms(f){
@@ -1556,7 +1564,9 @@ async function ankiPull(silent){
     const fut=[]; for(let i=1;i<=horizon;i++) fut.push((await ankiCall('findCards', {query: scope+'prop:due='+i})).length);
     let again=null; try{ again=(await ankiCall('findCards', {query: scope+'rated:1:1'})).length; }catch(e){}
     const cur=G && G.ankiByDay[today()];
-    if(!cur || cur.reviewed!==reviewed || cur.due!==due || JSON.stringify(cur.fut)!==JSON.stringify(fut) || cur.again!==again) addEvent({id:'anki-'+today(), type:'anki', reviewed, due, fut, again, auto:true});
+    // keep the day's best: reviews only go up, and once AnKing hits 0 due that day it stays recorded even after new cards come due
+    const rv=Math.max(reviewed, cur&&cur.date===today()?cur.reviewed||0:0), hit0=due===0 || !!(cur&&cur.hit0);
+    if(!cur || cur.reviewed!==rv || cur.due!==due || JSON.stringify(cur.fut)!==JSON.stringify(fut) || cur.again!==again || !!cur.hit0!==hit0) addEvent({id:'anki-'+today(), type:'anki', reviewed:rv, due, fut, again, hit0, auto:true});
     if(!silent) toast(`Anki (${dk||'all'}): ${reviewed} reviewed today, ${due.toLocaleString()} due now, ${fut[0]} scheduled for tomorrow.`);
     return true;
   }catch(e){
@@ -1641,7 +1651,7 @@ document.addEventListener('click', e=>{
   else if(a==='log-save') saveLog();
   else if(a==='habit'){ const k=b.dataset.k, cur=habitVal(today(),k); addEvent({id:`habit-${today()}-${k}`, type:'habit', kind:k, val: cur!==true}); }
   else if(a==='anki-manual') openAnkiManual();
-  else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} const f=$('#ak-f').value; addEvent({id:'anki-'+today(), type:'anki', reviewed:r, due:d, ...(f!==''?{fut:[+f]}:{}), auto:false}); closeSheet(); }
+  else if(a==='anki-save'){ const r=+$('#ak-r').value||0, d=+$('#ak-d').value; if($('#ak-d').value===''){toast('Enter cards due.');return;} const f=$('#ak-f')?$('#ak-f').value:'', dd=AKD||today(), h0=$('#ak-0').checked, prev=G.ankiByDay[dd]; addEvent({id:'anki-'+dd, type:'anki', reviewed:r, due:d, ...(f!==''?{fut:[+f]}:prev&&prev.fut?{fut:prev.fut}:{}), hit0:h0||d===0, auto:false, date:dd}); closeSheet(); }
   else if(a==='anki-pull') ankiPull(false);
   else if(a==='anki-auto'){ const on=localStorage.getItem(LS_ANKI)==='1'; localStorage.setItem(LS_ANKI, on?'0':'1'); render(); if(!on) ankiPull(false); }
   else if(a==='cms') openCms(+b.dataset.f);
@@ -1680,7 +1690,7 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('change', e=>{
   const t=e.target;
-  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ankiGoal','backlogAt','defenseQ'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); if(k==='ankiDeck' && localStorage.getItem(LS_ANKI)==='1') ankiPull(false); }
+  if(t.dataset.s){ const k=t.dataset.s; const num=['targetPct','ankiGoal','backlogAt','defenseQ','rollover'].includes(k); S.settings[k]= num ? (+t.value||0) : t.value; touchSettings(); if(k==='ankiDeck' && localStorage.getItem(LS_ANKI)==='1') ankiPull(false); }
   else if(t.dataset.cms){ S.settings.cms={...S.settings.cms,[t.dataset.cms]:t.value}; touchSettings(); }
   else if(t.id==='importfile' && t.files[0]){ t.files[0].text().then(txt=>{ try{ const imp=JSON.parse(txt); if(!imp.events) throw 0; S=mergeStates(S,imp); commit(); toast('Backup merged in.'); }catch(err){ toast('That file isn\'t a campaign backup.'); } }); }
 });
@@ -1942,7 +1952,16 @@ async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('
 
 /* ================= Lifecycle ================= */
 function onShow(){ syncNow(); if(localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ onShow(); maybeReport(); } else if(hallOpen){ hallOpen=false; if(tab==='hall') render(); } });
+async function maybeMuster(){
+  if(CUT || OP || !$('#gate').classList.contains('hidden') || !$('#sheetbg').classList.contains('hidden')) return false;
+  if(typeof chapPlaying!=='undefined' && chapPlaying) return false;
+  let seen=null, off=null; try{ seen=localStorage.getItem(LS_MUS); off=localStorage.getItem(LS_MUSOFF); }catch(e){}
+  if(off==='1' || seen===today()) return false;
+  try{ localStorage.setItem(LS_MUS,today()); localStorage.setItem(LS_REP,today()); }catch(e){}
+  render(); await playScene('muster'); return true;
+}
+setInterval(()=>{ if(document.visibilityState==='visible') maybeMuster(); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ onShow(); maybeMuster().then(m=>{ if(!m) maybeReport(); }); } else if(hallOpen){ hallOpen=false; if(tab==='hall') render(); } });
 setInterval(()=>{ if(document.visibilityState==='visible' && localStorage.getItem(LS_ANKI)==='1') ankiPull(true); }, 3*60*1000);
 setInterval(()=>{ if(document.visibilityState==='visible' && !syncing) syncNow(); }, 2*60*1000);
 window.addEventListener('resize', ()=>{ if(VB && $('#mapsvg')){ setVB({...VB}); updateMap(); } });
