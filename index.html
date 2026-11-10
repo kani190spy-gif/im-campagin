@@ -121,6 +121,8 @@ svg.map.dragging{cursor:grabbing}
 .dots i.y{background:var(--good);border-color:var(--good)} .dots i.n{background:#3a1e20;border-color:#5a2a2d}
 .fabs{position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:20;display:flex;gap:8px;align-items:center}
 .fab{background:var(--brass);color:#1a1408;border:0;border-radius:999px;padding:14px 20px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.seg.wrap{flex-wrap:wrap}
+.ckdays{margin:8px 0 4px}.ckh{font-family:var(--display);letter-spacing:.06em;color:var(--brass);margin:8px 0 2px}.ckh2{margin:12px 0 4px;font-size:14px}
 .fab.alt{background:var(--panel2);color:var(--text);border:1px solid var(--line2);padding:13px 16px}
 main{padding-bottom:110px}
 /* sheets */
@@ -1277,9 +1279,11 @@ function closeSheet(){ $('#sheetbg').classList.add('hidden'); $('#sheet').innerH
 
 /* ---- Log sheet: quick numbers or paste ---- */
 let LD=null;
-function openLog(attachTo){
+function retroDays(){ const out=[], st=S.settings.campaignStart; for(let i=0;i<7;i++){ const d=addDays(today(),-i); if(st && d<st) break; out.push(d); } return out; }
+function dayChip(d){ const t=today(); return d===t?'Today':d===addDays(t,-1)?'Yesterday':(()=>{ const x=new Date(d+'T12:00'); return x.toLocaleDateString('en-US',{weekday:'short'})+' '+x.getDate(); })(); }
+function openLog(attachTo, date){
   const ids = attachTo ? (Array.isArray(attachTo)?attachTo:[attachTo]) : null;
-  LD={mode: ids?'paste':'quick', src:'uw', attachTo:ids, rows:null, score:null, date:today()};
+  LD={mode: ids?'paste':'quick', src:'uw', attachTo:ids, rows:null, score:null, date:date||today()};
   drawLog();
 }
 function drawLog(){
@@ -1287,16 +1291,16 @@ function drawLog(){
   let body='';
   if(d.mode==='quick'){
     body=`<div class="field"><label>Source</label><div class="seg"><button data-ls="uw" class="${d.src==='uw'?'on':''}">UWorld</button><button data-ls="amboss" class="${d.src==='amboss'?'on':''}">AMBOSS</button></div></div>
-      <div class="pair"><div class="field"><label>Questions</label><input type="number" inputmode="numeric" id="lg-n" placeholder="40"></div><div class="field"><label>Correct</label><input type="number" inputmode="numeric" id="lg-c" placeholder="26"></div></div>`;
+      <div class="pair"><div class="field"><label>Questions done</label><input type="number" inputmode="numeric" id="lg-n" placeholder="e.g. 12"></div><div class="field"><label>Correct</label><input type="number" inputmode="numeric" id="lg-c" placeholder="26"></div></div>`;
   } else {
     body=`<div class="field"><label>Paste the UWorld results page</label><textarea id="lg-paste" placeholder="On the results page: Cmd+A, Cmd+C, then paste here">${d.raw?esc(d.raw):''}</textarea></div>
       ${d.rows?`<div class="note">${d.rows.length} questions found${d.score!=null?` · UWorld score ${d.score}% (${Math.round(d.score*d.rows.length/100)} correct)`:''}. ${att&&att.q.length===d.rows.length?'Your live taps are filled in.':att?(att.segs.length>1?`Your live count was ${att.n}; intel will be matched in order to the first ${Math.min(att.n,d.rows.length)}. Tap the ones you got wrong.`:`Your live count was ${att.n}; these ${d.rows.length} results will replace it. Tap the ones you got wrong.`):'Tap the ones you got wrong.'} Marked correct: <b id="lg-cnt">${d.rows.filter(r=>r.ok).length}</b></div>
         <div class="qrows">${d.rows.map((r,i)=>`<div class="qrow"><button class="${r.ok?'':'x'}" data-qi="${i}">${r.ok?'✓':'✗'}</button><div><div>${esc(r.cat||'')}</div><div class="t">${esc(r.topic||'')} · ${esc(r.sys||'')}</div></div><span class="t">${r.r?esc(REG[r.r].land.replace(/^The /,'')):''}</span></div>`).join('')}</div>`:''}`;
   }
   openSheet(`<h2>${att?'Add intel to '+esc(att.name||'operation'):'Report work'}</h2>
-    <div class="note">${att?'Paste the results so the map knows which systems you hit.':'Use this when you did questions without live mode.'}</div>
+    <div class="note">${att?'Paste the results so the map knows which systems you hit.':'Any amount counts, including part of a block. Sets under 40 on the same day pool together toward Field coins. You can report up to 7 days back.'}</div>
     ${att?'':`<div class="field"><label>How</label><div class="seg"><button data-lm="quick" class="${d.mode==='quick'?'on':''}">Numbers</button><button data-lm="paste" class="${d.mode==='paste'?'on':''}">Paste UWorld results</button></div></div>`}
-    ${att?'':`<div class="field"><label>Day</label><div class="seg"><button data-ld="${today()}" class="${d.date===today()?'on':''}">Today</button><button data-ld="${addDays(today(),-1)}" class="${d.date!==today()?'on':''}">Yesterday</button></div></div>`}
+    ${att?'':`<div class="field"><label>Day</label><div class="seg wrap">${retroDays().map(x=>`<button data-ld="${x}" class="${d.date===x?'on':''}">${dayChip(x)}</button>`).join('')}</div></div>`}
     ${body}
     <div class="actions"><button class="btn" data-a="close">Cancel</button><button class="btn pri" data-a="log-save">${att?'Add intel':'Send report'}</button></div>`);
   const ta=$('#lg-paste'); if(ta) ta.addEventListener('input',()=>{ LD.raw=ta.value; parsePaste(); });

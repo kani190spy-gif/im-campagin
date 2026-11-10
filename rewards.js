@@ -28,7 +28,7 @@ const COINS={
   duty:  {n:'Participant coin', g:'✚', why:'Daily clinical activities completed', tiers:'a random design each day: collect all 10, rarer ones are harder to find'},
   iron:  {n:'Forge coin',   g:'⚒', why:'Every gym session (metal by session # that week)', tiers:'1st nickel · 2nd copper · 3rd silver · 4th+ gold'},
   supply:{n:'Supply coin',  g:'⛭', why:'Anki each day', tiers:'½ goal nickel · ¾ goal copper · goal hit silver · 0 due gold'},
-  field: {n:'Field coin',   g:'⚔', why:'Each 40-question block (metal by accuracy)', tiers:'50% nickel · 55% iron · 60% copper · 65% bronze · 70% silver · 75% gold'},
+  field: {n:'Field coin',   g:'⚔', why:'Each 40-question block, or every 40 questions pooled from smaller sets that day (metal by accuracy)', tiers:'50% nickel · 55% iron · 60% copper · 65% bronze · 70% silver · 75% gold'},
   march: {n:'March coin',   g:'⚑', why:'Daily question goal', tiers:'½ nickel · ¾ copper · 100% silver · 125% gold'},
   orders:{n:'Command coin', g:'✉', why:'Daily orders done', tiers:'1 bronze · 2 silver · all 3 gold'},
 };
@@ -104,7 +104,14 @@ function collection(){
     if(!R.leave && R.quota){ const f=R.q/R.quota; give('march', f>=1.25?'gold': f>=1?'silver': f>=0.75?'copper': f>=0.5?'nickel':null, d); }
     const od=dailyOrders(d).filter(o=>o.done).length; give('orders',[null,'bronze','silver','gold'][Math.min(3,od)],d);
   }
-  for(const b of G.blocks) if(b.e.type==='block' && b.n>=40 && b.d<=seasonEnd()){ const a=b.acc; give('field', a>=0.75?'gold': a>=0.7?'silver': a>=0.65?'bronze': a>=0.6?'copper': a>=0.55?'iron': a>=0.5?'nickel':null, b.d); }
+  const fieldM=a=> a>=0.75?'gold': a>=0.7?'silver': a>=0.65?'bronze': a>=0.6?'copper': a>=0.55?'iron': a>=0.5?'nickel':null;
+  const pool={};
+  for(const b of G.blocks) if(b.e.type==='block' && b.d<=seasonEnd()){
+    if(b.n>=40) give('field', fieldM(b.acc), b.d);
+    else { const p=pool[b.d]||(pool[b.d]={n:0,c:0}); p.n+=b.n; p.c+=b.c; }
+  }
+  // partial sets on the same day pool: each full 40 earns a Field coin at the pooled accuracy
+  for(const d in pool){ const p=pool[d]; for(let i=0;i<Math.floor(p.n/40);i++) give('field', fieldM(p.c/p.n), d); }
   // ribbons by week
   const ribbons={}, ribLog=[]; for(const k in RIBBONS) ribbons[k]=0;
   const weeks=[...new Set(seasonDays().map(weekMonday))];

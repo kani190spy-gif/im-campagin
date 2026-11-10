@@ -217,6 +217,7 @@ function viewProfile(){
           <div class="xpbar"><div style="width:${pct}%"></div></div>
           <div class="sub">${P.need?`${P.into.toLocaleString()} / ${P.need.toLocaleString()} XP to level ${P.lvl+1}`:P.maxed?'Master Prestige — the top of the ladder.':'Level 50 reached.'} · ${P.total.toLocaleString()} XP lifetime</div>
           ${P.canPrestige?`<button class="btn pri" data-a="prestige" style="margin-top:8px">★ Enter Prestige ${P.prestige+1}</button>`:''}</div></div></div>
+    ${checklistCard()}
     ${paceCard(P)}
     <div class="cmdgrid">
       <div class="card"><h3>Today's orders</h3><ul class="ordl">${dd.map(orderRow).join('')||'<li class="c-muted">Leave day — no orders.</li>'}</ul>
@@ -259,6 +260,39 @@ function prayersRow(){
   const t=today(), on=prayersOn(t), n=on.filter(Boolean).length;
   return `<div class="toggle pray"><div><div>Prayers <span class="c-muted">${n}/5${n===5?' · all five':''}</span></div></div><div class="prow5">${PRAYERS.map((p,i)=>`<button class="pbtn ${on[i]?'on':''}" data-a="habit" data-k="p${i+1}" title="${p}">${p}</button>`).join('')}</div></div>`;
 }
+
+/* ---------- Daily checklist (back-fill up to 7 days) ---------- */
+let CKD=null;
+function checklistCard(){
+  const days=retroDays(); if(!CKD || !days.includes(CKD)) CKD=today();
+  const d=CKD, ts=taskState();
+  const blocks=G.blocks.filter(b=>b.d===d && b.e.type==='block'), qn=blocks.reduce((a,b)=>a+b.n,0), qc=blocks.reduce((a,b)=>a+b.c,0);
+  const R=G.days[d], quota=R&&!R.leave?R.quota:0;
+  const gym=habitVal(d,'gym')===true, duty=habitVal(d,'duty'), on=prayersOn(d), np=on.filter(Boolean).length;
+  const tasks=CLERK.flatMap(g=>g.items).filter(it=>{ const e=ts[it.k]; return (e&&e.val) ? e.date===d : clerkDue(it.due)<=addDays(d,7); });
+  const trow=it=>{ const e=ts[it.k], done=!!(e&&e.val), due=clerkDue(it.due), late=d>due;
+    return `<li class="ord ${done?'done':''}"><button class="ock tk" data-a="ck-task" data-k="${it.k}" aria-label="Toggle">${done?'✓':''}</button><span>${esc(it.t)}<span class="c-muted"> · due ${fmtDow(due)}${late?' · <b class="c-bad">late</b>':''}</span></span><b class="oxp">+${late?Math.round(it.xp/2):it.xp} XP</b></li>`; };
+  const od=dailyOrders(d);
+  return `<div class="card ckcard"><h3>Daily checklist</h3>
+    <div class="note">Mark what you did on any of the last 7 days. Pick the day first, then tick its goals. Orders, coins and XP update for that day.</div>
+    <div class="seg wrap ckdays">${days.map(x=>`<button data-a="ck-day" data-d="${x}" class="${x===d?'on':''}">${dayChip(x)}</button>`).join('')}</div>
+    <div class="ckh">${fmtDow(d)}</div>
+    <div class="toggle"><div><div>Questions <span class="c-muted">${qn}${quota?` / ${quota}`:''}${qn?` · ${Math.round(qc/qn*100)}%`:''}</span></div><div class="note" style="margin:0">${blocks.length?blocks.map(b=>`${b.n} ${b.e.src==='amboss'?'AMBOSS':'UW'} @ ${Math.round(b.acc*100)}%`).join(' · '):'Nothing logged yet'}</div></div><button class="btn sm pri" data-a="ck-q">+ Add questions</button></div>
+    <div class="toggle"><div>Gym</div><button class="sw ${gym?'on':''}" data-a="ck-hab" data-k="gym" aria-label="Gym"></button></div>
+    <div class="toggle"><div>Daily clinical activities</div><div class="prow5"><button class="pbtn ${duty==='done'?'on':''}" data-a="ck-duty" data-v="done">Completed</button><button class="pbtn ${duty==='na'?'on na':''}" data-a="ck-duty" data-v="na">N/A</button></div></div>
+    <div class="toggle pray"><div>Prayers <span class="c-muted">${np}/5</span></div><div class="prow5">${PRAYERS.map((p,i)=>`<button class="pbtn ${on[i]?'on':''}" data-a="ck-hab" data-k="p${i+1}">${p}</button>`).join('')}</div></div>
+    ${tasks.length?`<h4 class="ckh2">Clerkship tasks <small class="c-muted">ticking here records them as done on ${dayChip(d).toLowerCase()==='today'?'today':fmtDow(d)}</small></h4><ul class="ordl">${tasks.map(trow).join('')}</ul>`:''}
+    ${od.length?`<h4 class="ckh2">Orders that day <small class="c-muted">checked automatically</small></h4><ul class="ordl">${od.map(orderRow).join('')}</ul>`:''}
+  </div>`;
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a, d=CKD||today();
+  if(a==='ck-day'){ CKD=b.dataset.d; render(); }
+  else if(a==='ck-q'){ openLog(null, d); }
+  else if(a==='ck-hab'){ const k=b.dataset.k, cur=habitVal(d,k); addEvent({id:`habit-${d}-${k}`, type:'habit', kind:k, val: cur!==true, date:d}); }
+  else if(a==='ck-duty'){ const cur=habitVal(d,'duty'), v=b.dataset.v; addEvent({id:`habit-${d}-duty`, type:'habit', kind:'duty', val: cur===v?null:v, date:d}); }
+  else if(a==='ck-task'){ const k=b.dataset.k, cur=taskState()[k]; addEvent({id:'task-'+k, type:'task', k, val:!(cur&&cur.val), date:d}); }
+});
 
 /* ---------- corner rank widget ---------- */
 function renderRankCorner(){
