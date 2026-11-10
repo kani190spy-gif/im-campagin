@@ -1,5 +1,5 @@
 // Network-first for the app shell so updates arrive right away; cache is the offline fallback.
-const CACHE = 'imc-v72';
+const CACHE = 'imc-v73';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './map.json', './map.jpg', './story.json', './battle.js', './election.js', './command.js', './profile.js', './rewards.js', './elec/us.json', './art/map_farmland.webp', './art/u_tank_light.webp'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
