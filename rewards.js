@@ -134,7 +134,7 @@ function collection(){
 
 /* ---------- drawing (placeholders until art arrives) ---------- */
 // Per-level coin art: add '<coin>_<metal>' when art/coin_<coin>_<metal>.webp exists. (prayer tiers are interim tints of your nickel Vigil coin)
-const COIN_FILES=new Set(['prayer_nickel','prayer_bronze','prayer_silver','prayer_gold','prayer_obsidian','supply_nickel','supply_copper','supply_silver']);
+const COIN_FILES=new Set(['prayer_nickel','prayer_bronze','prayer_silver','prayer_gold','prayer_obsidian','supply_nickel','supply_copper','supply_silver','supply_gold']);
 const COIN_ART=new Set([]), RIBBON_ART=new Set([]), MEDAL_ART=new Set([]);
 function coinHtml(k, metal, size){
   const c=COINS[k], s=size||56, col=METAL_COL[metal]||'#888';
